@@ -1,5 +1,9 @@
 #include <Arduino.h>
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <WiFi.h>
+#include "secrets.h"
 
 
 void setup() {
@@ -22,7 +26,7 @@ void setup() {
 
   // reset settings - wipe stored credentials for testing
   // these are stored by the esp library
-  wm.resetSettings();
+  // wm.resetSettings();
 
   // Automatically connect using saved credentials,
   // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
@@ -44,7 +48,65 @@ void setup() {
   }
 }
 
+void scanAccessPoints() {
+  int n = WiFi.scanNetworks();
+  Serial.printf("Found %d networks:\n", n);
+  for (int i = 0; i < n; ++i) {
+    String ssid = WiFi.SSID(i);
+    String bssid = WiFi.BSSIDstr(i); // MAC address
+    int rssi = WiFi.RSSI(i);
+    Serial.printf("SSID: %s, BSSID: %s, RSSI: %d\n", ssid.c_str(), bssid.c_str(), rssi);
+  }
+  WiFi.scanDelete(); // Free memory
+}
+
+String buildWifiJson() {
+  StaticJsonDocument<1024> doc;
+  doc["considerIp"] = false;
+  JsonArray aps = doc.createNestedArray("wifiAccessPoints");
+  int n = WiFi.scanNetworks();
+  for (int i = 0; i < n; ++i) {
+    JsonObject ap = aps.createNestedObject();
+    ap["macAddress"] = WiFi.BSSIDstr(i);
+    ap["signalStrength"] = WiFi.RSSI(i);
+    ap["signalToNoiseRatio"] = 0;
+  }
+  WiFi.scanDelete();
+  String output;
+  serializeJson(doc, output);
+  return output;
+}
+
+void getLocationFromGoogle(const String& apiKey) {
+  String wifiJson = buildWifiJson();
+  HTTPClient http;
+  String url = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + apiKey;
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  int httpCode = http.POST(wifiJson);
+  if (httpCode > 0) {
+    String payload = http.getString();
+    Serial.println(payload);
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, payload);
+    if (!error) {
+      float lat = doc["location"]["lat"];
+      float lon = doc["location"]["lng"];
+      Serial.printf("Google Location: Latitude: %f, Longitude: %f\n", lat, lon);
+    } else {
+      Serial.println("Failed to parse Google JSON response");
+    }
+  } else {
+    Serial.printf("Google HTTP POST failed, error: %s\n", http.errorToString(httpCode).c_str());
+  }
+  http.end();
+}
+
 void loop() {
-  Serial.println("Hello from loop!");
-  delay(10000);
+  if (WiFi.status() == WL_CONNECTED) {
+    getLocationFromGoogle(GOOGLE_API_KEY);
+  } else {
+    Serial.println("WiFi not connected");
+  }
+  delay(60000); // Wait 60 seconds before next request
 }
