@@ -235,10 +235,10 @@ String getUniqueSSID(const String& prefix) {
 void setup() {
   Serial.begin(115200);
   Serial.println("Hello, PlatformIO World!");
-  // if (!LittleFS.begin()) {
-  //   Serial.println("[ERROR] LittleFS mount failed! Please check filesystem or flash.");
-  //   while (true) { delay(1000); }
-  // }
+  if (!LittleFS.begin()) {
+    Serial.println("[ERROR] LittleFS mount failed! Please check filesystem or flash.");
+    while (true) { delay(1000); }
+  }
   WiFiManager wm;
   wm.resetSettings(); // Reset WiFi settings for fresh start
   // Debug: Print before AP setup
