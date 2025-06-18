@@ -7,6 +7,8 @@
 #include "secrets/secrets.h"
 #include "secrets/rmv_secrets.h"
 #include <WebServer.h>
+#include <FS.h>
+#include <LittleFS.h>
 
 WebServer server(80);
 bool inConfigMode = true;
@@ -63,6 +65,13 @@ bool getLocationFromGoogle(float &lat, float &lon) {
   return false;
 }
 
+struct Station {
+  String id;
+  String name;
+  String type; // "bus" or "train"
+};
+std::vector<Station> stations; // Fill from RMV API
+
 // Get nearby stops from RMV API
 void getNearbyStops(float lat, float lon) {
   printFreeHeap("Before RMV request:");
@@ -79,6 +88,7 @@ void getNearbyStops(float lat, float lon) {
     DynamicJsonDocument doc(8192); // Use heap, not stack
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
+      stations.clear();
       JsonArray stops = doc["stopLocationOrCoordLocation"];
       for (JsonObject item : stops) {
         JsonObject stop = item["StopLocation"];
@@ -87,7 +97,10 @@ void getNearbyStops(float lat, float lon) {
           const char* name = stop["name"] | "";
           float lon = stop["lon"] | 0.0;
           float lat = stop["lat"] | 0.0;
-          Serial.printf("Stop ID: %s, Name: %s, Lon: %f, Lat: %f\n", id, name, lon, lat);
+          int products = stop["products"] | 0;
+          String type = (products & 64) ? "train" : "bus"; // Example: RMV uses bitmask for products
+          stations.push_back({String(id), String(name), type});
+          Serial.printf("Stop ID: %s, Name: %s, Lon: %f, Lat: %f, Type: %s\n", id, name, lon, lat, type.c_str());
         }
       }
     } else {
@@ -179,6 +192,30 @@ void getDepartureBoard(const char* stopId) {
   http.end();
 }
 
+String generateStationsHTML(const std::vector<Station>& stations) {
+  String html;
+  for (size_t i = 0; i < stations.size(); ++i) {
+    const auto& s = stations[i];
+    html += "<div class='station'>";
+    html += "<input type='radio' name='station' value='" + s.id + "'>";
+    html += s.name + " (" + s.type + ")";
+    html += "</div>";
+  }
+  return html;
+}
+
+void handleStationSelect() {
+  File file = LittleFS.open("/station_select.html", "r");
+  if (!file) {
+    server.send(500, "text/plain", "Template not found");
+    return;
+  }
+  String page = file.readString();
+  file.close();
+  page.replace("{{stations}}", generateStationsHTML(stations));
+  server.send(200, "text/html", page);
+}
+
 void handleConfigPage() {
   server.send(200, "text/html", "<h1>ESP32 Configuration Page</h1><p>Put your config form here.</p>");
 }
@@ -188,21 +225,46 @@ void handleConfigDone() {
   server.send(200, "text/html", "<h1>Configuration Complete</h1><p>Device will now run in normal mode.</p>");
 }
 
+String getUniqueSSID(const String& prefix) {
+  uint32_t chipId = (uint32_t)ESP.getEfuseMac(); // Unique per ESP32
+  char ssid[32];
+  snprintf(ssid, sizeof(ssid), "%s-%06X", prefix.c_str(), chipId & 0xFFFFFF);
+  return String(ssid);
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Hello, PlatformIO World!");
+  // if (!LittleFS.begin()) {
+  //   Serial.println("[ERROR] LittleFS mount failed! Please check filesystem or flash.");
+  //   while (true) { delay(1000); }
+  // }
   WiFiManager wm;
+  wm.resetSettings(); // Reset WiFi settings for fresh start
+  // Debug: Print before AP setup
+  Serial.println("[DEBUG] Starting WiFiManager AP mode...");
   const char* menu[] = { "wifi" };
   wm.setMenu(menu, 1);
   wm.setAPStaticIPConfig(IPAddress(10,0,1,1), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
-  // wm.resetSettings(); // Uncomment to clear WiFi credentials
-  bool res = wm.autoConnect("MyStation");
+  String apName = getUniqueSSID("MyStation");
+  Serial.print("[DEBUG] AP SSID: "); Serial.println(apName);
+  bool res = wm.autoConnect(apName.c_str());
+  Serial.println("[DEBUG] autoConnect() returned");
   if(!res) {
       Serial.println("Failed to connect");
   } else {
+    Serial.println("WiFi connected!");
+    // WiFi.mode(WIFI_STA); // Ensure STA mode
+    Serial.print("ESP32 IP address: ");
+    Serial.println(WiFi.localIP());
+    float lat = 0, lon = 0;
+      getLocationFromGoogle(lat, lon);
+      getNearbyStops(lat, lon);
+        
       Serial.println("connected...yeey :)");
       server.on("/", handleConfigPage);
       server.on("/done", handleConfigDone); // Call this URL to finish config
+      server.on("/stations", handleStationSelect);
       server.begin();
       Serial.println("HTTP server started.");
   }
@@ -210,6 +272,7 @@ void setup() {
 
 void loop() {
   if (inConfigMode) {
+
     server.handleClient();
     // When user finishes config, they should visit /done to exit config mode
   } else {
@@ -218,14 +281,9 @@ void loop() {
     loopCount++;
     Serial.printf("Loop count: %lu\n", loopCount);
     if (WiFi.status() == WL_CONNECTED) {
-      float lat = 0, lon = 0;
-      if (getLocationFromGoogle(lat, lon)) {
-        // getNearbyStops(lat, lon);
-
         //Todo: Replace with actual stopId from getNearbyStops
         // getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
         getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
-      }
     } else {
       Serial.println("WiFi not connected");
     }
