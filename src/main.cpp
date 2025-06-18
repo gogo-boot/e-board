@@ -1,65 +1,17 @@
 #include <Arduino.h>
-#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
+#include <WiFiManager.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
-#include "secrets.h"
+#include "secrets/secrets.h"
+#include "secrets/rmv_secrets.h"
 
-
-void setup() {
-  // WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
-  // it is a good practice to make sure your code sets wifi mode how you want it.
-
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  
-  Serial.println("Hello, PlatformIO World!");
-  //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
-  WiFiManager wm;
-
-  // Only show wifi (removes exit, info, update buttons)
-  const char* menu[] = { "wifi" };
-  wm.setMenu(menu, 1);
-
-  //set custom ip for portal
-  wm.setAPStaticIPConfig(IPAddress(10,0,1,1), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
-
-  // reset settings - wipe stored credentials for testing
-  // these are stored by the esp library
-  // wm.resetSettings();
-
-  // Automatically connect using saved credentials,
-  // if connection fails, it starts an access point with the specified name ( "AutoConnectAP"),
-  // if empty will auto generate SSID, if password is blank it will be anonymous AP (wm.autoConnect())
-  // then goes into a blocking loop awaiting configuration and will return success result
-
-  bool res;
-  // res = wm.autoConnect(); // auto generated AP name from chipid
-  res = wm.autoConnect("MyStation"); // anonymous ap
-  // res = wm.autoConnect("AutoConnectAP","password"); // password protected ap
-
-  if(!res) {
-      Serial.println("Failed to connect");
-      // ESP.restart();
-  } 
-  else {
-      //if you get here you have connected to the WiFi    
-      Serial.println("connected...yeey :)");
-  }
+// Utility: Print free heap
+void printFreeHeap(const char* msg) {
+  Serial.printf("%s Free heap: %u bytes\n", msg, ESP.getFreeHeap());
 }
 
-void scanAccessPoints() {
-  int n = WiFi.scanNetworks();
-  Serial.printf("Found %d networks:\n", n);
-  for (int i = 0; i < n; ++i) {
-    String ssid = WiFi.SSID(i);
-    String bssid = WiFi.BSSIDstr(i); // MAC address
-    int rssi = WiFi.RSSI(i);
-    Serial.printf("SSID: %s, BSSID: %s, RSSI: %d\n", ssid.c_str(), bssid.c_str(), rssi);
-  }
-  WiFi.scanDelete(); // Free memory
-}
-
+// Scan WiFi and build JSON for Google Geolocation API
 String buildWifiJson() {
   StaticJsonDocument<1024> doc;
   doc["considerIp"] = false;
@@ -77,22 +29,25 @@ String buildWifiJson() {
   return output;
 }
 
-void getLocationFromGoogle(const String& apiKey) {
+// Get location from Google Geolocation API
+bool getLocationFromGoogle(float &lat, float &lon) {
   String wifiJson = buildWifiJson();
   HTTPClient http;
-  String url = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + apiKey;
+  String url = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + String(GOOGLE_API_KEY);
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   int httpCode = http.POST(wifiJson);
   if (httpCode > 0) {
     String payload = http.getString();
     Serial.println(payload);
-    StaticJsonDocument<512> doc;
+    DynamicJsonDocument doc(2048);
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
-      float lat = doc["location"]["lat"];
-      float lon = doc["location"]["lng"];
+      lat = doc["location"]["lat"];
+      lon = doc["location"]["lng"];
       Serial.printf("Google Location: Latitude: %f, Longitude: %f\n", lat, lon);
+      http.end();
+      return true;
     } else {
       Serial.println("Failed to parse Google JSON response");
     }
@@ -100,11 +55,72 @@ void getLocationFromGoogle(const String& apiKey) {
     Serial.printf("Google HTTP POST failed, error: %s\n", http.errorToString(httpCode).c_str());
   }
   http.end();
+  return false;
+}
+
+// Get nearby stops from RMV API
+void getNearbyStops(float lat, float lon) {
+  printFreeHeap("Before RMV request:");
+  HTTPClient http;
+  String url = "https://www.rmv.de/hapi/location.nearbystops?accessId=" + String(RMV_API_KEY) +
+               "&originCoordLat=" + String(lat, 6) +
+               "&originCoordLong=" + String(lon, 6) +
+               "&format=json&maxNo=7";
+  http.begin(url);
+  int httpCode = http.GET();
+  if (httpCode > 0) {
+    String payload = http.getString();
+    Serial.println(payload); // Print full response
+    DynamicJsonDocument doc(8192); // Use heap, not stack
+    DeserializationError error = deserializeJson(doc, payload);
+    if (!error) {
+      JsonArray stops = doc["stopLocationOrCoordLocation"];
+      for (JsonObject item : stops) {
+        JsonObject stop = item["StopLocation"];
+        if (!stop.isNull()) {
+          const char* id = stop["id"] | "";
+          const char* name = stop["name"] | "";
+          float lon = stop["lon"] | 0.0;
+          float lat = stop["lat"] | 0.0;
+          Serial.printf("Stop ID: %s, Name: %s, Lon: %f, Lat: %f\n", id, name, lon, lat);
+        }
+      }
+    } else {
+      Serial.print("Failed to parse RMV JSON: ");
+      Serial.println(error.c_str());
+    }
+  } else {
+    Serial.printf("HTTP GET failed, error: %s\n", http.errorToString(httpCode).c_str());
+  }
+  http.end();
+  printFreeHeap("After RMV request:");
+}
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Hello, PlatformIO World!");
+  WiFiManager wm;
+  const char* menu[] = { "wifi" };
+  wm.setMenu(menu, 1);
+  wm.setAPStaticIPConfig(IPAddress(10,0,1,1), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
+  // wm.resetSettings(); // Uncomment to clear WiFi credentials
+  bool res = wm.autoConnect("MyStation");
+  if(!res) {
+      Serial.println("Failed to connect");
+  } else {
+      Serial.println("connected...yeey :)");
+  }
 }
 
 void loop() {
+  static unsigned long loopCount = 0;
+  loopCount++;
+  Serial.printf("Loop count: %lu\n", loopCount);
   if (WiFi.status() == WL_CONNECTED) {
-    getLocationFromGoogle(GOOGLE_API_KEY);
+    float lat = 0, lon = 0;
+    if (getLocationFromGoogle(lat, lon)) {
+      getNearbyStops(lat, lon);
+    }
   } else {
     Serial.println("WiFi not connected");
   }
