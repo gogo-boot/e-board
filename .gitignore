@@ -5,6 +5,4 @@
 .vscode/ipch
 
 # Ignore all files in the secrets directory
-/secrets/
-
-src/secrets.h
+src/secrets/*
