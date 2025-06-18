@@ -193,19 +193,23 @@ void setup() {
 
 void loop() {
   static unsigned long loopCount = 0;
+  unsigned long startTime = millis();
   loopCount++;
   Serial.printf("Loop count: %lu\n", loopCount);
   if (WiFi.status() == WL_CONNECTED) {
     float lat = 0, lon = 0;
     if (getLocationFromGoogle(lat, lon)) {
-      getNearbyStops(lat, lon);
+      // getNearbyStops(lat, lon);
 
       //Todo: Replace with actual stopId from getNearbyStops
-      getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
+      // getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
       getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
     }
   } else {
     Serial.println("WiFi not connected");
   }
+  unsigned long endTime = millis();
+  unsigned long duration = endTime - startTime;
+  Serial.printf("Loop duration: %lu ms\n", duration);
   delay(60000); // Wait 60 seconds before next request
 }
