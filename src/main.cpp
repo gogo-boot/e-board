@@ -1,3 +1,4 @@
+#define ARDUINOJSON_DECODE_NESTING_LIMIT 200
 #include <Arduino.h>
 #include <WiFiManager.h>
 #include <HTTPClient.h>
@@ -40,7 +41,7 @@ bool getLocationFromGoogle(float &lat, float &lon) {
   if (httpCode > 0) {
     String payload = http.getString();
     Serial.println(payload);
-    DynamicJsonDocument doc(2048);
+    DynamicJsonDocument doc(1024); // Use heap, not stack
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
       lat = doc["location"]["lat"];
@@ -96,6 +97,73 @@ void getNearbyStops(float lat, float lon) {
   printFreeHeap("After RMV request:");
 }
 
+String urlEncode(const String& str) {
+  String encoded = "";
+  char c;
+  char code0;
+  char code1;
+  for (int i = 0; i < str.length(); i++) {
+    c = str.charAt(i);
+    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+      encoded += c;
+    } else {
+      code1 = (c & 0xf) + '0';
+      if ((c & 0xf) > 9) code1 = (c & 0xf) - 10 + 'A';
+      code0 = ((c >> 4) & 0xf) + '0';
+      if (((c >> 4) & 0xf) > 9) code0 = ((c >> 4) & 0xf) - 10 + 'A';
+      encoded += '%';
+      encoded += code0;
+      encoded += code1;
+    }
+  }
+  return encoded;
+}
+
+// Filter for only needed fields in Departure
+StaticJsonDocument<256> departureFilter;
+void initDepartureFilter() {
+  departureFilter["Departure"][0]["name"] = true;
+  departureFilter["Departure"][0]["direction"] = true;
+  departureFilter["Departure"][0]["time"] = true;
+}
+
+void printDepartures(const String& payload) {
+  initDepartureFilter();
+  DynamicJsonDocument doc(20480);
+  DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(departureFilter));
+  if (!error) {
+    JsonArray departures = doc["Departure"];
+    for (JsonObject dep : departures) {
+      const char* name = dep["name"] | "";
+      const char* direction = dep["direction"] | "";
+      const char* time = dep["time"] | "";
+      Serial.printf("Line: %s, Direction: %s, Time: %s\n", name, direction, time);
+    }
+  } else {
+    Serial.print("Failed to parse RMV departureBoard JSON: ");
+    Serial.println(error.c_str());
+  }
+}
+
+void getDepartureBoard(const char* stopId) {
+  HTTPClient http;
+  String encodedId = urlEncode(String(stopId));
+  String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
+               "&id=" + encodedId +
+               "&duration=30" + // Duration in minutes
+               "&format=json&maxJourneys=10"; // Limit to 10 journeys
+  http.begin(url);
+  int httpCode = http.GET();
+  if (httpCode > 0) {
+    String payload = http.getString();
+    Serial.println(payload); // Print full response
+    printDepartures(payload);
+  } else {
+    Serial.printf("HTTP GET failed, error: %s\n", http.errorToString(httpCode).c_str());
+  }
+  http.end();
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Hello, PlatformIO World!");
@@ -120,6 +188,9 @@ void loop() {
     float lat = 0, lon = 0;
     if (getLocationFromGoogle(lat, lon)) {
       getNearbyStops(lat, lon);
+
+      //Todo: Replace with actual stopId from getNearbyStops
+      getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
     }
   } else {
     Serial.println("WiFi not connected");
