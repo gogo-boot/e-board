@@ -124,7 +124,10 @@ StaticJsonDocument<256> departureFilter;
 void initDepartureFilter() {
   departureFilter["Departure"][0]["name"] = true;
   departureFilter["Departure"][0]["direction"] = true;
+  departureFilter["Departure"][0]["track"] = true;  // Optional, may not be present
+  departureFilter["Departure"][0]["rtTime"] = true;  // not always present, use rtTime if available
   departureFilter["Departure"][0]["time"] = true;
+  departureFilter["Departure"][0]["Product"][0]["catOut"] = true;
 }
 
 void printDepartures(const String& payload) {
@@ -137,7 +140,14 @@ void printDepartures(const String& payload) {
       const char* name = dep["name"] | "";
       const char* direction = dep["direction"] | "";
       const char* time = dep["time"] | "";
-      Serial.printf("Line: %s, Direction: %s, Time: %s\n", name, direction, time);
+      const char* rtTime = dep["rtTime"] | "";
+      const char* track = dep["track"] | "";
+      const char* catOut = "";
+      if (dep.containsKey("Product") && dep["Product"].is<JsonArray>() && dep["Product"].size() > 0) {
+      catOut = dep["Product"][0]["catOut"] | "";
+      }
+      Serial.printf("Line: %s, Direction: %s, Time: %s, rtTime: %s, Track: %s, Category: %s\n",
+            name, direction, time, rtTime, track, catOut);
     }
   } else {
     Serial.print("Failed to parse RMV departureBoard JSON: ");
@@ -150,7 +160,8 @@ void getDepartureBoard(const char* stopId) {
   String encodedId = urlEncode(String(stopId));
   String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
                "&id=" + encodedId +
-               "&duration=30" + // Duration in minutes
+              //  "&duration=5" + // Duration in minutes
+              //  "&minDur=15" + // Duration in minutes
                "&format=json&maxJourneys=10"; // Limit to 10 journeys
   http.begin(url);
   int httpCode = http.GET();
@@ -191,6 +202,7 @@ void loop() {
 
       //Todo: Replace with actual stopId from getNearbyStops
       getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
+      getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
     }
   } else {
     Serial.println("WiFi not connected");
