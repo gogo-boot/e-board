@@ -6,6 +6,10 @@
 #include <WiFi.h>
 #include "secrets/secrets.h"
 #include "secrets/rmv_secrets.h"
+#include <WebServer.h>
+
+WebServer server(80);
+bool inConfigMode = true;
 
 // Utility: Print free heap
 void printFreeHeap(const char* msg) {
@@ -175,6 +179,15 @@ void getDepartureBoard(const char* stopId) {
   http.end();
 }
 
+void handleConfigPage() {
+  server.send(200, "text/html", "<h1>ESP32 Configuration Page</h1><p>Put your config form here.</p>");
+}
+
+void handleConfigDone() {
+  inConfigMode = false;
+  server.send(200, "text/html", "<h1>Configuration Complete</h1><p>Device will now run in normal mode.</p>");
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Hello, PlatformIO World!");
@@ -188,28 +201,37 @@ void setup() {
       Serial.println("Failed to connect");
   } else {
       Serial.println("connected...yeey :)");
+      server.on("/", handleConfigPage);
+      server.on("/done", handleConfigDone); // Call this URL to finish config
+      server.begin();
+      Serial.println("HTTP server started.");
   }
 }
 
 void loop() {
-  static unsigned long loopCount = 0;
-  unsigned long startTime = millis();
-  loopCount++;
-  Serial.printf("Loop count: %lu\n", loopCount);
-  if (WiFi.status() == WL_CONNECTED) {
-    float lat = 0, lon = 0;
-    if (getLocationFromGoogle(lat, lon)) {
-      // getNearbyStops(lat, lon);
-
-      //Todo: Replace with actual stopId from getNearbyStops
-      // getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
-      getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
-    }
+  if (inConfigMode) {
+    server.handleClient();
+    // When user finishes config, they should visit /done to exit config mode
   } else {
-    Serial.println("WiFi not connected");
+    static unsigned long loopCount = 0;
+    unsigned long startTime = millis();
+    loopCount++;
+    Serial.printf("Loop count: %lu\n", loopCount);
+    if (WiFi.status() == WL_CONNECTED) {
+      float lat = 0, lon = 0;
+      if (getLocationFromGoogle(lat, lon)) {
+        // getNearbyStops(lat, lon);
+
+        //Todo: Replace with actual stopId from getNearbyStops
+        // getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
+        getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
+      }
+    } else {
+      Serial.println("WiFi not connected");
+    }
+    unsigned long endTime = millis();
+    unsigned long duration = endTime - startTime;
+    Serial.printf("Loop duration: %lu ms\n", duration);
+    delay(60000); // Wait 60 seconds before next request
   }
-  unsigned long endTime = millis();
-  unsigned long duration = endTime - startTime;
-  Serial.printf("Loop duration: %lu ms\n", duration);
-  delay(60000); // Wait 60 seconds before next request
 }
