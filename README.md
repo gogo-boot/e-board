@@ -3,6 +3,10 @@
 ## Overview
 This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
 
+> **Note:** The Deutsche Bahn (DB) API is not supported in this project because its commercial terms and pricing are too expensive for hobby and open-source use. Only the RMV API (Hessen, Germany) is implemented for public transport data.
+>
+> **Planned/Implemented:** Support for public transport APIs of Germany's top 5 cities (e.g., Berlin, Hamburg, Munich, Cologne, Frankfurt) will be implemented or is already implemented, as long as their API call prices are reasonable for hobby and open-source projects.
+
 ## Features
 - ESP32-C3 support (tested on simple mini dev boards)
 - WiFi configuration via captive portal (WiFiManager)
