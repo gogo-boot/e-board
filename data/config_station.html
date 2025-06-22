@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Select Bus/Train Station</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    .station { margin-bottom: 1em; }
+    .custom { margin-top: 2em; }
+  </style>
+</head>
+<body>
+  <h1>Select a Station</h1>
+  <form method="POST" action="/save-station">
+    <div id="stations">
+      {{stations}}
+    </div>
+    <div class="custom">
+      <label for="customStation">Or enter a custom station:</label><br>
+      <input type="text" id="customStation" name="customStation" placeholder="Custom station name">
+      <input type="submit" value="Search">
+    </div>
+    <input type="submit" value="Save Selection">
+  </form>
+</body>
+</html>
