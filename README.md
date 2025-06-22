@@ -3,6 +3,25 @@
 ## Overview
 This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
 
+## Features
+- ESP32-C3 support (tested on simple mini dev boards)
+- WiFi configuration via captive portal (WiFiManager)
+- **Automatic location detection:** The device uses WiFi scanning and the Google Geolocation API to determine its current latitude and longitude, which are then used to find nearby stations.
+- RMV API integration for real-time station and departure info
+- Web server with:
+  - Dynamic station selection page
+  - Configuration page (UTF-8, mobile-friendly)
+- Filesystem (LittleFS) for serving HTML templates and storing config
+- Modular C++ code structure (API, config, util)
+
+## About the RMV API
+The RMV (Rhein-Main-Verkehrsverbund) API provides access to public transportation data for the Hessen region in Germany. It allows you to:
+- Find nearby stations based on geographic coordinates (latitude/longitude)
+- Retrieve real-time departure and arrival information for buses, trains, and other public transport
+- Integrate with other RMV services for comprehensive travel information
+
+For more details, see the [RMV API documentation](https://www.rmv.de/c/de/hapi/overview).
+
 ---
 
 ## System Architecture (Mermaid Diagram)
@@ -27,26 +46,54 @@ flowchart TD
     API -->|"HTTP"| Google[("Google Geolocation API")]
     User -->|"WiFi"| WebUI
 ```
+
 ---
 
-## Features
-- ESP32-C3 support (tested on simple mini dev boards)
-- WiFi configuration via captive portal (WiFiManager)
-- **Automatic location detection:** The device uses WiFi scanning and the Google Geolocation API to determine its current latitude and longitude, which are then used to find nearby stations.
-- RMV API integration for real-time station and departure info
-- Web server with:
-  - Dynamic station selection page
-  - Configuration page (UTF-8, mobile-friendly)
-- Filesystem (LittleFS) for serving HTML templates and storing config
-- Modular C++ code structure (API, config, util)
+## Device Initialization & Configuration Flow
+```mermaid
+sequenceDiagram
+    participant ESP as ESP32 Device
+    participant WiFi as WiFi Network
+    participant Google as Google Geolocation API
+    participant RMV as RMV API
+    participant Weather as Weather API
+    participant User as User (Web UI)
 
-## About the RMV API
-The RMV (Rhein-Main-Verkehrsverbund) API provides access to public transportation data for the Hessen region in Germany. It allows you to:
-- Find nearby stations based on geographic coordinates (latitude/longitude)
-- Retrieve real-time departure and arrival information for buses, trains, and other public transport
-- Integrate with other RMV services for comprehensive travel information
+    ESP->>WiFi: Connect to WiFi
+    ESP->>Google: Request location (WiFi scan)
+    Google-->>ESP: Return longitude, latitude
+    ESP->>Weather: Get city name (reverse geocode or weather API)
+    Weather-->>ESP: Return city name
+    ESP->>RMV: Get nearby stations/stops
+    RMV-->>ESP: Return station/stop names
+    ESP->>User: Show config UI (pre-filled with city, stations, etc.)
+    User->>ESP: Confirm/save configuration
+```
 
-For more details, see the [RMV API documentation](https://www.rmv.de/c/de/hapi/overview).
+---
+
+## Runtime Data Flow
+```mermaid
+flowchart TD
+    subgraph Initialization
+      A["Get longitude, latitude<br/>(Google API)"]
+      B["Get city name<br/>(Weather API or reverse geocode)"]
+      C["Get station/stop names<br/>(RMV API)"]
+      D["User configures<br/>city/station/stop via Web UI"]
+      A --> B --> C --> D
+    end
+    subgraph Repeated Operation
+      E["Fetch weather info<br/>(Weather API)"]
+      F["Fetch departure board<br/>(RMV API)"]
+      G["Display info on e-board"]
+      E --> G
+      F --> G
+    end
+    D --> E
+    D --> F
+```
+
+---
 
 ## Directory Structure
 ```
