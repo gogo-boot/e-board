@@ -27,7 +27,7 @@ void setup() {
     while (true) { delay(1000); }
   }
   WiFiManager wm;
-  wm.resetSettings(); // Reset WiFi settings for fresh start
+  // wm.resetSettings(); // Reset WiFi settings for fresh start
   // Debug: Print before AP setup
   Serial.println("[DEBUG] Starting WiFiManager AP mode...");
   const char* menu[] = { "wifi" };
@@ -46,10 +46,10 @@ void setup() {
     Serial.println(WiFi.localIP());
     getLocationFromGoogle(g_lat, g_lon);
     getNearbyStops(g_lat, g_lon);
+
     Serial.println("connected...yeey :)");
     server.on("/", [](){ handleConfigPage(server); });
     server.on("/done", [](){ handleConfigDone(server, inConfigMode); });
-    static std::vector<Station> stations; // Ensure Station type is defined and included
     server.on("/stations", [&](){ handleStationSelect(server, stations); });
     server.begin();
     Serial.println("HTTP server started.");
@@ -67,13 +67,44 @@ void loop() {
     loopCount++;
     Serial.printf("Loop count: %lu\n", loopCount);
     if (WiFi.status() == WL_CONNECTED) {
+      if (!stations.empty()) {
+        String firstStationId = stations[0].id;
+        Serial.printf("First station ID: %s\n", firstStationId.c_str());
+        getDepartureBoard(firstStationId.c_str());
+      } else {
+        Serial.println("No stations found from getNearbyStops.");
+      }
         //Todo: Replace with actual stopId from getNearbyStops
         // getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
-        getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
+        // getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
+        // getDepartureBoard("A=1@O=Frankfurt (Main) Güterplatz@X=8655740@Y=50107536@U=80@L=3000018@"); // Example stopId, replace with actual ID from getNearbyStops
         // Call weather API
         WeatherInfo weather;
         if (getWeatherFromDWD(g_lat, g_lon, weather)) {
-            Serial.printf("Weather for %s: %s, %s\n", weather.city.c_str(), weather.temperature.c_str(), weather.condition.c_str());
+            Serial.println("--- WeatherInfo ---");
+            Serial.printf("City: %s\n", weather.city.c_str());
+            Serial.printf("Current Temp: %s\n", weather.temperature.c_str());
+            Serial.printf("Condition: %s\n", weather.condition.c_str());
+            Serial.printf("Max Temp: %s\n", weather.tempMax.c_str());
+            Serial.printf("Min Temp: %s\n", weather.tempMin.c_str());
+            Serial.printf("Sunrise: %s\n", weather.sunrise.c_str());
+            Serial.printf("Sunset: %s\n", weather.sunset.c_str());
+            Serial.printf("Raw JSON: %s\n", weather.rawJson.c_str());
+            Serial.printf("Forecast count: %d\n", weather.forecastCount);
+            for (int i = 0; i < weather.forecastCount && i < 12; ++i) {
+                const auto& hour = weather.forecast[i];
+                Serial.printf("-- Hour %d --\n", i+1);
+                Serial.printf("Time: %s\n", hour.time.c_str());
+                Serial.printf("Temp: %s\n", hour.temperature.c_str());
+                Serial.printf("Rain Chance: %s\n", hour.rainChance.c_str());
+                Serial.printf("Humidity: %s\n", hour.humidity.c_str());
+                Serial.printf("Wind Speed: %s\n", hour.windSpeed.c_str());
+                Serial.printf("Rainfall: %s\n", hour.rainfall.c_str());
+                Serial.printf("Snowfall: %s\n", hour.snowfall.c_str());
+                Serial.printf("Weather Code: %s\n", hour.weatherCode.c_str());
+                Serial.printf("Weather Desc: %s\n", hour.weatherDesc.c_str());
+            }
+            Serial.println("--- End WeatherInfo ---");
         } else {
             Serial.println("Failed to get weather information from DWD.");
         }
