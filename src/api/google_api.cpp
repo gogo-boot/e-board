@@ -3,6 +3,9 @@
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include "secrets/google_secrets.h"
+#include "esp_log.h"
+
+static const char* TAG = "GOOGLE_API";
 
 String buildWifiJson() {
   StaticJsonDocument<1024> doc;
@@ -18,6 +21,7 @@ String buildWifiJson() {
   WiFi.scanDelete();
   String output;
   serializeJson(doc, output);
+  ESP_LOGD(TAG, "WiFi JSON: %s", output.c_str());
   return output;
 }
 
@@ -25,20 +29,26 @@ bool getLocationFromGoogle(float &lat, float &lon) {
   String wifiJson = buildWifiJson();
   HTTPClient http;
   String url = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + String(GOOGLE_API_KEY);
+  ESP_LOGI(TAG, "Requesting location from Google: %s", url.c_str());
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   int httpCode = http.POST(wifiJson);
   if (httpCode > 0) {
     String payload = http.getString();
-    Serial.println(payload); // Debug print
+    ESP_LOGD(TAG, "Google geolocation response: %s", payload.c_str());
     DynamicJsonDocument doc(1024);
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
       lat = doc["location"]["lat"];
       lon = doc["location"]["lng"];
+      ESP_LOGI(TAG, "Location found: lat=%.6f, lon=%.6f", lat, lon);
       http.end();
       return true;
+    } else {
+      ESP_LOGE(TAG, "Failed to parse Google geolocation JSON: %s", error.c_str());
     }
+  } else {
+    ESP_LOGE(TAG, "HTTP POST failed, error: %s", http.errorToString(httpCode).c_str());
   }
   http.end();
   return false;

@@ -78,7 +78,6 @@ void setup()
     getLocationFromGoogle(g_lat, g_lon);
     getNearbyStops(g_lat, g_lon);
 
-    ESP_LOGI(TAG, "connected...yeey :)");
     server.on("/", []()
               { handleConfigPage(server); });
     server.on("/done", []()

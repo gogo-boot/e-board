@@ -5,6 +5,9 @@
 #include <Arduino.h>
 #include "secrets/rmv_secrets.h"
 #include "../util/util.h"
+#include "esp_log.h"
+
+static const char* TAG = "RMV_API";
 
 namespace {
 StaticJsonDocument<256> departureFilter;
@@ -33,12 +36,11 @@ void printDepartures(const String& payload) {
       if (dep.containsKey("Product") && dep["Product"].is<JsonArray>() && dep["Product"].size() > 0) {
         catOut = dep["Product"][0]["catOut"] | "";
       }
-      Serial.printf("Line: %s, Direction: %s, Time: %s, rtTime: %s, Track: %s, Category: %s\n",
+      ESP_LOGI(TAG, "Line: %s, Direction: %s, Time: %s, rtTime: %s, Track: %s, Category: %s",
             name, direction, time, rtTime, track, catOut);
     }
   } else {
-    Serial.print("Failed to parse RMV departureBoard JSON: ");
-    Serial.println(error.c_str());
+    ESP_LOGE(TAG, "Failed to parse RMV departureBoard JSON: %s", error.c_str());
   }
 }
 } // end anonymous namespace
@@ -52,11 +54,19 @@ void getNearbyStops(float lat, float lon) {
                "&originCoordLat=" + String(lat, 6) +
                "&originCoordLong=" + String(lon, 6) +
                "&format=json&maxNo=7";
+  String urlForLog = url;
+  int keyPos = urlForLog.indexOf("accessId=");
+  if (keyPos != -1) {
+    int keyEnd = urlForLog.indexOf('&', keyPos);
+    if (keyEnd == -1) keyEnd = urlForLog.length();
+    urlForLog.replace(urlForLog.substring(keyPos, keyEnd), "accessId=***");
+  }
+  ESP_LOGI(TAG, "Requesting nearby stops: %s", urlForLog.c_str());
   http.begin(url);
   int httpCode = http.GET();
   if (httpCode > 0) {
     String payload = http.getString();
-    Serial.println(payload); // Print full response
+    ESP_LOGD(TAG, "Nearby stops response: %s", payload.c_str());
     DynamicJsonDocument doc(8192); // Use heap, not stack
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
@@ -72,15 +82,14 @@ void getNearbyStops(float lat, float lon) {
           int products = stop["products"] | 0;
           String type = (products & 64) ? "train" : "bus"; // Example: RMV uses bitmask for products
           stations.push_back({String(id), String(name), type});
-          Serial.printf("Stop ID: %s, Name: %s, Lon: %f, Lat: %f, Type: %s\n", id, name, lon, lat, type.c_str());
+          ESP_LOGI(TAG, "Stop ID: %s, Name: %s, Lon: %f, Lat: %f, Type: %s", id, name, lon, lat, type.c_str());
         }
       }
     } else {
-      Serial.print("Failed to parse RMV JSON: ");
-      Serial.println(error.c_str());
+      ESP_LOGE(TAG, "Failed to parse RMV JSON: %s", error.c_str());
     }
   } else {
-    Serial.printf("HTTP GET failed, error: %s\n", http.errorToString(httpCode).c_str());
+    ESP_LOGE(TAG, "HTTP GET failed, error: %s", http.errorToString(httpCode).c_str());
   }
   http.end();
   Util::printFreeHeap("After RMV request:");
@@ -92,14 +101,22 @@ void getDepartureBoard(const char* stopId) {
   String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
                "&id=" + encodedId +
                "&format=json&maxJourneys=10";
+  String urlForLog = url;
+  int keyPos = urlForLog.indexOf("accessId=");
+  if (keyPos != -1) {
+    int keyEnd = urlForLog.indexOf('&', keyPos);
+    if (keyEnd == -1) keyEnd = urlForLog.length();
+    urlForLog.replace(urlForLog.substring(keyPos, keyEnd), "accessId=***");
+  }
+  ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
   http.begin(url);
   int httpCode = http.GET();
   if (httpCode > 0) {
     String payload = http.getString();
-    Serial.println(payload); // Print full response
+    ESP_LOGD(TAG, "Departure board response: %s", payload.c_str());
     printDepartures(payload);
   } else {
-    Serial.printf("HTTP GET failed, error: %s\n", http.errorToString(httpCode).c_str());
+    ESP_LOGE(TAG, "HTTP GET failed, error: %s", http.errorToString(httpCode).c_str());
   }
   http.end();
 }
