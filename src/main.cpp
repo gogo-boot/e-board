@@ -81,11 +81,11 @@ void setup()
     getNearbyStops(g_lat, g_lon);
 
     server.on("/", []()
-              { handleConfigPage(server); });
+              { handleConfigPage(server); }); // Serve the config page
     server.on("/done", []()
               { handleConfigDone(server, inConfigMode); });
-    server.on("/save_config", HTTP_POST, []() { handleSaveConfig(server, inConfigMode ); });
-    server.on("/api/stop", HTTP_GET, []() { handleStopAutocomplete(server); });
+    server.on("/save_config", HTTP_POST, []() { handleSaveConfig(server, inConfigMode ); }); // AJAX handler for saving config
+    server.on("/api/stop", HTTP_GET, []() { handleStopAutocomplete(server); }); // AJAX handler for autocomplete
     server.begin();
     ESP_LOGI(TAG, "HTTP server started.");
   }

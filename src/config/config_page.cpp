@@ -2,6 +2,9 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <WebServer.h>
+#include "api/rmv_api.h"
+
+extern float g_lat, g_lon;
 
 void handleStationSelect(WebServer &server, const std::vector<Station>& stations) {
     File file = LittleFS.open("/station_select.html", "r");
@@ -22,6 +25,7 @@ void handleStationSelect(WebServer &server, const std::vector<Station>& stations
     page.replace("{{stations}}", html);
     server.send(200, "text/html", page);
 }
+
 // Update the config page handler to serve config_my_station.html
 void handleConfigPage(WebServer &server) {
   File file = LittleFS.open("/config_my_station.html", "r");
@@ -29,8 +33,27 @@ void handleConfigPage(WebServer &server) {
     server.send(404, "text/plain", "Konfigurationsseite nicht gefunden");
     return;
   }
-  server.streamFile(file, "text/html; charset=utf-8");
+  String page = file.readString();
   file.close();
+
+  // Replace reserved keywords
+  page.replace("{{LAT}}", String(g_lat, 6));
+  page.replace("{{LON}}", String(g_lon, 6));
+
+  // Build nearest stops HTML
+  String stopsHtml;
+  for (const auto& s : stations) {
+    stopsHtml += s.name + " (" + s.type + ")<br>";
+  }
+  if (stopsHtml.length() == 0) stopsHtml = "Keine Haltestellen gefunden.";
+  page.replace("{{STOPS}}", stopsHtml);
+
+  // Optionally, replace city/town name if available (not implemented in backend yet)
+  page.replace("{{CITY}}", ""); // Replace with city name if available
+  page.replace("{{ROUTER}}", ""); // Replace with router info if available
+  page.replace("{{IP}}", ""); // Replace with IP info if available
+
+  server.send(200, "text/html; charset=utf-8", page);
 }
 
 // Handle the configuration done action (GET /done)

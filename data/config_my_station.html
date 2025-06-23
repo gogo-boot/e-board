@@ -28,11 +28,11 @@
     <div class="section">
       <div class="label">Mein Standort</div>
       <div id="location" class="row">
-        <span>Breitengrad: <span id="lat">--</span>, Längengrad: <span id="lon">--</span></span>
+        <span>Breitengrad: {{LAT}}, Längengrad: {{LON}}</span>
       </div>
       <div class="label">Router/IP-Informationen</div>
       <div id="ipinfo" class="row">
-        <span id="router">--</span> / <span id="ip">--</span>
+        <span id="router">{{ROUTER}}</span> / <span id="ip">{{IP}}</span>
       </div>
     </div>
     <div class="section">
@@ -40,7 +40,7 @@
         <button class="edit-btn" id="edit-city" onclick="editCity()">✏️ Bearbeiten</button>
       </div>
       <div class="row">
-        <span id="city-display">--</span>
+        <span id="city-display">{{CITY}}</span>
         <input type="text" id="city-input" style="display:none;" autocomplete="off" oninput="autocompleteCity(this.value)">
       </div>
       <div id="city-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
@@ -50,7 +50,7 @@
         <button class="edit-btn" id="edit-stop" onclick="editStop()">✏️ Bearbeiten</button>
       </div>
       <div class="row">
-        <span id="stop-display">--</span>
+        <span id="stop-display">{{STOPS}}</span>
         <input type="text" id="stop-input" style="display:none;" autocomplete="off" oninput="autocompleteStop(this.value)">
       </div>
       <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
