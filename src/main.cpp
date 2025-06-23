@@ -53,6 +53,26 @@ void setup()
     // WiFi.mode(WIFI_STA); // Ensure STA mode
     Serial.print("ESP32 IP address: ");
     Serial.println(WiFi.localIP());
+
+    // NTP time sync
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+    Serial.print("Waiting for NTP time sync");
+    time_t now = time(nullptr);
+    int retry = 0;
+    const int retry_count = 30;
+    while (now < 8 * 3600 * 2 && retry < retry_count) { // year < 1971
+      delay(500);
+      Serial.print(".");
+      now = time(nullptr);
+      retry++;
+    }
+    Serial.println();
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    Serial.printf("NTP time set: %04d-%02d-%02d %02d:%02d:%02d\n",
+      timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+      timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
     getLocationFromGoogle(g_lat, g_lon);
     getNearbyStops(g_lat, g_lon);
 
