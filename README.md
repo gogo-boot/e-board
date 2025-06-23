@@ -1,12 +1,20 @@
 # e-board: ESP32-based Station Information Board
 
 ## Overview
-This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
+This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, fetches current weather information, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
+
+## Weather API Integration
+- The board fetches current weather data using the Open-Meteo API, which provides free access to Deutscher Wetterdienst (DWD) weather data for Germany and Europe.
+- Weather is retrieved based on the device's latitude and longitude (from Google Geolocation API).
+- The city or nearest location name is determined using OpenStreetMap Nominatim reverse geocoding.
+- Weather information (temperature, condition, location) is available for display or further use in the application.
 
 ## Features
 - ESP32-C3 support (tested on simple mini dev boards)
 - WiFi configuration via captive portal (WiFiManager)
-- **Automatic location detection:** The device uses WiFi scanning and the Google Geolocation API to determine its current latitude and longitude, which are then used to find nearby stations.
+- **Automatic location detection:** The device uses WiFi scanning and the Google Geolocation API to determine its current latitude and longitude, which are then used to find nearby stations and fetch weather data.
+- **Weather API integration:** Fetches current weather (temperature, condition) for the device’s location using Open-Meteo/DWD.
+- **City/location name lookup:** Uses OpenStreetMap Nominatim to get a human-readable city or location name from coordinates.
 - RMV API integration for real-time station and departure info
 - Web server with:
   - Dynamic station selection page
@@ -31,7 +39,7 @@ flowchart TD
     subgraph ESP32
       WebUI["Web UI<br/>(config.html, station_select.html)"]
       MainApp["main.cpp"]
-      API["api/ (RMV, Google)"]
+      API["api/ (RMV, Google, Weather)"]
       Config["config/ (Config Page)"]
       Util["util/ (Utils)"]
       LittleFS["LittleFS<br/>(HTML, config)"]
@@ -44,6 +52,8 @@ flowchart TD
     end
     API -->|"HTTP"| RMV[("RMV API<br/>Hessen, Germany")]
     API -->|"HTTP"| Google[("Google Geolocation API")]
+    API -->|"HTTP"| Weather[("Open-Meteo/DWD Weather API")]
+    API -->|"HTTP"| Nominatim[("OpenStreetMap Nominatim<br/>Reverse Geocoding")]
     User -->|"WiFi"| WebUI
 ```
 
@@ -57,16 +67,19 @@ sequenceDiagram
     participant Google as Google Geolocation API
     participant RMV as RMV API
     participant Weather as Weather API
+    participant Nominatim as Nominatim (OSM)
     participant User as User (Web UI)
 
     ESP->>WiFi: Connect to WiFi
     ESP->>Google: Request location (WiFi scan)
     Google-->>ESP: Return longitude, latitude
-    ESP->>Weather: Get city name (reverse geocode or weather API)
-    Weather-->>ESP: Return city name
+    ESP->>Weather: Get weather for coordinates
+    Weather-->>ESP: Return temperature, condition
+    ESP->>Nominatim: Reverse geocode to city/location name
+    Nominatim-->>ESP: Return city/location name
     ESP->>RMV: Get nearby stations/stops
     RMV-->>ESP: Return station/stop names
-    ESP->>User: Show config UI (pre-filled with city, stations, etc.)
+    ESP->>User: Show config UI (pre-filled with city, weather, stations, etc.)
     User->>ESP: Confirm/save configuration
 ```
 
@@ -77,20 +90,21 @@ sequenceDiagram
 flowchart TD
     subgraph Initialization
       A["Get longitude, latitude<br/>(Google API)"]
-      B["Get city name<br/>(Weather API or reverse geocode)"]
-      C["Get station/stop names<br/>(RMV API)"]
-      D["User configures<br/>city/station/stop via Web UI"]
-      A --> B --> C --> D
+      B["Get city name<br/>(Nominatim)"]
+      C["Get weather info<br/>(Open-Meteo/DWD)"]
+      D["Get station/stop names<br/>(RMV API)"]
+      E["User configures<br/>city/station/stop via Web UI"]
+      A --> B --> C --> D --> E
     end
     subgraph Repeated Operation
-      E["Fetch weather info<br/>(Weather API)"]
-      F["Fetch departure board<br/>(RMV API)"]
-      G["Display info on e-board"]
-      E --> G
-      F --> G
+      F["Fetch weather info<br/>(Weather API)"]
+      G["Fetch departure board<br/>(RMV API)"]
+      H["Display info on e-board"]
+      F --> H
+      G --> H
     end
-    D --> E
-    D --> F
+    E --> F
+    E --> G
 ```
 
 ---
