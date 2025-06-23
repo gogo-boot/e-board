@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>MyStation Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #f4f6fa; color: #222; }
+    .container { max-width: 480px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; }
+    h1 { font-size: 1.5em; margin-bottom: 0.5em; text-align: center; }
+    .section { margin-bottom: 1.2em; }
+    .label { font-weight: 500; margin-bottom: 0.2em; display: block; }
+    .row { display: flex; align-items: center; justify-content: space-between; }
+    .edit-btn { background: none; border: none; color: #007aff; font-size: 1em; cursor: pointer; margin-left: 0.5em; }
+    input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.5em; }
+    .chip { padding: 0.4em 1em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; }
+    .chip.active { background: #007aff; color: #fff; }
+    .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; }
+    @media (max-width: 600px) {
+      .container { border-radius: 0; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>MyStation Status</h1>
+    <div class="section">
+      <div class="label">Mein Standort</div>
+      <div id="location" class="row">
+        <span>Breitengrad: <span id="lat">--</span>, Längengrad: <span id="lon">--</span></span>
+      </div>
+      <div class="label">Router/IP-Informationen</div>
+      <div id="ipinfo" class="row">
+        <span id="router">--</span> / <span id="ip">--</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="label">Stadt / Ort <span style="font-weight:400; color:#666; font-size:0.95em;">(wird für die Wetterabfrage verwendet)</span>
+        <button class="edit-btn" id="edit-city" onclick="editCity()">✏️ Bearbeiten</button>
+      </div>
+      <div class="row">
+        <span id="city-display">--</span>
+        <input type="text" id="city-input" style="display:none;" autocomplete="off" oninput="autocompleteCity(this.value)">
+      </div>
+      <div id="city-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+    </div>
+    <div class="section">
+      <div class="label">Meine Station
+        <button class="edit-btn" id="edit-stop" onclick="editStop()">✏️ Bearbeiten</button>
+      </div>
+      <div class="row">
+        <span id="stop-display">--</span>
+        <input type="text" id="stop-input" style="display:none;" autocomplete="off" oninput="autocompleteStop(this.value)">
+      </div>
+      <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+    </div>
+    <div class="section">
+      <div class="label">ÖPNV-Filter</div>
+      <div class="chips" id="filter-chips">
+        <div class="chip active" data-type="RE" onclick="toggleChip(this)">RE</div>
+        <div class="chip active" data-type="R" onclick="toggleChip(this)">R</div>
+        <div class="chip active" data-type="S" onclick="toggleChip(this)">S-Bahn</div>
+        <div class="chip active" data-type="Bus" onclick="toggleChip(this)">Busse</div>
+        <div class="chip active" data-type="U" onclick="toggleChip(this)">U-Bahn</div>
+        <div class="chip active" data-type="Tram" onclick="toggleChip(this)">Tram</div>
+      </div>
+    </div>
+    <div class="section" style="text-align:center; margin-top:2em;">
+      <button id="save-btn" style="background:#007aff;color:#fff;border:none;padding:0.8em 2em;font-size:1.1em;border-radius:6px;cursor:pointer;box-shadow:0 1px 4px #0002;">Speichern</button>
+    </div>
+    <div class="privacy" style="margin-top:2em;">
+      <strong>Datenschutzhinweis:</strong> Ihr Standort wird ausschließlich über die IP-Adresse Ihres Routers und öffentliche Geodatenbanken ermittelt. Es werden keine GPS-Daten oder persönliche Bewegungsprofile verwendet. Die Standortdaten werden nur zur Anzeige und für die Wetter-/Stationssuche genutzt und nicht an Dritte weitergegeben.
+    </div>
+  </div>
+  <script>
+    // --- Stadt bearbeiten ---
+    function editCity() {
+      document.getElementById('city-display').style.display = 'none';
+      document.getElementById('city-input').style.display = '';
+      document.getElementById('city-input').focus();
+    }
+    function autocompleteCity(query) {
+      // TODO: AJAX-Aufruf an Backend für Städte-Autovervollständigung
+    }
+    function showCitySuggestions(suggestions) {
+      // TODO: Vorschläge in #city-suggestions anzeigen, Klick zum Auswählen
+    }
+    // --- Haltestelle bearbeiten ---
+    function editStop() {
+      document.getElementById('stop-display').style.display = 'none';
+      document.getElementById('stop-input').style.display = '';
+      document.getElementById('stop-input').focus();
+    }
+    function autocompleteStop(query) {
+      // TODO: AJAX-Aufruf an Backend für Haltestellen-Autovervollständigung (RMV API)
+    }
+    function showStopSuggestions(suggestions) {
+      // TODO: Vorschläge in #stop-suggestions anzeigen, Klick zum Auswählen
+    }
+    // --- Filter Chips ---
+    function toggleChip(el) {
+      el.classList.toggle('active');
+      // TODO: Filterstatus speichern
+    }
+    // --- Dynamische Datenbefüllung Beispiel ---
+    // document.getElementById('lat').textContent = ...;
+    // document.getElementById('lon').textContent = ...;
+    // document.getElementById('router').textContent = ...;
+    // document.getElementById('ip').textContent = ...;
+    // document.getElementById('city-display').textContent = ...;
+    // document.getElementById('stop-display').textContent = ...;
+  </script>
+</body>
+</html>
