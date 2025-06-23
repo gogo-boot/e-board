@@ -11,11 +11,14 @@
 #include <LittleFS.h>
 #include "api/rmv_api.h"
 #include "api/google_api.h"
+#include "api/dwd_weather_api.h"
 #include "util/util.h"
 #include "config/config_page.h"
 
 WebServer server(80);
 bool inConfigMode = true;
+
+float g_lat = 0.0, g_lon = 0.0;
 
 void setup() {
   Serial.begin(115200);
@@ -41,17 +44,15 @@ void setup() {
     // WiFi.mode(WIFI_STA); // Ensure STA mode
     Serial.print("ESP32 IP address: ");
     Serial.println(WiFi.localIP());
-    float lat = 0, lon = 0;
-      getLocationFromGoogle(lat, lon);
-      getNearbyStops(lat, lon);
-        
-      Serial.println("connected...yeey :)");
-      server.on("/", [](){ handleConfigPage(server); });
-      server.on("/done", [](){ handleConfigDone(server, inConfigMode); });
-      static std::vector<Station> stations; // Ensure Station type is defined and included
-      server.on("/stations", [&](){ handleStationSelect(server, stations); });
-      server.begin();
-      Serial.println("HTTP server started.");
+    getLocationFromGoogle(g_lat, g_lon);
+    getNearbyStops(g_lat, g_lon);
+    Serial.println("connected...yeey :)");
+    server.on("/", [](){ handleConfigPage(server); });
+    server.on("/done", [](){ handleConfigDone(server, inConfigMode); });
+    static std::vector<Station> stations; // Ensure Station type is defined and included
+    server.on("/stations", [&](){ handleStationSelect(server, stations); });
+    server.begin();
+    Serial.println("HTTP server started.");
   }
 }
 
@@ -69,6 +70,13 @@ void loop() {
         //Todo: Replace with actual stopId from getNearbyStops
         // getDepartureBoard("A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@"); // Example stopId, replace with actual ID from getNearbyStops
         getDepartureBoard("A=1@O=Frankfurt (Main) Radilostraße@X=8610722@Y=50125083@U=80@L=3001238@"); // Example stopId, replace with actual ID from getNearbyStops
+        // Call weather API
+        WeatherInfo weather;
+        if (getWeatherFromDWD(g_lat, g_lon, weather)) {
+            Serial.printf("Weather for %s: %s, %s\n", weather.city.c_str(), weather.temperature.c_str(), weather.condition.c_str());
+        } else {
+            Serial.println("Failed to get weather information from DWD.");
+        }
     } else {
       Serial.println("WiFi not connected");
     }
