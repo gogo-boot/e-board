@@ -4,6 +4,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
+#include "esp_log.h"
 #include "secrets/google_secrets.h"
 #include "secrets/rmv_secrets.h"
 #include <WebServer.h>
@@ -17,7 +18,6 @@
 #include "util/power.h"
 #include "util/weather_print.h"
 #include <time.h>
-#include "esp_log.h"
 
 static const char* TAG = "MAIN";
 
@@ -30,6 +30,8 @@ float g_lat = 0.0, g_lon = 0.0;
 void setup()
 {
   Serial.begin(115200);
+  Serial.setDebugOutput(true);
+
   esp_log_level_set("*", ESP_LOG_INFO); // Set global log level
   ESP_LOGI(TAG, "System starting...");
   WiFiManager wm;
