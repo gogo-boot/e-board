@@ -14,7 +14,8 @@
 #include "api/dwd_weather_api.h"
 #include "util/util.h"
 #include "config/config_page.h"
-#include "esp_sleep.h"
+#include "util/power.h"
+#include "util/weather_print.h"
 #include <time.h>
 
 WebServer server(80);
@@ -86,43 +87,6 @@ void setup()
     server.begin();
     Serial.println("HTTP server started.");
   }
-}
-
-void enterHibernate(uint64_t sleep_us) {
-  Serial.printf("Entering hibernate mode for %.2f minutes...\n", sleep_us / 60000000.0);
-  esp_sleep_enable_timer_wakeup(sleep_us);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
-  esp_deep_sleep_start();
-  // The device will reset after wakeup
-}
-
-void printWeatherInfo(const WeatherInfo &weather) {
-  Serial.println("--- WeatherInfo ---");
-  Serial.printf("City: %s\n", weather.city.c_str());
-  Serial.printf("Current Temp: %s\n", weather.temperature.c_str());
-  Serial.printf("Condition: %s\n", weather.condition.c_str());
-  Serial.printf("Max Temp: %s\n", weather.tempMax.c_str());
-  Serial.printf("Min Temp: %s\n", weather.tempMin.c_str());
-  Serial.printf("Sunrise: %s\n", weather.sunrise.c_str());
-  Serial.printf("Sunset: %s\n", weather.sunset.c_str());
-  Serial.printf("Raw JSON: %s\n", weather.rawJson.c_str());
-  Serial.printf("Forecast count: %d\n", weather.forecastCount);
-  for (int i = 0; i < weather.forecastCount && i < 12; ++i) {
-    const auto &hour = weather.forecast[i];
-    Serial.printf("-- Hour %d --\n", i + 1);
-    Serial.printf("Time: %s\n", hour.time.c_str());
-    Serial.printf("Temp: %s\n", hour.temperature.c_str());
-    Serial.printf("Rain Chance: %s\n", hour.rainChance.c_str());
-    Serial.printf("Humidity: %s\n", hour.humidity.c_str());
-    Serial.printf("Wind Speed: %s\n", hour.windSpeed.c_str());
-    Serial.printf("Rainfall: %s\n", hour.rainfall.c_str());
-    Serial.printf("Snowfall: %s\n", hour.snowfall.c_str());
-    Serial.printf("Weather Code: %s\n", hour.weatherCode.c_str());
-    Serial.printf("Weather Desc: %s\n", hour.weatherDesc.c_str());
-  }
-  Serial.println("--- End WeatherInfo ---");
 }
 
 void loop() {
