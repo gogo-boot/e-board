@@ -83,8 +83,8 @@ void setup()
               { handleConfigPage(server); });
     server.on("/done", []()
               { handleConfigDone(server, inConfigMode); });
-    server.on("/stations", [&]()
-              { handleStationSelect(server, stations); });
+    server.on("/save_config", HTTP_POST, []() { handleSaveConfig(server, inConfigMode ); });
+    server.on("/api/stop", HTTP_GET, []() { handleStopAutocomplete(server); });
     server.begin();
     ESP_LOGI(TAG, "HTTP server started.");
   }
