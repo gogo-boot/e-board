@@ -3,10 +3,6 @@
 ## Overview
 This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
 
-> **Note:** The Deutsche Bahn (DB) API is not supported in this project because its commercial terms and pricing are too expensive for hobby and open-source use. Only the RMV API (Hessen, Germany) is implemented for public transport data.
->
-> **Planned/Implemented:** Support for public transport APIs of Germany's top 5 cities (e.g., Berlin, Hamburg, Munich, Cologne, Frankfurt) will be implemented or is already implemented, as long as their API call prices are reasonable for hobby and open-source projects.
-
 ## Features
 - ESP32-C3 support (tested on simple mini dev boards)
 - WiFi configuration via captive portal (WiFiManager)
@@ -127,6 +123,31 @@ flowchart TD
 - Access the ESP32's IP in your browser after connecting to its WiFi.
 - The configuration page is served from `config.html` and supports UTF-8.
 - All settings are saved and applied on the device.
+
+## Battery Selection Rationale
+
+### Battery Types Discussed
+
+- **CR123/CR123A:** 3.0V non-rechargeable lithium battery, stable output, can be connected directly to the ESP32 board.
+- **16340 (Li-ion/LiFePO₄):** Rechargeable, 3.2–3.7V nominal, requires a regulator for safe use with ESP32.
+- **AA (Alkaline/NiMH):** 1.5V (alkaline) or 1.2V (NiMH) per cell; 3 or 4 in series either require a regulator or risk unstable operation as voltage drops.
+- **Li-Po/Li-ion single cell:** 3.7V nominal, 4.2V fully charged; needs a regulator or boost converter for stable ESP32 operation.
+
+### Why CR123A Was Chosen
+
+- **No regulator needed:** CR123A outputs a stable 3V, which can be connected directly to the ESP32 board’s 3.3V input, minimizing energy loss.
+- **Efficiency:** Voltage regulators waste energy as heat, especially with higher input voltages; direct connection is more efficient.
+- **Stable voltage:** CR123A provides a consistent voltage throughout most of its discharge cycle, supporting ESP32 WiFi’s high current demands.
+- **Sufficient capacity:** While not as high as some larger batteries, CR123A offers enough mAh for many ESP32 applications.
+- **Drawbacks:** CR123A batteries are less common and can be harder to find than AA or Li-ion cells.
+
+### Why Not Other Batteries?
+
+- **AA or rechargeable batteries:** Require a regulator for safe operation; direct connection is not possible, and voltage drops below 70% charge can cause instability.
+- **Li-ion/Li-Po/16340:** Output voltage is too high when fully charged and too low when nearly empty; require a regulator or boost converter, reducing efficiency and usable capacity.
+
+**In summary:**  
+CR123A was selected for its simplicity, efficiency, and stable voltage output, making it ideal for direct connection to the ESP32 without the need for a regulator.
 
 ## Dependencies
 - [WiFiManager](https://github.com/tzapu/WiFiManager)
