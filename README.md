@@ -1,5 +1,6 @@
 # e-board: ESP32-based Station Information Board
 
+
 ## Overview
 This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, fetches current weather information, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
 
@@ -166,6 +167,14 @@ flowchart TD
 **In summary:**  
 CR123A was selected for its simplicity, efficiency, and stable voltage output, making it ideal for direct connection to the ESP32 without the need for a regulator.
 
+## API Documentation Locations
+
+- **Google Geolocation API**: [Official documentation](https://developers.google.com/maps/documentation/geolocation/overview)
+- **RMV API**: [RMV HAFAS Public API documentation](https://www.rmv.de/hapi/swagger-ui)
+- **Open-Meteo (DWD) Weather API**: [Open-Meteo API documentation](https://open-meteo.com/en/docs)
+- **OpenStreetMap Nominatim (Reverse Geocoding)**: [Nominatim API documentation](https://nominatim.org/release-docs/latest/api/Overview/)
+
+These links provide details on endpoints, authentication, and usage for each external service used by this project.
 ## Dependencies
 - [WiFiManager](https://github.com/tzapu/WiFiManager)
 - [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
