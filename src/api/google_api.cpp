@@ -2,7 +2,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
-#include "secrets/secrets.h"
+#include "secrets/google_secrets.h"
 
 String buildWifiJson() {
   StaticJsonDocument<1024> doc;

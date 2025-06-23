@@ -3,6 +3,7 @@
 ## Overview
 This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, fetches current weather information, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
 
+  
 ## Weather API Integration
 - The board fetches current weather data using the Open-Meteo API, which provides free access to Deutscher Wetterdienst (DWD) weather data for Germany and Europe.
 - Weather is retrieved based on the device's latitude and longitude (from Google Geolocation API).
@@ -127,7 +128,9 @@ flowchart TD
 1. **Clone the repository**
 2. **Install PlatformIO** (VSCode recommended)
 3. **Configure your secrets**
-   - Copy `src/secrets/secrets.h.example` and `src/secrets/rmv_secrets.h.example` to `src/secrets/secrets.h` and `src/secrets/rmv_secrets.h`, then fill in your API keys.
+- Copy `src/secrets/google_secrets.h.example` to `src/secrets/google_secrets.h` and add your Google API key.
+- Copy `src/secrets/rmv_secrets.h.example` to `src/secrets/rmv_secrets.h` and add your RMV API key.
+- **Do not commit your actual secrets files to version control.**
 4. **Upload the filesystem image**
    - Place your HTML files in `data/` and run `PlatformIO: Upload File System image`.
 5. **Build and upload the firmware**
