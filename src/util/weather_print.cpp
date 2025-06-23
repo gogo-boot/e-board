@@ -1,29 +1,32 @@
 #include "weather_print.h"
 #include <Arduino.h>
+#include "esp_log.h"
+
+static const char* TAG = "WEATHER";
 
 void printWeatherInfo(const WeatherInfo &weather) {
-    Serial.println("--- WeatherInfo ---");
-    Serial.printf("City: %s\n", weather.city.c_str());
-    Serial.printf("Current Temp: %s\n", weather.temperature.c_str());
-    Serial.printf("Condition: %s\n", weather.condition.c_str());
-    Serial.printf("Max Temp: %s\n", weather.tempMax.c_str());
-    Serial.printf("Min Temp: %s\n", weather.tempMin.c_str());
-    Serial.printf("Sunrise: %s\n", weather.sunrise.c_str());
-    Serial.printf("Sunset: %s\n", weather.sunset.c_str());
-    Serial.printf("Raw JSON: %s\n", weather.rawJson.c_str());
-    Serial.printf("Forecast count: %d\n", weather.forecastCount);
+    ESP_LOGI(TAG, "--- WeatherInfo ---");
+    ESP_LOGI(TAG, "City: %s", weather.city.c_str());
+    ESP_LOGI(TAG, "Current Temp: %s", weather.temperature.c_str());
+    ESP_LOGI(TAG, "Condition: %s", weather.condition.c_str());
+    ESP_LOGI(TAG, "Max Temp: %s", weather.tempMax.c_str());
+    ESP_LOGI(TAG, "Min Temp: %s", weather.tempMin.c_str());
+    ESP_LOGI(TAG, "Sunrise: %s", weather.sunrise.c_str());
+    ESP_LOGI(TAG, "Sunset: %s", weather.sunset.c_str());
+    ESP_LOGI(TAG, "Raw JSON: %s", weather.rawJson.c_str());
+    ESP_LOGI(TAG, "Forecast count: %d", weather.forecastCount);
     for (int i = 0; i < weather.forecastCount && i < 12; ++i) {
         const auto &hour = weather.forecast[i];
-        Serial.printf("-- Hour %d --\n", i + 1);
-        Serial.printf("Time: %s\n", hour.time.c_str());
-        Serial.printf("Temp: %s\n", hour.temperature.c_str());
-        Serial.printf("Rain Chance: %s\n", hour.rainChance.c_str());
-        Serial.printf("Humidity: %s\n", hour.humidity.c_str());
-        Serial.printf("Wind Speed: %s\n", hour.windSpeed.c_str());
-        Serial.printf("Rainfall: %s\n", hour.rainfall.c_str());
-        Serial.printf("Snowfall: %s\n", hour.snowfall.c_str());
-        Serial.printf("Weather Code: %s\n", hour.weatherCode.c_str());
-        Serial.printf("Weather Desc: %s\n", hour.weatherDesc.c_str());
+        ESP_LOGI(TAG, "-- Hour %d --", i + 1);
+        ESP_LOGI(TAG, "Time: %s", hour.time.c_str());
+        ESP_LOGI(TAG, "Temp: %s", hour.temperature.c_str());
+        ESP_LOGI(TAG, "Rain Chance: %s", hour.rainChance.c_str());
+        ESP_LOGI(TAG, "Humidity: %s", hour.humidity.c_str());
+        ESP_LOGI(TAG, "Wind Speed: %s", hour.windSpeed.c_str());
+        ESP_LOGI(TAG, "Rainfall: %s", hour.rainfall.c_str());
+        ESP_LOGI(TAG, "Snowfall: %s", hour.snowfall.c_str());
+        ESP_LOGI(TAG, "Weather Code: %s", hour.weatherCode.c_str());
+        ESP_LOGI(TAG, "Weather Desc: %s", hour.weatherDesc.c_str());
     }
-    Serial.println("--- End WeatherInfo ---");
+    ESP_LOGI(TAG, "--- End WeatherInfo ---");
 }
