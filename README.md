@@ -1,16 +1,22 @@
 # e-board: ESP32-based Station Information Board
 
-## Overview
-This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
 
-> **Note:** The Deutsche Bahn (DB) API is not supported in this project because its commercial terms and pricing are too expensive for hobby and open-source use. Only the RMV API (Hessen, Germany) is implemented for public transport data.
->
-> **Planned/Implemented:** Support for public transport APIs of Germany's top 5 cities (e.g., Berlin, Hamburg, Munich, Cologne, Frankfurt) will be implemented or is already implemented, as long as their API call prices are reasonable for hobby and open-source projects.
+## Overview
+This project is an ESP32-powered electronic board that displays station information, retrieves real-time data from the RMV API, fetches current weather information, and provides a web-based configuration interface. It is designed for easy deployment and configuration via WiFi and a modern web UI.
+
+  
+## Weather API Integration
+- The board fetches current weather data using the Open-Meteo API, which provides free access to Deutscher Wetterdienst (DWD) weather data for Germany and Europe.
+- Weather is retrieved based on the device's latitude and longitude (from Google Geolocation API).
+- The city or nearest location name is determined using OpenStreetMap Nominatim reverse geocoding.
+- Weather information (temperature, condition, location) is available for display or further use in the application.
 
 ## Features
 - ESP32-C3 support (tested on simple mini dev boards)
 - WiFi configuration via captive portal (WiFiManager)
-- **Automatic location detection:** The device uses WiFi scanning and the Google Geolocation API to determine its current latitude and longitude, which are then used to find nearby stations.
+- **Automatic location detection:** The device uses WiFi scanning and the Google Geolocation API to determine its current latitude and longitude, which are then used to find nearby stations and fetch weather data.
+- **Weather API integration:** Fetches current weather (temperature, condition) for the device’s location using Open-Meteo/DWD.
+- **City/location name lookup:** Uses OpenStreetMap Nominatim to get a human-readable city or location name from coordinates.
 - RMV API integration for real-time station and departure info
 - Web server with:
   - Dynamic station selection page
@@ -35,7 +41,7 @@ flowchart TD
     subgraph ESP32
       WebUI["Web UI<br/>(config.html, station_select.html)"]
       MainApp["main.cpp"]
-      API["api/ (RMV, Google)"]
+      API["api/ (RMV, Google, Weather)"]
       Config["config/ (Config Page)"]
       Util["util/ (Utils)"]
       LittleFS["LittleFS<br/>(HTML, config)"]
@@ -48,6 +54,8 @@ flowchart TD
     end
     API -->|"HTTP"| RMV[("RMV API<br/>Hessen, Germany")]
     API -->|"HTTP"| Google[("Google Geolocation API")]
+    API -->|"HTTP"| Weather[("Open-Meteo/DWD Weather API")]
+    API -->|"HTTP"| Nominatim[("OpenStreetMap Nominatim<br/>Reverse Geocoding")]
     User -->|"WiFi"| WebUI
 ```
 
@@ -61,16 +69,19 @@ sequenceDiagram
     participant Google as Google Geolocation API
     participant RMV as RMV API
     participant Weather as Weather API
+    participant Nominatim as Nominatim (OSM)
     participant User as User (Web UI)
 
     ESP->>WiFi: Connect to WiFi
     ESP->>Google: Request location (WiFi scan)
     Google-->>ESP: Return longitude, latitude
-    ESP->>Weather: Get city name (reverse geocode or weather API)
-    Weather-->>ESP: Return city name
+    ESP->>Weather: Get weather for coordinates
+    Weather-->>ESP: Return temperature, condition
+    ESP->>Nominatim: Reverse geocode to city/location name
+    Nominatim-->>ESP: Return city/location name
     ESP->>RMV: Get nearby stations/stops
     RMV-->>ESP: Return station/stop names
-    ESP->>User: Show config UI (pre-filled with city, stations, etc.)
+    ESP->>User: Show config UI (pre-filled with city, weather, stations, etc.)
     User->>ESP: Confirm/save configuration
 ```
 
@@ -81,20 +92,21 @@ sequenceDiagram
 flowchart TD
     subgraph Initialization
       A["Get longitude, latitude<br/>(Google API)"]
-      B["Get city name<br/>(Weather API or reverse geocode)"]
-      C["Get station/stop names<br/>(RMV API)"]
-      D["User configures<br/>city/station/stop via Web UI"]
-      A --> B --> C --> D
+      B["Get city name<br/>(Nominatim)"]
+      C["Get weather info<br/>(Open-Meteo/DWD)"]
+      D["Get station/stop names<br/>(RMV API)"]
+      E["User configures<br/>city/station/stop via Web UI"]
+      A --> B --> C --> D --> E
     end
     subgraph Repeated Operation
-      E["Fetch weather info<br/>(Weather API)"]
-      F["Fetch departure board<br/>(RMV API)"]
-      G["Display info on e-board"]
-      E --> G
-      F --> G
+      F["Fetch weather info<br/>(Weather API)"]
+      G["Fetch departure board<br/>(RMV API)"]
+      H["Display info on e-board"]
+      F --> H
+      G --> H
     end
-    D --> E
-    D --> F
+    E --> F
+    E --> G
 ```
 
 ---
@@ -117,7 +129,9 @@ flowchart TD
 1. **Clone the repository**
 2. **Install PlatformIO** (VSCode recommended)
 3. **Configure your secrets**
-   - Copy `src/secrets/secrets.h.example` and `src/secrets/rmv_secrets.h.example` to `src/secrets/secrets.h` and `src/secrets/rmv_secrets.h`, then fill in your API keys.
+- Copy `src/secrets/google_secrets.h.example` to `src/secrets/google_secrets.h` and add your Google API key.
+- Copy `src/secrets/rmv_secrets.h.example` to `src/secrets/rmv_secrets.h` and add your RMV API key.
+- **Do not commit your actual secrets files to version control.**
 4. **Upload the filesystem image**
    - Place your HTML files in `data/` and run `PlatformIO: Upload File System image`.
 5. **Build and upload the firmware**
@@ -128,6 +142,39 @@ flowchart TD
 - The configuration page is served from `config.html` and supports UTF-8.
 - All settings are saved and applied on the device.
 
+## Battery Selection Rationale
+
+### Battery Types Discussed
+
+- **CR123/CR123A:** 3.0V non-rechargeable lithium battery, stable output, can be connected directly to the ESP32 board.
+- **16340 (Li-ion/LiFePO₄):** Rechargeable, 3.2–3.7V nominal, requires a regulator for safe use with ESP32.
+- **AA (Alkaline/NiMH):** 1.5V (alkaline) or 1.2V (NiMH) per cell; 3 or 4 in series either require a regulator or risk unstable operation as voltage drops.
+- **Li-Po/Li-ion single cell:** 3.7V nominal, 4.2V fully charged; needs a regulator or boost converter for stable ESP32 operation.
+
+### Why CR123A Was Chosen
+
+- **No regulator needed:** CR123A outputs a stable 3V, which can be connected directly to the ESP32 board’s 3.3V input, minimizing energy loss.
+- **Efficiency:** Voltage regulators waste energy as heat, especially with higher input voltages; direct connection is more efficient.
+- **Stable voltage:** CR123A provides a consistent voltage throughout most of its discharge cycle, supporting ESP32 WiFi’s high current demands.
+- **Sufficient capacity:** While not as high as some larger batteries, CR123A offers enough mAh for many ESP32 applications.
+- **Drawbacks:** CR123A batteries are less common and can be harder to find than AA or Li-ion cells.
+
+### Why Not Other Batteries?
+
+- **AA or rechargeable batteries:** Require a regulator for safe operation; direct connection is not possible, and voltage drops below 70% charge can cause instability.
+- **Li-ion/Li-Po/16340:** Output voltage is too high when fully charged and too low when nearly empty; require a regulator or boost converter, reducing efficiency and usable capacity.
+
+**In summary:**  
+CR123A was selected for its simplicity, efficiency, and stable voltage output, making it ideal for direct connection to the ESP32 without the need for a regulator.
+
+## API Documentation Locations
+
+- **Google Geolocation API**: [Official documentation](https://developers.google.com/maps/documentation/geolocation/overview)
+- **RMV API**: [RMV HAFAS Public API documentation](https://www.rmv.de/hapi/swagger-ui)
+- **Open-Meteo (DWD) Weather API**: [Open-Meteo API documentation](https://open-meteo.com/en/docs)
+- **OpenStreetMap Nominatim (Reverse Geocoding)**: [Nominatim API documentation](https://nominatim.org/release-docs/latest/api/Overview/)
+
+These links provide details on endpoints, authentication, and usage for each external service used by this project.
 ## Dependencies
 - [WiFiManager](https://github.com/tzapu/WiFiManager)
 - [ArduinoJson](https://github.com/bblanchon/ArduinoJson)

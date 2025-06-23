@@ -4,5 +4,6 @@
 .vscode/launch.json
 .vscode/ipch
 
-# Ignore all files in the secrets directory
-src/secrets/*
+# Ignore all secret headers except example files
+src/secrets/*.h
+!src/secrets/*.h.example
