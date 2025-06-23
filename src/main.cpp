@@ -18,7 +18,8 @@
 #include <time.h>
 
 WebServer server(80);
-bool inConfigMode = true;
+RTC_DATA_ATTR bool inConfigMode = true;
+RTC_DATA_ATTR unsigned long loopCount = 0;
 
 float g_lat = 0.0, g_lon = 0.0;
 
@@ -38,20 +39,16 @@ void setup()
   bool res = wm.autoConnect(apName.c_str());
   Serial.println("[DEBUG] autoConnect() returned");
 
-  if (!LittleFS.begin())
-  {
+  if (!LittleFS.begin()) {
     Serial.println("[ERROR] LittleFS mount failed! Please check filesystem or flash.");
-    while (true)
-    {
+    while (true) {
       delay(1000);
     }
   }
-  if (!res)
-  {
+
+  if (!res) {
     Serial.println("Failed to connect");
-  }
-  else
-  {
+  } else {
     Serial.println("WiFi connected!");
     // WiFi.mode(WIFI_STA); // Ensure STA mode
     Serial.print("ESP32 IP address: ");
@@ -71,8 +68,7 @@ void setup()
   }
 }
 
-void enterHibernate(uint64_t sleep_us)
-{
+void enterHibernate(uint64_t sleep_us) {
   Serial.printf("Entering hibernate mode for %.2f minutes...\n", sleep_us / 60000000.0);
   esp_sleep_enable_timer_wakeup(sleep_us);
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
@@ -82,8 +78,7 @@ void enterHibernate(uint64_t sleep_us)
   // The device will reset after wakeup
 }
 
-void printWeatherInfo(const WeatherInfo &weather)
-{
+void printWeatherInfo(const WeatherInfo &weather) {
   Serial.println("--- WeatherInfo ---");
   Serial.printf("City: %s\n", weather.city.c_str());
   Serial.printf("Current Temp: %s\n", weather.temperature.c_str());
@@ -94,8 +89,7 @@ void printWeatherInfo(const WeatherInfo &weather)
   Serial.printf("Sunset: %s\n", weather.sunset.c_str());
   Serial.printf("Raw JSON: %s\n", weather.rawJson.c_str());
   Serial.printf("Forecast count: %d\n", weather.forecastCount);
-  for (int i = 0; i < weather.forecastCount && i < 12; ++i)
-  {
+  for (int i = 0; i < weather.forecastCount && i < 12; ++i) {
     const auto &hour = weather.forecast[i];
     Serial.printf("-- Hour %d --\n", i + 1);
     Serial.printf("Time: %s\n", hour.time.c_str());
@@ -111,52 +105,41 @@ void printWeatherInfo(const WeatherInfo &weather)
   Serial.println("--- End WeatherInfo ---");
 }
 
-void loop()
-{
+void loop() {
   // Set your interval in seconds (e.g., 3600 for hourly, 10800 for 3-hourly)
   const int INTERVAL_SEC = 60; // 1 minute
 
-  if (inConfigMode)
-  {
-
+  if (inConfigMode) {
     server.handleClient();
     // When user finishes config, they should visit /done to exit config mode
-  }
-  else
-  {
-    static unsigned long loopCount = 0;
+  } else {
     loopCount++;
-    Serial.printf("Loop count: %lu\n", loopCount);
-    if (WiFi.status() == WL_CONNECTED)
-    {
-      if (!stations.empty())
-      {
+    // Print current time from NTP/RTC
+    time_t now = time(nullptr);
+    struct tm *timeinfo = localtime(&now);
+    Serial.printf("Current time: %04d-%02d-%02d %02d:%02d:%02d\n",
+      timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
+      timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+
+    if (WiFi.status() == WL_CONNECTED) {
+      if (!stations.empty()) {
         String firstStationId = stations[0].id;
         Serial.printf("First station ID: %s\n", firstStationId.c_str());
         getDepartureBoard(firstStationId.c_str());
-      }
-      else
-      {
+      } else {
         Serial.println("No stations found from getNearbyStops.");
       }
       WeatherInfo weather;
-      if (getWeatherFromDWD(g_lat, g_lon, weather))
-      {
+      if (getWeatherFromDWD(g_lat, g_lon, weather)) {
         printWeatherInfo(weather);
-      }
-      else
-      {
+      } else {
         Serial.println("Failed to get weather information from DWD.");
       }
-    }
-    else
-    {
+    } else {
       Serial.println("WiFi not connected");
     }
 
-    // Get current time
-    time_t now = time(nullptr);
-    struct tm *timeinfo = localtime(&now);
+    // Calculate seconds to next interval using the already declared now/timeinfo
     int seconds_since_hour = timeinfo->tm_min * 60 + timeinfo->tm_sec;
     int seconds_to_next = INTERVAL_SEC - (now % INTERVAL_SEC);
     Serial.printf("Current time: %02d:%02d:%02d, sleeping for %d seconds to next interval.\n", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec, seconds_to_next);
