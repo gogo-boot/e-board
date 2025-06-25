@@ -1,6 +1,8 @@
 #include "dwd_weather_api.h"
+#include "config/config_struct.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include "esp_log.h"
 
 // Helper: Get city/location name from lat/lon using Nominatim (OpenStreetMap)
 static String getCityFromLatLon(float lat, float lon) {
@@ -12,6 +14,7 @@ static String getCityFromLatLon(float lat, float lon) {
     String city = "";
     if (httpCode > 0) {
         String payload = http.getString();
+        ESP_LOGD("DWD_CITY", "Nominatim payload: %s", payload.c_str());
         DynamicJsonDocument doc(2048);
         DeserializationError error = deserializeJson(doc, payload);
         if (!error && doc.containsKey("address")) {
@@ -27,6 +30,8 @@ static String getCityFromLatLon(float lat, float lon) {
         }
     }
     http.end();
+    extern MyStationConfig g_stationConfig;
+    g_stationConfig.cityName = city;
     return city;
 }
 

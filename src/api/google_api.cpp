@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include "secrets/google_secrets.h"
 #include "esp_log.h"
+#include "config/config_struct.h"
 
 static const char* TAG = "GOOGLE_API";
 
@@ -41,6 +42,9 @@ bool getLocationFromGoogle(float &lat, float &lon) {
     if (!error) {
       lat = doc["location"]["lat"];
       lon = doc["location"]["lng"];
+      extern MyStationConfig g_stationConfig;
+      g_stationConfig.latitude = lat;
+      g_stationConfig.longitude = lon;
       ESP_LOGI(TAG, "Location found: lat=%.6f, lon=%.6f", lat, lon);
       http.end();
       return true;

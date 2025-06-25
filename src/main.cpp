@@ -18,6 +18,7 @@
 #include "util/power.h"
 #include "util/weather_print.h"
 #include <time.h>
+#include "config/config_struct.h"
 
 static const char* TAG = "MAIN";
 
@@ -26,16 +27,24 @@ RTC_DATA_ATTR bool inConfigMode = true;
 RTC_DATA_ATTR unsigned long loopCount = 0;
 
 float g_lat = 0.0, g_lon = 0.0;
+MyStationConfig g_stationConfig;
 
 void setup()
 {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
 
-  esp_log_level_set("*", ESP_LOG_INFO); // Set global log level
+  esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
   ESP_LOGI(TAG, "System starting...");
+  // Example: set config values
+  g_stationConfig.latitude = 0.0; // will be set after Google API call
+  g_stationConfig.longitude = 0.0; // will be set after Google API call
+  g_stationConfig.ssid = ""; // will be set after WiFi connects
+  g_stationConfig.cityName = ""; //will be set after city lookup
+  g_stationConfig.oepnvFilters = {"RE", "S-Bahn", "Bus"};
+
   WiFiManager wm;
-  // wm.resetSettings(); // Reset WiFi settings for fresh start
+  wm.resetSettings(); // Reset WiFi settings for fresh start
   ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
   const char *menu[] = {"wifi"};
   wm.setMenu(menu, 1);
@@ -56,7 +65,7 @@ void setup()
     ESP_LOGE(TAG, "Failed to connect");
   } else {
     ESP_LOGI(TAG, "WiFi connected!");
-    // WiFi.mode(WIFI_STA); // Ensure STA mode
+    g_stationConfig.ssid = wm.getWiFiSSID();
     ESP_LOGI(TAG, "ESP32 IP address: %s", WiFi.localIP().toString().c_str());
 
     // NTP time sync
@@ -77,8 +86,8 @@ void setup()
       timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
       timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
-    getLocationFromGoogle(g_lat, g_lon);
-    getNearbyStops(g_lat, g_lon);
+    getLocationFromGoogle(g_lat, g_lon); // This will set g_stationConfig.latitude/longitude 
+    getNearbyStops(); // Now uses g_stationConfig for lat/lon
 
     server.on("/", []()
               { handleConfigPage(server); }); // Serve the config page
