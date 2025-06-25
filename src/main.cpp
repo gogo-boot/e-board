@@ -4,6 +4,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
+#include "esp_log.h"
 #include "secrets/google_secrets.h"
 #include "secrets/rmv_secrets.h"
 #include <WebServer.h>
@@ -17,7 +18,8 @@
 #include "util/power.h"
 #include "util/weather_print.h"
 #include <time.h>
-#include "esp_log.h"
+#include "config/config_struct.h"
+#include <ESPmDNS.h>
 
 static const char* TAG = "MAIN";
 
@@ -26,14 +28,24 @@ RTC_DATA_ATTR bool inConfigMode = true;
 RTC_DATA_ATTR unsigned long loopCount = 0;
 
 float g_lat = 0.0, g_lon = 0.0;
+MyStationConfig g_stationConfig;
 
 void setup()
 {
   Serial.begin(115200);
-  esp_log_level_set("*", ESP_LOG_INFO); // Set global log level
+  Serial.setDebugOutput(true);
+
+  esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
   ESP_LOGI(TAG, "System starting...");
+  // Example: set config values
+  g_stationConfig.latitude = 0.0; // will be set after Google API call
+  g_stationConfig.longitude = 0.0; // will be set after Google API call
+  g_stationConfig.ssid = ""; // will be set after WiFi connects
+  g_stationConfig.cityName = ""; //will be set after city lookup
+  g_stationConfig.oepnvFilters = {"RE", "S-Bahn", "Bus"};
+
   WiFiManager wm;
-  // wm.resetSettings(); // Reset WiFi settings for fresh start
+  wm.resetSettings(); // Reset WiFi settings for fresh start
   ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
   const char *menu[] = {"wifi"};
   wm.setMenu(menu, 1);
@@ -54,8 +66,15 @@ void setup()
     ESP_LOGE(TAG, "Failed to connect");
   } else {
     ESP_LOGI(TAG, "WiFi connected!");
-    // WiFi.mode(WIFI_STA); // Ensure STA mode
+    g_stationConfig.ssid = wm.getWiFiSSID();
+    // Start mDNS responder
+    if (MDNS.begin("mystation")) {
+      ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
+    } else {
+      ESP_LOGW(TAG, "mDNS responder failed to start");
+    }
     ESP_LOGI(TAG, "ESP32 IP address: %s", WiFi.localIP().toString().c_str());
+    g_stationConfig.ipAddress = WiFi.localIP().toString();
 
     // NTP time sync
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
@@ -75,16 +94,15 @@ void setup()
       timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
       timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
-    getLocationFromGoogle(g_lat, g_lon);
-    getNearbyStops(g_lat, g_lon);
+    getLocationFromGoogle(g_lat, g_lon); // This will set g_stationConfig.latitude/longitude 
+    getNearbyStops(); // Now uses g_stationConfig for lat/lon
 
-    ESP_LOGI(TAG, "connected...yeey :)");
     server.on("/", []()
-              { handleConfigPage(server); });
+              { handleConfigPage(server); }); // Serve the config page
     server.on("/done", []()
               { handleConfigDone(server, inConfigMode); });
-    server.on("/stations", [&]()
-              { handleStationSelect(server, stations); });
+    server.on("/save_config", HTTP_POST, []() { handleSaveConfig(server, inConfigMode ); }); // AJAX handler for saving config
+    server.on("/api/stop", HTTP_GET, []() { handleStopAutocomplete(server); }); // AJAX handler for autocomplete
     server.begin();
     ESP_LOGI(TAG, "HTTP server started.");
   }
