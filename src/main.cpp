@@ -19,6 +19,7 @@
 #include "util/weather_print.h"
 #include <time.h>
 #include "config/config_struct.h"
+#include <ESPmDNS.h>
 
 static const char* TAG = "MAIN";
 
@@ -66,7 +67,14 @@ void setup()
   } else {
     ESP_LOGI(TAG, "WiFi connected!");
     g_stationConfig.ssid = wm.getWiFiSSID();
+    // Start mDNS responder
+    if (MDNS.begin("mystation")) {
+      ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
+    } else {
+      ESP_LOGW(TAG, "mDNS responder failed to start");
+    }
     ESP_LOGI(TAG, "ESP32 IP address: %s", WiFi.localIP().toString().c_str());
+    g_stationConfig.ipAddress = WiFi.localIP().toString();
 
     // NTP time sync
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");

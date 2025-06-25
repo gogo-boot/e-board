@@ -6,6 +6,7 @@ struct MyStationConfig {
     float latitude = 0.0;
     float longitude = 0.0;
     String ssid; // changed from routerName to ssid
+    String ipAddress;
     String cityName;
     std::vector<String> oepnvFilters; // e.g. {"RE", "S-Bahn", "Bus"}
     std::vector<String> stopIds;   // all found stop IDs

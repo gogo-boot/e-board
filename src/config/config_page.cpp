@@ -3,10 +3,12 @@
 #include <ArduinoJson.h>
 #include <WebServer.h>
 #include "api/rmv_api.h"
+#include "config/config_struct.h"
 
 extern float g_lat, g_lon;
 
-void handleStationSelect(WebServer &server, const std::vector<Station>& stations) {
+void handleStationSelect(WebServer &server) {
+    extern MyStationConfig g_stationConfig;
     File file = LittleFS.open("/station_select.html", "r");
     if (!file) {
         server.send(500, "text/plain", "Template not found");
@@ -15,11 +17,10 @@ void handleStationSelect(WebServer &server, const std::vector<Station>& stations
     String page = file.readString();
     file.close();
     String html;
-    for (size_t i = 0; i < stations.size(); ++i) {
-        const auto& s = stations[i];
+    for (size_t i = 0; i < g_stationConfig.stopNames.size(); ++i) {
         html += "<div class='station'>";
-        html += "<input type='radio' name='station' value='" + s.id + "'>";
-        html += s.name + " (" + s.type + ")";
+        html += "<input type='radio' name='station' value='" + g_stationConfig.stopIds[i] + "'>";
+        html += g_stationConfig.stopNames[i] + " (ID: " + g_stationConfig.stopIds[i] + ")";
         html += "</div>";
     }
     page.replace("{{stations}}", html);
@@ -28,6 +29,7 @@ void handleStationSelect(WebServer &server, const std::vector<Station>& stations
 
 // Update the config page handler to serve config_my_station.html
 void handleConfigPage(WebServer &server) {
+  extern MyStationConfig g_stationConfig;
   File file = LittleFS.open("/config_my_station.html", "r");
   if (!file) {
     server.send(404, "text/plain", "Konfigurationsseite nicht gefunden");
@@ -37,21 +39,21 @@ void handleConfigPage(WebServer &server) {
   file.close();
 
   // Replace reserved keywords
-  page.replace("{{LAT}}", String(g_lat, 6));
-  page.replace("{{LON}}", String(g_lon, 6));
+  page.replace("{{LAT}}", String(g_stationConfig.latitude, 6));
+  page.replace("{{LON}}", String(g_stationConfig.longitude, 6));
 
-  // Build nearest stops HTML
+  // Build nearest stops HTML from g_stationConfig
   String stopsHtml;
-  for (const auto& s : stations) {
-    stopsHtml += s.name + " (" + s.type + ")<br>";
+  for (size_t i = 0; i < g_stationConfig.stopNames.size(); ++i) {
+    stopsHtml += g_stationConfig.stopNames[i] + "<br>";
   }
   if (stopsHtml.length() == 0) stopsHtml = "Keine Haltestellen gefunden.";
   page.replace("{{STOPS}}", stopsHtml);
 
-  // Optionally, replace city/town name if available (not implemented in backend yet)
-  page.replace("{{CITY}}", ""); // Replace with city name if available
-  page.replace("{{ROUTER}}", ""); // Replace with router info if available
-  page.replace("{{IP}}", ""); // Replace with IP info if available
+  // Replace city, ssid, etc.
+  page.replace("{{CITY}}", g_stationConfig.cityName);
+  page.replace("{{ROUTER}}", g_stationConfig.ssid);
+  page.replace("{{IP}}", g_stationConfig.ipAddress); // Replace with IP info if available
 
   server.send(200, "text/html; charset=utf-8", page);
 }
