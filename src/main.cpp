@@ -15,6 +15,7 @@
 #include "api/dwd_weather_api.h"
 #include "util/util.h"
 #include "config/config_page.h"
+#include "api/google_api.h" // Add this if getCityFromLatLon is declared here
 #include "util/power.h"
 #include "util/weather_print.h"
 #include <time.h>
@@ -94,6 +95,7 @@ void setup()
       timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
       timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
+    getCityFromLatLon(g_lat, g_lon); // Get city name from lat/lon
     getLocationFromGoogle(g_lat, g_lon); // This will set g_stationConfig.latitude/longitude 
     getNearbyStops(); // Now uses g_stationConfig for lat/lon
 
