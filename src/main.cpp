@@ -95,8 +95,10 @@ void setup()
       timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
       timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
-    getCityFromLatLon(g_lat, g_lon); // Get city name from lat/lon
     getLocationFromGoogle(g_lat, g_lon); // This will set g_stationConfig.latitude/longitude 
+    // Set city name from lat/lon and assign to g_stationConfig
+    getCityFromLatLon(g_lat, g_lon);
+    ESP_LOGI(TAG, "City set in setup: %s", g_stationConfig.cityName.c_str());
     getNearbyStops(); // Now uses g_stationConfig for lat/lon
 
     server.on("/", []()
