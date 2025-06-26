@@ -18,8 +18,40 @@
     .chip { padding: 0.4em 1em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; }
     .chip.active { background: #007aff; color: #fff; }
     .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; }
+    .subnav {
+      display: block;
+      margin-bottom: 1.2em;
+      background: #eaf6ff;
+      border-radius: 6px;
+      padding: 0.5em 0.5em 0.5em 0.5em;
+      box-shadow: 0 1px 4px #007aff22;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .subnav a {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      color: #007aff;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.6em 1em;
+      border-radius: 20px;
+      transition: background 0.2s, color 0.2s;
+      font-size: 1em;
+      margin-bottom: 0.3em;
+    }
+    .subnav a .icon {
+      font-size: 1.1em;
+    }
+    .subnav a:hover, .subnav a.active {
+      background: #007aff;
+      color: #fff;
+    }
     @media (max-width: 600px) {
-      .container { border-radius: 0; box-shadow: none; }
+      .subnav { padding: 0.3em; }
+      .subnav a { font-size: 0.97em; padding: 0.5em 0.7em; }
     }
   </style>
 </head>
@@ -27,53 +59,36 @@
   <div class="container">
     <h1>MyStation Status</h1>
     <div class="chapter">Standort</div>
-    <div class="section">
-      <div class="label">Mein Standort</div>
-      <div id="location" class="row">
-        <span>Breitengrad: {{LAT}}, Längengrad: {{LON}}</span>
-      </div>
-    </div>
+    <nav class="subnav">
+      <a href="#router-section"><span class="icon">📶</span> Mein Standort</a>
+        <span id="router">{{CITY}}</span>
+      <a href="#ip-section"><span class="icon">🌐</span> Breitengrad:, Längengrad: </a>
+        <span id="ip">{{LAT}}, {{LON}}</span>
+    </nav>    
     <div class="chapter">Netzwerk</div>
-    <div class="section">
-      <div class="label">Router</div>
+    <nav class="subnav">
+      <a href="#router-section"><span class="icon">📶</span> Router</a>
         <span id="router">{{ROUTER}}</span>
-      <div class="label">IP-Informationen</div>
+      <a href="#ip-section"><span class="icon">🌐</span> IP-Information</a>
         <span id="ip">{{IP}}</span>
-    </div>
+    </nav>
     <div class="chapter">Konfiguration</div>
-    <div class="section">
-      <div class="label">Stadt / Ort <span style="font-weight:400; color:#666; font-size:0.95em;">(wird für die Wetterabfrage verwendet)</span>
-      </div>
-      <div class="row">
-        <span id="city-display">{{CITY}}</span>
-        <input type="text" id="city-input" style="display:none;" autocomplete="off" oninput="autocompleteCity(this.value)">
-        <input type="hidden" id="city-lat">
-        <input type="hidden" id="city-lon">
-      </div>
-      <div id="city-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
-    </div>
-    <div class="section">
-      <div class="label">Meine Station
-      </div>
-      <div class="row">
-        <select id="stop-select" style="width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;">
-          {{STOPS}}
-        </select>
-        <input type="text" id="stop-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px; margin-left:0.5em;" placeholder="Haltestelle eingeben..." autocomplete="off">
-      </div>
-      <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
-    </div>
-    <div class="section">
-      <div class="label">ÖPNV-Filter</div>
-      <div class="chips" id="filter-chips">
+    <nav class="subnav">
+      <a href="#station-section"><span class="icon">🚏</span> Meine Station</a>
+        <div class="row">
+          <select id="stop-select" style="width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;">{{STOPS}}</select>
+          <input type="text" id="stop-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px; margin-left:0.5em;" placeholder="Haltestelle eingeben..." autocomplete="off">
+        </div>
+        <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+      <a href="#filter-section"><span class="icon">🚌</span> ÖPNV-Filter</a>
+      <div class="chips" id="filter-chips"></div>
         <div class="chip active" data-type="RE" onclick="toggleChip(this)">RE</div>
         <div class="chip active" data-type="R" onclick="toggleChip(this)">R</div>
         <div class="chip active" data-type="S" onclick="toggleChip(this)">S-Bahn</div>
         <div class="chip active" data-type="Bus" onclick="toggleChip(this)">Busse</div>
         <div class="chip active" data-type="U" onclick="toggleChip(this)">U-Bahn</div>
         <div class="chip active" data-type="Tram" onclick="toggleChip(this)">Tram</div>
-      </div>
-    </div>
+    </nav>
     <div class="section" style="text-align:center; margin-top:2em;">
       <button id="save-btn" style="background:#007aff;color:#fff;border:none;padding:0.8em 2em;font-size:1.1em;border-radius:6px;cursor:pointer;box-shadow:0 1px 4px #0002;">Speichern</button>
     </div>
