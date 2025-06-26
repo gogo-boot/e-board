@@ -45,7 +45,7 @@ void setup()
   g_stationConfig.oepnvFilters = {"RE", "S-Bahn", "Bus"};
 
   WiFiManager wm;
-  wm.resetSettings(); // Reset WiFi settings for fresh start
+  // wm.resetSettings(); // Reset WiFi settings for fresh start
   ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
   const char *menu[] = {"wifi"};
   wm.setMenu(menu, 1);
@@ -99,8 +99,6 @@ void setup()
 
     server.on("/", []()
               { handleConfigPage(server); }); // Serve the config page
-    server.on("/done", []()
-              { handleConfigDone(server, inConfigMode); });
     server.on("/save_config", HTTP_POST, []() { handleSaveConfig(server, inConfigMode ); }); // AJAX handler for saving config
     server.on("/api/stop", HTTP_GET, []() { handleStopAutocomplete(server); }); // AJAX handler for autocomplete
     server.begin();
