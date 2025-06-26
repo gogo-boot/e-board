@@ -81,13 +81,14 @@
         </div>
         <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
       <a href="#filter-section"><span class="icon">🚌</span> ÖPNV-Filter</a>
-      <div class="chips" id="filter-chips"></div>
+      <div class="chips" id="filter-chips" style="display: flex; flex-wrap: wrap; gap: 0.5em;"></div>
         <div class="chip active" data-type="RE" onclick="toggleChip(this)">RE</div>
         <div class="chip active" data-type="R" onclick="toggleChip(this)">R</div>
         <div class="chip active" data-type="S" onclick="toggleChip(this)">S-Bahn</div>
         <div class="chip active" data-type="Bus" onclick="toggleChip(this)">Busse</div>
         <div class="chip active" data-type="U" onclick="toggleChip(this)">U-Bahn</div>
         <div class="chip active" data-type="Tram" onclick="toggleChip(this)">Tram</div>
+      </div>
     </nav>
     <div class="section" style="text-align:center; margin-top:2em;">
       <button id="save-btn" style="background:#007aff;color:#fff;border:none;padding:0.8em 2em;font-size:1.1em;border-radius:6px;cursor:pointer;box-shadow:0 1px 4px #0002;">Speichern</button>
