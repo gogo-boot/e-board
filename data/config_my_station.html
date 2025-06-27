@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #f4f6fa; color: #222; }
-    .container { max-width: 480px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; }
+    .container { max-width: 480px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; box-sizing: border-box; width: 100%; }
     h1 { font-size: 1.7em; margin-bottom: 1em; text-align: center; letter-spacing: 1px; }
     .chapter { font-size: 1.15em; font-weight: 600; color: #007aff; margin-top: 2em; margin-bottom: 0.5em; border-left: 4px solid #007aff; padding-left: 0.7em; background: #eaf6ff; border-radius: 6px; }
     .section { margin-bottom: 1.5em; }
@@ -17,7 +17,7 @@
     .chips { display: flex; flex-wrap: wrap; gap: 0.5em; }
     .chip { padding: 0.4em 1em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; }
     .chip.active { background: #007aff; color: #fff; }
-    .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; }
+    .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; margin-top: 2em; max-width: 480px; width: 100%; box-sizing: border-box; display: block; text-align: left; margin-left: auto; margin-right: auto; }
     .subnav {
       display: block;
       margin-bottom: 1.2em;
@@ -93,7 +93,7 @@
     <div class="section" style="text-align:center; margin-top:2em;">
       <button id="save-btn" style="background:#007aff;color:#fff;border:none;padding:0.8em 2em;font-size:1.1em;border-radius:6px;cursor:pointer;box-shadow:0 1px 4px #0002;">Speichern</button>
     </div>
-    <div class="privacy" style="margin-top:2em;">
+    <div class="privacy" style="margin-top:2em; margin-left:auto; margin-right:auto; max-width:480px; width:100%; box-sizing:border-box; display:block; text-align:left;">
       <strong>Datenschutzhinweis:</strong> Ihr Standort wird ausschließlich über die IP-Adresse Ihres Routers und öffentliche Geodatenbanken ermittelt. Es werden keine GPS-Daten oder persönliche Bewegungsprofile verwendet. Die Standortdaten werden nur zur Anzeige und für die Wetter-/Stationssuche genutzt und nicht an Dritte weitergegeben.
     </div>
   </div>
