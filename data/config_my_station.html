@@ -6,58 +6,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #f4f6fa; color: #222; }
-    .container { max-width: 480px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; }
-    h1 { font-size: 1.5em; margin-bottom: 0.5em; text-align: center; }
-    .section { margin-bottom: 1.2em; }
-    .label { font-weight: 500; margin-bottom: 0.2em; display: block; }
+    .container { max-width: 480px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; box-sizing: border-box; width: 100%; }
+    h1 { font-size: 1.7em; margin-bottom: 1em; text-align: center; letter-spacing: 1px; }
+    .chapter { font-size: 1.15em; font-weight: 600; color: #007aff; margin-top: 2em; margin-bottom: 0.5em; border-left: 4px solid #007aff; padding-left: 0.7em; background: #eaf6ff; border-radius: 6px; }
+    .section { margin-bottom: 1.5em; }
+    .label { font-weight: 500; margin-bottom: 0.2em; display: block; color: #333; }
     .row { display: flex; align-items: center; justify-content: space-between; }
     .edit-btn { background: none; border: none; color: #007aff; font-size: 1em; cursor: pointer; margin-left: 0.5em; }
-    input[type=text] { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 0.5em; }
-    .chip { padding: 0.4em 1em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; }
+    input[type=text], select { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.3em; justify-content: flex-start; }
+    .chip { display: inline-block; padding: 0.25em 0.8em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; font-size: 0.97em; margin-right: 0.2em; margin-bottom: 0.2em; white-space: nowrap; min-width: unset; }
     .chip.active { background: #007aff; color: #fff; }
-    .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; }
+    .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; margin-top: 2em; max-width: 480px; width: 100%; box-sizing: border-box; display: block; text-align: left; margin-left: auto; margin-right: auto; }
+    .subnav {
+      display: block;
+      margin-bottom: 1.2em;
+      background: #eaf6ff;
+      border-radius: 6px;
+      padding: 0.5em 0.5em 0.5em 0.5em;
+      box-shadow: 0 1px 4px #007aff22;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .subnav a {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      color: #007aff;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.6em 1em;
+      border-radius: 20px;
+      transition: background 0.2s, color 0.2s;
+      font-size: 1em;
+      margin-bottom: 0.3em;
+    }
+    .subnav a .icon {
+      font-size: 1.1em;
+    }
+    .subnav a:hover, .subnav a.active {
+      background: #007aff;
+      color: #fff;
+    }
     @media (max-width: 600px) {
-      .container { border-radius: 0; box-shadow: none; }
+      .subnav { padding: 0.3em; }
+      .subnav a { font-size: 0.97em; padding: 0.5em 0.7em; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>MyStation Status</h1>
-    <div class="section">
-      <div class="label">Mein Standort</div>
-      <div id="location" class="row">
-        <span>Breitengrad: {{LAT}}, Längengrad: {{LON}}</span>
-      </div>
-      <div class="label">Router/IP-Informationen</div>
-      <div id="ipinfo" class="row">
-        <span id="router">{{ROUTER}}</span> / <span id="ip">{{IP}}</span>
-      </div>
-    </div>
-    <div class="section">
-      <div class="label">Stadt / Ort <span style="font-weight:400; color:#666; font-size:0.95em;">(wird für die Wetterabfrage verwendet)</span>
-        <button class="edit-btn" id="edit-city" onclick="editCity()">✏️ Bearbeiten</button>
-      </div>
-      <div class="row">
-        <span id="city-display">{{CITY}}</span>
-        <input type="text" id="city-input" style="display:none;" autocomplete="off" oninput="autocompleteCity(this.value)">
-      </div>
-      <div id="city-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
-    </div>
-    <div class="section">
-      <div class="label">Meine Station
-        <button class="edit-btn" id="edit-stop" onclick="editStop()">✏️ Bearbeiten</button>
-      </div>
-      <div class="row">
-        <span id="stop-display">{{STOPS}}</span>
-        <input type="text" id="stop-input" style="display:none;" autocomplete="off" oninput="autocompleteStop(this.value)">
-      </div>
-      <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
-    </div>
-    <div class="section">
-      <div class="label">ÖPNV-Filter</div>
-      <div class="chips" id="filter-chips">
+    <div class="chapter">Standort</div>
+    <nav class="subnav">
+      <a href="#router-section"><span class="icon">📶</span> Mein Standort</a>
+        <span id="router">{{CITY}}</span>
+      <a href="#ip-section"><span class="icon">🌐</span> Breitengrad:, Längengrad: </a>
+        <span id="ip">{{LAT}}, {{LON}}</span>
+    </nav>    
+    <div class="chapter">Netzwerk</div>
+    <nav class="subnav">
+      <a href="#router-section"><span class="icon">📶</span> Router</a>
+        <span id="router">{{ROUTER}}</span>
+      <a href="#ip-section"><span class="icon">🌐</span> IP-Information</a>
+        <span id="ip">{{IP}}</span>
+    </nav>
+    <div class="chapter">Konfiguration</div>
+    <nav class="subnav">
+      <a href="#station-section"><span class="icon">🚏</span> Meine Station</a>
+        <div class="row">
+          <select id="stop-select" style="width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;">{{STOPS}}</select>
+          <input type="text" id="stop-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px; margin-left:0.5em;" placeholder="Haltestelle eingeben..." autocomplete="off">
+        </div>
+        <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+      <a href="#filter-section"><span class="icon">🚌</span> ÖPNV-Filter</a>
+      <div class="chips" id="filter-chips" style="display: flex; flex-wrap: wrap; gap: 0.3em; justify-content: flex-start;">
         <div class="chip active" data-type="RE" onclick="toggleChip(this)">RE</div>
         <div class="chip active" data-type="R" onclick="toggleChip(this)">R</div>
         <div class="chip active" data-type="S" onclick="toggleChip(this)">S-Bahn</div>
@@ -65,11 +89,11 @@
         <div class="chip active" data-type="U" onclick="toggleChip(this)">U-Bahn</div>
         <div class="chip active" data-type="Tram" onclick="toggleChip(this)">Tram</div>
       </div>
-    </div>
+    </nav>
     <div class="section" style="text-align:center; margin-top:2em;">
       <button id="save-btn" style="background:#007aff;color:#fff;border:none;padding:0.8em 2em;font-size:1.1em;border-radius:6px;cursor:pointer;box-shadow:0 1px 4px #0002;">Speichern</button>
     </div>
-    <div class="privacy" style="margin-top:2em;">
+    <div class="privacy" style="margin-top:2em; margin-left:auto; margin-right:auto; max-width:480px; width:100%; box-sizing:border-box; display:block; text-align:left;">
       <strong>Datenschutzhinweis:</strong> Ihr Standort wird ausschließlich über die IP-Adresse Ihres Routers und öffentliche Geodatenbanken ermittelt. Es werden keine GPS-Daten oder persönliche Bewegungsprofile verwendet. Die Standortdaten werden nur zur Anzeige und für die Wetter-/Stationssuche genutzt und nicht an Dritte weitergegeben.
     </div>
   </div>
@@ -87,29 +111,117 @@
       // TODO: Vorschläge in #city-suggestions anzeigen, Klick zum Auswählen
     }
     // --- Haltestelle bearbeiten ---
-    function editStop() {
-      document.getElementById('stop-display').style.display = 'none';
-      document.getElementById('stop-input').style.display = '';
-      document.getElementById('stop-input').focus();
+    // Remove editStop and related code, always show select
+    // --- Stop select population ---
+    // Populate stop-select with stopsData if available
+    function populateStops() {
+      var select = document.getElementById('stop-select');
+      if (!window.stopsData) return;
+      select.innerHTML = '';
+      window.stopsData.forEach(function(stop) {
+        var opt = document.createElement('option');
+        opt.value = stop.id;
+        opt.textContent = stop.name;
+        select.appendChild(opt);
+      });
+      // Optionally select the current stop
+      if (window.selectedStopId) {
+        select.value = window.selectedStopId;
+      }
     }
-    function autocompleteStop(query) {
-      // TODO: AJAX-Aufruf an Backend für Haltestellen-Autovervollständigung (RMV API)
-    }
-    function showStopSuggestions(suggestions) {
-      // TODO: Vorschläge in #stop-suggestions anzeigen, Klick zum Auswählen
-    }
+    if (window.stopsData) populateStops();
     // --- Filter Chips ---
     function toggleChip(el) {
       el.classList.toggle('active');
       // TODO: Filterstatus speichern
     }
-    // --- Dynamische Datenbefüllung Beispiel ---
-    // document.getElementById('lat').textContent = ...;
-    // document.getElementById('lon').textContent = ...;
-    // document.getElementById('router').textContent = ...;
-    // document.getElementById('ip').textContent = ...;
-    // document.getElementById('city-display').textContent = ...;
-    // document.getElementById('stop-display').textContent = ...;
+    // --- Stop select/manual entry toggle ---
+    var stopSelect = document.getElementById('stop-select');
+    var stopInput = document.getElementById('stop-input');
+    var stopSuggestions = document.getElementById('stop-suggestions');
+    stopSelect.addEventListener('change', function() {
+      if (stopSelect.value === '__manual__') {
+        stopSelect.style.display = 'none';
+        stopInput.style.display = '';
+        stopInput.value = '';
+        stopInput.focus();
+      }
+    });
+    stopInput.addEventListener('input', function() {
+      var q = stopInput.value.trim();
+      if (q.length < 2) {
+        stopSuggestions.style.display = 'none';
+        return;
+      }
+      fetch('/api/stop?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(suggestions => {
+          stopSuggestions.innerHTML = '';
+          suggestions.forEach(function(name) {
+            var div = document.createElement('div');
+            div.textContent = name;
+            div.style.padding = '0.5em';
+            div.style.cursor = 'pointer';
+            div.onclick = function() {
+              stopInput.value = name;
+              stopSuggestions.style.display = 'none';
+            };
+            stopSuggestions.appendChild(div);
+          });
+          if (suggestions.length > 0) {
+            stopSuggestions.style.display = '';
+            var rect = stopInput.getBoundingClientRect();
+            stopSuggestions.style.top = (stopInput.offsetTop + stopInput.offsetHeight) + 'px';
+            stopSuggestions.style.left = stopInput.offsetLeft + 'px';
+            stopSuggestions.style.width = stopInput.offsetWidth + 'px';
+          } else {
+            stopSuggestions.style.display = 'none';
+          }
+        });
+    });
+    // Hide suggestions on blur
+    stopInput.addEventListener('blur', function() {
+      setTimeout(function() { stopSuggestions.style.display = 'none'; }, 200);
+    });
+    // --- Save config handler ---
+    document.getElementById('save-btn').onclick = function() {
+      var city = document.getElementById('city-display') ? document.getElementById('city-display').textContent : '';
+      var cityLat = document.getElementById('city-lat') ? document.getElementById('city-lat').value : '';
+      var cityLon = document.getElementById('city-lon') ? document.getElementById('city-lon').value : '';
+      var stopId = '';
+      var stopName = '';
+      var stopSelect = document.getElementById('stop-select');
+      var stopInput = document.getElementById('stop-input');
+      if (stopInput && stopInput.style.display !== 'none') {
+        stopName = stopInput.value;
+        stopId = '__manual__';
+      } else if (stopSelect) {
+        stopId = stopSelect.value;
+        stopName = stopSelect.options[stopSelect.selectedIndex] ? stopSelect.options[stopSelect.selectedIndex].text : '';
+      }
+      var filterChips = document.querySelectorAll('.chip.active');
+      var filters = Array.from(filterChips).map(function(chip) { return chip.getAttribute('data-type'); });
+      var config = {
+        city: city,
+        cityLat: cityLat,
+        cityLon: cityLon,
+        stopId: stopId,
+        stopName: stopName,
+        filters: filters
+      };
+      fetch('/save_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      }).then(function(r) {
+        if (!r.ok) throw new Error('Netzwerkfehler');
+        return r.json();
+      }).then(function(resp) {
+        alert('Konfiguration gespeichert!');
+      }).catch(function(e) {
+        alert('Fehler beim Speichern: ' + e.message);
+      });
+    };
   </script>
 </body>
 </html>

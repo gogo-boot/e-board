@@ -4,6 +4,7 @@
 #include <WebServer.h>
 #include "api/rmv_api.h"
 #include "config/config_struct.h"
+#include "../util/util.h"
 
 extern float g_lat, g_lon;
 
@@ -42,26 +43,23 @@ void handleConfigPage(WebServer &server) {
   page.replace("{{LAT}}", String(g_stationConfig.latitude, 6));
   page.replace("{{LON}}", String(g_stationConfig.longitude, 6));
 
-  // Build nearest stops HTML from g_stationConfig
-  String stopsHtml;
+  // Build <option> list for stops, add manual entry option
+  String stopsHtml = "<option value=''>Bitte wählen...</option>";
   for (size_t i = 0; i < g_stationConfig.stopNames.size(); ++i) {
-    stopsHtml += g_stationConfig.stopNames[i] + "<br>";
+    String encodedId = Util::urlEncode(g_stationConfig.stopIds[i]);
+    stopsHtml += "<option value='" + encodedId + "'>" + g_stationConfig.stopNames[i] + "</option>";
   }
-  if (stopsHtml.length() == 0) stopsHtml = "Keine Haltestellen gefunden.";
+  stopsHtml += "<option value='__manual__'>Manuell eingeben...</option>";
+  if (g_stationConfig.stopNames.size() == 0) stopsHtml = "<option>Keine Haltestellen gefunden</option>";
   page.replace("{{STOPS}}", stopsHtml);
 
   // Replace city, ssid, etc.
   page.replace("{{CITY}}", g_stationConfig.cityName);
+  // Separate Router (SSID) and IP info
   page.replace("{{ROUTER}}", g_stationConfig.ssid);
   page.replace("{{IP}}", g_stationConfig.ipAddress); // Replace with IP info if available
 
   server.send(200, "text/html; charset=utf-8", page);
-}
-
-// Handle the configuration done action (GET /done)
-void handleConfigDone(WebServer &server, bool &inConfigMode) {
-    inConfigMode = false;
-    server.send(200, "text/html", "<h1>Configuration Complete</h1><p>Device will now run in normal mode.</p>");
 }
 
 // Save configuration handler (POST /save_config)
@@ -71,12 +69,28 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
         return;
     }
     // Parse JSON body
-    DynamicJsonDocument doc(512);
+    DynamicJsonDocument doc(1024);
     DeserializationError err = deserializeJson(doc, server.arg("plain"));
     if (err) {
         server.send(400, "text/plain", "Invalid JSON");
         return;
     }
+    // Decode stopId if present
+    if (doc.containsKey("stopId")) {
+        String stopId = doc["stopId"].as<String>();
+        doc["stopId"] = Util::urlDecode(stopId);
+    }
+    // Print received config for debug
+    String debugMsg = "[Config] City: " + String(doc["city"].as<const char*>());
+    debugMsg += ", Lat: " + String(doc["cityLat"].as<const char*>());
+    debugMsg += ", Lon: " + String(doc["cityLon"].as<const char*>());
+    debugMsg += ", Stop: " + String(doc["stopName"].as<const char*>());
+    debugMsg += ", StopId: " + String(doc["stopId"].as<const char*>());
+    debugMsg += ", ÖPNV Filter: ";
+    for (JsonVariant v : doc["filters"].as<JsonArray>()) {
+      debugMsg += String(v.as<const char*>()) + " ";
+    }
+    Serial.println(debugMsg);
     File f = LittleFS.open("/config.json", "w");
     if (!f) {
         server.send(500, "text/plain", "Failed to save config");
@@ -85,6 +99,11 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
     serializeJson(doc, f);
     f.close();
     inConfigMode = false;
+    // Switch to station mode only
+    #ifdef ESP32
+    WiFi.mode(WIFI_STA);
+    WiFi.softAPdisconnect(true);
+    #endif
     server.send(200, "application/json", "{\"status\":\"ok\"}");
 }
 

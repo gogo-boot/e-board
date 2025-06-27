@@ -28,3 +28,4 @@ struct WeatherInfo {
 };
 
 bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather);
+void getCityFromLatLon(float lat, float lon);

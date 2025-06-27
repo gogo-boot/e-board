@@ -4,8 +4,8 @@
 #include <ArduinoJson.h>
 #include "esp_log.h"
 
-// Helper: Get city/location name from lat/lon using Nominatim (OpenStreetMap)
-static String getCityFromLatLon(float lat, float lon) {
+// Get city/location name from lat/lon using Nominatim (OpenStreetMap)
+void getCityFromLatLon(float lat, float lon) {
     String url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=" + String(lat, 6) + "&lon=" + String(lon, 6) + "&zoom=10&addressdetails=1";
     HTTPClient http;
     http.begin(url);
@@ -31,8 +31,7 @@ static String getCityFromLatLon(float lat, float lon) {
     }
     http.end();
     extern MyStationConfig g_stationConfig;
-    g_stationConfig.cityName = city;
-    return city;
+    g_stationConfig.cityName = city; // Store city name in global config
 }
 
 // Map Open-Meteo weather codes to human-readable strings
@@ -75,7 +74,9 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
                 weather.temperature = String(doc["current_weather"]["temperature"].as<float>(), 1) + " °C";
                 int wcode = doc["current_weather"]["weathercode"].as<int>();
                 weather.condition = weatherCodeToString(wcode);
-                weather.city = getCityFromLatLon(lat, lon);
+                if (weather.city.isEmpty()) {
+                    getCityFromLatLon(lat, lon);
+                }
             }
             if (doc.containsKey("hourly")) {
                 JsonObject hourly = doc["hourly"];

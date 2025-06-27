@@ -15,6 +15,7 @@
 #include "api/dwd_weather_api.h"
 #include "util/util.h"
 #include "config/config_page.h"
+#include "api/google_api.h" // Add this if getCityFromLatLon is declared here
 #include "util/power.h"
 #include "util/weather_print.h"
 #include <time.h>
@@ -45,7 +46,7 @@ void setup()
   g_stationConfig.oepnvFilters = {"RE", "S-Bahn", "Bus"};
 
   WiFiManager wm;
-  wm.resetSettings(); // Reset WiFi settings for fresh start
+  // wm.resetSettings(); // Reset WiFi settings for fresh start
   ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
   const char *menu[] = {"wifi"};
   wm.setMenu(menu, 1);
@@ -95,12 +96,13 @@ void setup()
       timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
     getLocationFromGoogle(g_lat, g_lon); // This will set g_stationConfig.latitude/longitude 
+    // Set city name from lat/lon and assign to g_stationConfig
+    getCityFromLatLon(g_lat, g_lon);
+    ESP_LOGI(TAG, "City set in setup: %s", g_stationConfig.cityName.c_str());
     getNearbyStops(); // Now uses g_stationConfig for lat/lon
 
     server.on("/", []()
               { handleConfigPage(server); }); // Serve the config page
-    server.on("/done", []()
-              { handleConfigDone(server, inConfigMode); });
     server.on("/save_config", HTTP_POST, []() { handleSaveConfig(server, inConfigMode ); }); // AJAX handler for saving config
     server.on("/api/stop", HTTP_GET, []() { handleStopAutocomplete(server); }); // AJAX handler for autocomplete
     server.begin();
@@ -125,9 +127,9 @@ void loop() {
 
     if (WiFi.status() == WL_CONNECTED) {
       if (!stations.empty()) {
-        String firstStationId = stations[0].id;
+        String firstStationId = stations[0].id;  
         ESP_LOGI(TAG, "First station ID: %s", firstStationId.c_str());
-        getDepartureBoard(firstStationId.c_str());
+        getDepartureBoard(firstStationId.c_str()); // Todo: pass stopId from config
       } else {
         ESP_LOGW(TAG, "No stations found from getNearbyStops.");
       }

@@ -26,6 +26,34 @@ String Util::urlEncode(const String& str) {
     return encoded;
 }
 
+String Util::urlDecode(const String& str) {
+    String decoded = "";
+    char temp[] = "00";
+    unsigned int len = str.length();
+    unsigned int i = 0;
+    while (i < len) {
+        char c = str.charAt(i);
+        if (c == '%') {
+            if (i + 2 < len) {
+                temp[0] = str.charAt(i + 1);
+                temp[1] = str.charAt(i + 2);
+                decoded += (char) strtol(temp, nullptr, 16);
+                i += 3;
+            } else {
+                decoded += c;
+                i++;
+            }
+        } else if (c == '+') {
+            decoded += ' ';
+            i++;
+        } else {
+            decoded += c;
+            i++;
+        }
+    }
+    return decoded;
+}
+
 String Util::getUniqueSSID(const String& prefix) {
     uint32_t chipId = (uint32_t)ESP.getEfuseMac();
     char ssid[32];
