@@ -185,17 +185,19 @@
     });
     // --- Save config handler ---
     document.getElementById('save-btn').onclick = function() {
-      var city = document.getElementById('city-display').textContent;
-      var cityLat = document.getElementById('city-lat').value;
-      var cityLon = document.getElementById('city-lon').value;
+      var city = document.getElementById('city-display') ? document.getElementById('city-display').textContent : '';
+      var cityLat = document.getElementById('city-lat') ? document.getElementById('city-lat').value : '';
+      var cityLon = document.getElementById('city-lon') ? document.getElementById('city-lon').value : '';
       var stopId = '';
       var stopName = '';
-      if (stopInput.style.display !== 'none') {
+      var stopSelect = document.getElementById('stop-select');
+      var stopInput = document.getElementById('stop-input');
+      if (stopInput && stopInput.style.display !== 'none') {
         stopName = stopInput.value;
         stopId = '__manual__';
-      } else {
+      } else if (stopSelect) {
         stopId = stopSelect.value;
-        stopName = stopSelect.options[stopSelect.selectedIndex].text;
+        stopName = stopSelect.options[stopSelect.selectedIndex] ? stopSelect.options[stopSelect.selectedIndex].text : '';
       }
       var filterChips = document.querySelectorAll('.chip.active');
       var filters = Array.from(filterChips).map(function(chip) { return chip.getAttribute('data-type'); });
@@ -211,8 +213,13 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
-      }).then(r => r.json()).then(resp => {
+      }).then(function(r) {
+        if (!r.ok) throw new Error('Netzwerkfehler');
+        return r.json();
+      }).then(function(resp) {
         alert('Konfiguration gespeichert!');
+      }).catch(function(e) {
+        alert('Fehler beim Speichern: ' + e.message);
       });
     };
   </script>

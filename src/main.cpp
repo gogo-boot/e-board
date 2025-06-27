@@ -127,9 +127,9 @@ void loop() {
 
     if (WiFi.status() == WL_CONNECTED) {
       if (!stations.empty()) {
-        String firstStationId = stations[0].id;
+        String firstStationId = stations[0].id;  
         ESP_LOGI(TAG, "First station ID: %s", firstStationId.c_str());
-        getDepartureBoard(firstStationId.c_str());
+        getDepartureBoard(firstStationId.c_str()); // Todo: pass stopId from config
       } else {
         ESP_LOGW(TAG, "No stations found from getNearbyStops.");
       }

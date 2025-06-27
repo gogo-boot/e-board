@@ -4,6 +4,7 @@
 #include <WebServer.h>
 #include "api/rmv_api.h"
 #include "config/config_struct.h"
+#include "../util/util.h"
 
 extern float g_lat, g_lon;
 
@@ -45,7 +46,8 @@ void handleConfigPage(WebServer &server) {
   // Build <option> list for stops, add manual entry option
   String stopsHtml = "<option value=''>Bitte wählen...</option>";
   for (size_t i = 0; i < g_stationConfig.stopNames.size(); ++i) {
-    stopsHtml += "<option value='" + g_stationConfig.stopIds[i] + "'>" + g_stationConfig.stopNames[i] + "</option>";
+    String encodedId = Util::urlEncode(g_stationConfig.stopIds[i]);
+    stopsHtml += "<option value='" + encodedId + "'>" + g_stationConfig.stopNames[i] + "</option>";
   }
   stopsHtml += "<option value='__manual__'>Manuell eingeben...</option>";
   if (g_stationConfig.stopNames.size() == 0) stopsHtml = "<option>Keine Haltestellen gefunden</option>";
@@ -72,6 +74,11 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
     if (err) {
         server.send(400, "text/plain", "Invalid JSON");
         return;
+    }
+    // Decode stopId if present
+    if (doc.containsKey("stopId")) {
+        String stopId = doc["stopId"].as<String>();
+        doc["stopId"] = Util::urlDecode(stopId);
     }
     // Print received config for debug
     String debugMsg = "[Config] City: " + String(doc["city"].as<const char*>());
