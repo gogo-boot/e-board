@@ -14,8 +14,8 @@
     .row { display: flex; align-items: center; justify-content: space-between; }
     .edit-btn { background: none; border: none; color: #007aff; font-size: 1em; cursor: pointer; margin-left: 0.5em; }
     input[type=text], select { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; }
-    .chips { display: flex; flex-wrap: wrap; gap: 0.5em; }
-    .chip { padding: 0.4em 1em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.3em; justify-content: flex-start; }
+    .chip { display: inline-block; padding: 0.25em 0.8em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; font-size: 0.97em; margin-right: 0.2em; margin-bottom: 0.2em; white-space: nowrap; min-width: unset; }
     .chip.active { background: #007aff; color: #fff; }
     .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; margin-top: 2em; max-width: 480px; width: 100%; box-sizing: border-box; display: block; text-align: left; margin-left: auto; margin-right: auto; }
     .subnav {
@@ -81,7 +81,7 @@
         </div>
         <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
       <a href="#filter-section"><span class="icon">🚌</span> ÖPNV-Filter</a>
-      <div class="chips" id="filter-chips" style="display: flex; flex-wrap: wrap; gap: 0.5em;"></div>
+      <div class="chips" id="filter-chips" style="display: flex; flex-wrap: wrap; gap: 0.3em; justify-content: flex-start;">
         <div class="chip active" data-type="RE" onclick="toggleChip(this)">RE</div>
         <div class="chip active" data-type="R" onclick="toggleChip(this)">R</div>
         <div class="chip active" data-type="S" onclick="toggleChip(this)">S-Bahn</div>
