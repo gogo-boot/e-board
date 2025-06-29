@@ -83,8 +83,7 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
     // Print the entire doc object for debugging
     String docStr;
     serializeJsonPretty(doc, docStr);
-    Serial.println("[Config] Received JSON:");
-    Serial.println(docStr);
+    ESP_LOGI("CONFIG", "[Config] Received JSON:\n%s", docStr.c_str());
 
     File f = LittleFS.open("/config.json", "w");
     if (!f) {
