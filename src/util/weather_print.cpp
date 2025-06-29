@@ -17,16 +17,17 @@ void printWeatherInfo(const WeatherInfo &weather) {
     ESP_LOGI(TAG, "Forecast count: %d", weather.forecastCount);
     for (int i = 0; i < weather.forecastCount && i < 12; ++i) {
         const auto &hour = weather.forecast[i];
-        ESP_LOGI(TAG, "-- Hour %d --", i + 1);
-        ESP_LOGI(TAG, "Time: %s", hour.time.c_str());
-        ESP_LOGI(TAG, "Temp: %s", hour.temperature.c_str());
-        ESP_LOGI(TAG, "Rain Chance: %s", hour.rainChance.c_str());
-        ESP_LOGI(TAG, "Humidity: %s", hour.humidity.c_str());
-        ESP_LOGI(TAG, "Wind Speed: %s", hour.windSpeed.c_str());
-        ESP_LOGI(TAG, "Rainfall: %s", hour.rainfall.c_str());
-        ESP_LOGI(TAG, "Snowfall: %s", hour.snowfall.c_str());
-        ESP_LOGI(TAG, "Weather Code: %s", hour.weatherCode.c_str());
-        ESP_LOGI(TAG, "Weather Desc: %s", hour.weatherDesc.c_str());
+        ESP_LOGI(TAG, "Hour %d | Time: %s | Temp: %s | Rain Chance: %s | Humidity: %s | Wind Speed: %s | Rainfall: %s | Snowfall: %s | Weather Code: %s | Weather Desc: %s",
+             i + 1,
+             hour.time.c_str(),
+             hour.temperature.c_str(),
+             hour.rainChance.c_str(),
+             hour.humidity.c_str(),
+             hour.windSpeed.c_str(),
+             hour.rainfall.c_str(),
+             hour.snowfall.c_str(),
+             hour.weatherCode.c_str(),
+             hour.weatherDesc.c_str());
     }
     ESP_LOGI(TAG, "--- End WeatherInfo ---");
 }
