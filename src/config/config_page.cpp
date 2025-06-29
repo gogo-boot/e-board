@@ -80,17 +80,12 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
         String stopId = doc["stopId"].as<String>();
         doc["stopId"] = Util::urlDecode(stopId);
     }
-    // Print received config for debug
-    String debugMsg = "[Config] City: " + String(doc["city"].as<const char*>());
-    debugMsg += ", Lat: " + String(doc["cityLat"].as<const char*>());
-    debugMsg += ", Lon: " + String(doc["cityLon"].as<const char*>());
-    debugMsg += ", Stop: " + String(doc["stopName"].as<const char*>());
-    debugMsg += ", StopId: " + String(doc["stopId"].as<const char*>());
-    debugMsg += ", ÖPNV Filter: ";
-    for (JsonVariant v : doc["filters"].as<JsonArray>()) {
-      debugMsg += String(v.as<const char*>()) + " ";
-    }
-    Serial.println(debugMsg);
+    // Print the entire doc object for debugging
+    String docStr;
+    serializeJsonPretty(doc, docStr);
+    Serial.println("[Config] Received JSON:");
+    Serial.println(docStr);
+
     File f = LittleFS.open("/config.json", "w");
     if (!f) {
         server.send(500, "text/plain", "Failed to save config");

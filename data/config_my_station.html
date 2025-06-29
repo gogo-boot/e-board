@@ -60,11 +60,14 @@
     <h1>MyStation Status</h1>
     <div class="chapter">Standort</div>
     <nav class="subnav">
-      <a href="#router-section"><span class="icon">📶</span> Mein Standort</a>
-        <span id="router">{{CITY}}</span>
-      <a href="#ip-section"><span class="icon">🌐</span> Breitengrad:, Längengrad: </a>
-        <span id="ip">{{LAT}}, {{LON}}</span>
-    </nav>    
+      <a href="#location-section"><span class="icon">📍</span> Mein Standort</a>
+      <span id="city-display">{{CITY}}</span>
+      <input type="hidden" id="city-lat" value="{{LAT}}">
+      <input type="hidden" id="city-lon" value="{{LON}}">
+      <div style="margin-top:0.3em; color:#555; font-size:0.97em;">
+        <span>Breitengrad: <span id="lat-display">{{LAT}}</span>, Längengrad: <span id="lon-display">{{LON}}</span></span>
+      </div>
+    </nav>
     <div class="chapter">Netzwerk</div>
     <nav class="subnav">
       <a href="#router-section"><span class="icon">📶</span> Router</a>
