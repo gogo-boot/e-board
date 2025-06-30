@@ -94,7 +94,7 @@ void handleConfigPage(WebServer &server) {
   String stopsHtml = "<option value=''>Bitte wählen...</option>";
   for (size_t i = 0; i < g_stationConfig.stopNames.size(); ++i) {
     String encodedId = Util::urlEncode(g_stationConfig.stopIds[i]);
-    stopsHtml += "<option value='" + encodedId + "'>" + g_stationConfig.stopNames[i] + "</option>";
+    stopsHtml += "<option value='" + encodedId + "'>" + g_stationConfig.stopNames[i] + "   ("+g_stationConfig.stopDistances[i]+"m)</option>";
   }
   stopsHtml += "<option value='__manual__'>Manuell eingeben...</option>";
   if (g_stationConfig.stopNames.size() == 0) stopsHtml = "<option>Keine Haltestellen gefunden</option>";
