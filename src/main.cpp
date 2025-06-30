@@ -28,7 +28,6 @@ static const char* TAG = "MAIN";
 
 // Function declarations
 bool loadConfig(MyStationConfig &config);
-void printWakeupReason();
 
 // --- Globals ---
 WebServer server(80);
@@ -176,32 +175,6 @@ void setup()
   }
 
   setupWebServer();
-}
-
-// Print ESP32 wakeup reason
-void printWakeupReason() {
-  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-  
-  switch(wakeup_reason) {
-    case ESP_SLEEP_WAKEUP_EXT0:
-      ESP_LOGI(TAG, "Wakeup caused by external signal using RTC_IO");
-      break;
-    case ESP_SLEEP_WAKEUP_EXT1:
-      ESP_LOGI(TAG, "Wakeup caused by external signal using RTC_CNTL");
-      break;
-    case ESP_SLEEP_WAKEUP_TIMER:
-      ESP_LOGI(TAG, "Wakeup caused by timer");
-      break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD:
-      ESP_LOGI(TAG, "Wakeup caused by touchpad");
-      break;
-    case ESP_SLEEP_WAKEUP_ULP:
-      ESP_LOGI(TAG, "Wakeup caused by ULP program");
-      break;
-    default:
-      ESP_LOGI(TAG, "Wakeup was not caused by deep sleep: %d", wakeup_reason);
-      break;
-  }
 }
 
 void loop() {
