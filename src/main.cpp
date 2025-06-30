@@ -15,6 +15,7 @@
 #include "api/dwd_weather_api.h"
 #include "util/util.h"
 #include "config/config_page.h"
+#include "config/config_manager.h" // Add new config manager
 #include "api/google_api.h" // Add this if getCityFromLatLon is declared here
 #include "util/power.h"
 #include "util/weather_print.h"
@@ -39,6 +40,38 @@ float g_lat = 0.0, g_lon = 0.0;
 MyStationConfig g_stationConfig;
 
 // --- Modularized Setup Functions ---
+void reconnectWiFi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    ESP_LOGD(TAG, "WiFi already connected: %s", WiFi.localIP().toString().c_str());
+    return; // Already connected
+  }
+  
+  ESP_LOGI(TAG, "WiFi disconnected, attempting to reconnect...");
+  
+  // Try to reconnect using saved credentials
+  if (g_stationConfig.ssid.length() > 0) {
+    ESP_LOGI(TAG, "Attempting to connect to saved SSID: %s", g_stationConfig.ssid.c_str());
+    WiFi.begin(g_stationConfig.ssid.c_str());
+    
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 3) {
+      delay(500);
+      ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
+      attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      ESP_LOGI(TAG, "WiFi reconnected successfully!");
+      ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
+      g_stationConfig.ipAddress = WiFi.localIP().toString();
+    } else {
+      ESP_LOGW(TAG, "Failed to reconnect to WiFi with saved credentials");
+    }
+  } else {
+    ESP_LOGW(TAG, "No saved WiFi credentials available for reconnection");
+  }
+}
+
 void setupWiFiAndMDNS(WiFiManager &wm, MyStationConfig &config) {
   ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
   const char *menu[] = {"wifi"};
@@ -90,16 +123,35 @@ void setupWebServer() {
   ESP_LOGI(TAG, "HTTP server started.");
 }
 
-void setup()
-{
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
+void setup() {
 
-  // Print wakeup reason first
-  printWakeupReason();
+  Serial.begin(115200);
+  delay(1000); // Allow time for serial monitor to connect
+  // Serial.setDebugOutput(true);
 
   esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
   ESP_LOGI(TAG, "System starting...");
+  
+  ConfigManager& configMgr = ConfigManager::getInstance();
+  
+  // Fast path: Try to load critical config from RTC memory first (after deep sleep)
+  if (!configMgr.isFirstBoot() && configMgr.loadCriticalFromRTC(g_stationConfig)) {
+    ESP_LOGI(TAG, "Fast wake: Using RTC config");
+    // We have the essential data, but still need WiFi for API calls
+    if (!inConfigMode && g_stationConfig.selectedStopId.length() > 0) {
+      ESP_LOGI(TAG, "Fast wake: Setting up minimal WiFi connection");
+      WiFiManager wm;
+      setupWiFiAndMDNS(wm, g_stationConfig);
+      
+      // Save updated config (especially SSID) back to NVS
+      configMgr.saveConfig(g_stationConfig);
+      
+      return; // Fast wake with WiFi connection
+    }
+  }
+  
+  // Slow path: Full boot or first-time setup
+  ESP_LOGI(TAG, "Full boot: Loading complete configuration");
   
   // Initialize config with defaults
   g_stationConfig.latitude = 0.0;
@@ -118,13 +170,15 @@ void setup()
     }
   }
 
-  // Load saved configuration if available
-  if (loadConfig(g_stationConfig)) {
-    ESP_LOGI(TAG, "Loaded saved configuration");
-    // If we have a valid config and not in config mode, skip WiFi setup for faster boot
+  // Load complete configuration from NVS (slower but complete)
+  if (configMgr.loadConfig(g_stationConfig)) {
+    ESP_LOGI(TAG, "Loaded complete configuration from NVS");
+    // If we have a valid config and not in config mode, we can still optimize
     if (!inConfigMode && g_stationConfig.selectedStopId.length() > 0) {
-      ESP_LOGI(TAG, "Using saved config, skipping full setup");
-      return; // Skip the rest of setup for faster wake from deep sleep
+      ESP_LOGI(TAG, "Using saved config, minimal setup");
+      // Still need WiFi for API calls, but can skip location lookup
+      setupWiFiAndMDNS(wm, g_stationConfig);
+      return;
     }
   } else {
     ESP_LOGI(TAG, "No saved config found, entering config mode");
@@ -139,21 +193,19 @@ void setup()
     getLocationFromGoogle(g_lat, g_lon);
     getCityFromLatLon(g_lat, g_lon);
     ESP_LOGI(TAG, "City set in setup: %s", g_stationConfig.cityName.c_str());
-    getNearbyStops();
   } else {
     // Use saved coordinates
     g_lat = g_stationConfig.latitude;
     g_lon = g_stationConfig.longitude;
     ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", 
-             g_stationConfig.cityName.c_str(), g_lat, g_lon);
+    g_stationConfig.cityName.c_str(), g_lat, g_lon);
   }
 
+  getNearbyStops();
   setupWebServer();
 }
 
 void loop() {
-  // --- Main Loop: Handles config mode and periodic updates ---
-  const int INTERVAL_SEC = 60; // 1 minute
 
   if (inConfigMode) {
     // Handle web server requests in config mode
@@ -161,12 +213,20 @@ void loop() {
     // When user finishes config, they should visit /done to exit config mode
   } else {
     loopCount++;
+    // Remove duplicate Serial.begin - it's already called in setup()
+    // Print wakeup reason first
+    printWakeupReason();
+    // Todo Print loop count everytime
+    ESP_LOGI(TAG, "Loop count: %lu", loopCount);
     // Print current time from NTP/RTC
     time_t now = time(nullptr);
     struct tm *timeinfo = localtime(&now);
     ESP_LOGI(TAG, "Current time: %04d-%02d-%02d %02d:%02d:%02d",
       timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
       timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+
+    // Ensure WiFi is connected before making API calls
+    reconnectWiFi();
 
     if (WiFi.status() == WL_CONNECTED) {
       // --- Main Data Fetch: Departure board and weather ---
@@ -195,7 +255,7 @@ void loop() {
     // Choose your preferred wakeup strategy:
     
     // Option 1: Wake up every 5 minutes (0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
-    uint64_t sleepTime = calculateSleepTime(5);
+    uint64_t sleepTime = calculateSleepTime(1);
     
     // Option 2: Wake up every 3 minutes (0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57)
     // uint64_t sleepTime = calculateSleepTime(3);

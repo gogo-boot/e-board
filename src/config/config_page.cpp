@@ -4,6 +4,7 @@
 #include <WebServer.h>
 #include "api/rmv_api.h"
 #include "config/config_struct.h"
+#include "config/config_manager.h"
 #include "../util/util.h"
 #include "esp_log.h"
 
@@ -114,6 +115,10 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
         server.send(405, "text/plain", "Method Not Allowed");
         return;
     }
+    
+    extern MyStationConfig g_stationConfig;
+    ConfigManager& configMgr = ConfigManager::getInstance();
+    
     // Parse JSON body
     DynamicJsonDocument doc(1024);
     DeserializationError err = deserializeJson(doc, server.arg("plain"));
@@ -121,29 +126,39 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
         server.send(400, "text/plain", "Invalid JSON");
         return;
     }
+    
     // Decode stopId if present
     if (doc.containsKey("stopId")) {
         String stopId = doc["stopId"].as<String>();
         doc["stopId"] = Util::urlDecode(stopId);
     }
+    
     // Print the entire doc object for debugging
     String docStr;
     serializeJsonPretty(doc, docStr);
     ESP_LOGI("CONFIG", "[Config] Received JSON:\n%s", docStr.c_str());
 
-    File f = LittleFS.open("/config.json", "w");
-    if (!f) {
-        server.send(500, "text/plain", "Failed to save config");
+    // Update global config structure
+    if (doc.containsKey("city")) g_stationConfig.cityName = doc["city"].as<String>();
+    if (doc.containsKey("cityLat")) g_stationConfig.latitude = doc["cityLat"].as<float>();
+    if (doc.containsKey("cityLon")) g_stationConfig.longitude = doc["cityLon"].as<float>();
+    if (doc.containsKey("stopId")) g_stationConfig.selectedStopId = doc["stopId"].as<String>();
+    if (doc.containsKey("stopName")) g_stationConfig.selectedStopName = doc["stopName"].as<String>();
+    
+    // Save to NVS (and RTC memory automatically)
+    if (!configMgr.saveConfig(g_stationConfig)) {
+        server.send(500, "text/plain", "Failed to save config to NVS");
         return;
     }
-    serializeJson(doc, f);
-    f.close();
+    
     inConfigMode = false;
+    
     // Switch to station mode only
     #ifdef ESP32
     WiFi.mode(WIFI_STA);
     WiFi.softAPdisconnect(true);
     #endif
+    
     server.send(200, "application/json", "{\"status\":\"ok\"}");
 }
 

@@ -97,9 +97,9 @@ void enterDeepSleep(uint64_t sleepTimeUs) {
   // Optional: Configure GPIO wakeup (e.g., for user button)
   // esp_sleep_enable_ext0_wakeup(GPIO_NUM_9, 0); // Wake on low signal on GPIO 9
   
-  // Power down WiFi and Bluetooth
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  // // Power down WiFi and Bluetooth
+  // WiFi.disconnect(true);
+  // WiFi.mode(WIFI_OFF);
   
   // Flush serial output
   Serial.flush();
