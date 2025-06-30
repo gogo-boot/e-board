@@ -18,6 +18,7 @@
 #include "api/google_api.h" // Add this if getCityFromLatLon is declared here
 #include "util/power.h"
 #include "util/weather_print.h"
+#include "util/sleep_utils.h"
 #include <time.h>
 #include "config/config_struct.h"
 #include <ESPmDNS.h>
@@ -203,27 +204,6 @@ void printWakeupReason() {
   }
 }
 
-// Enhanced deep sleep function
-void enterDeepSleep(uint64_t sleepTimeUs) {
-  ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTimeUs);
-  
-  // Configure timer wakeup
-  esp_sleep_enable_timer_wakeup(sleepTimeUs);
-  
-  // Optional: Configure GPIO wakeup (e.g., for user button)
-  // esp_sleep_enable_ext0_wakeup(GPIO_NUM_9, 0); // Wake on low signal on GPIO 9
-  
-  // Power down WiFi and Bluetooth
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  
-  // Flush serial output
-  Serial.flush();
-  
-  // Enter deep sleep
-  esp_deep_sleep_start();
-}
-
 void loop() {
   // --- Main Loop: Handles config mode and periodic updates ---
   const int INTERVAL_SEC = 60; // 1 minute
@@ -265,9 +245,29 @@ void loop() {
       ESP_LOGW(TAG, "WiFi not connected");
     }
 
-    int seconds_since_hour = timeinfo->tm_min * 60 + timeinfo->tm_sec;
-    int seconds_to_next = INTERVAL_SEC - (now % INTERVAL_SEC);
-    ESP_LOGI(TAG, "Current time: %02d:%02d:%02d, sleeping for %d seconds to next interval.", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec, seconds_to_next);
-    enterDeepSleep((uint64_t)seconds_to_next * 1000000ULL);
+    // Choose your preferred wakeup strategy:
+    
+    // Option 1: Wake up every 5 minutes (0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+    uint64_t sleepTime = calculateSleepTime(5);
+    
+    // Option 2: Wake up every 3 minutes (0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57)
+    // uint64_t sleepTime = calculateSleepTime(3);
+    
+    // Option 3: Wake up every 10 minutes (0, 10, 20, 30, 40, 50)
+    // uint64_t sleepTime = calculateSleepTime(10);
+    
+    // Option 4: Wake up at specific time (e.g., 01:00 every day)
+    // uint64_t sleepTime = calculateSleepUntilTime(1, 0); // 01:00
+    
+    // Option 5: Wake up at multiple specific times
+    // if (timeinfo->tm_hour >= 22 || timeinfo->tm_hour < 6) {
+    //   // Night mode: sleep until 06:00
+    //   uint64_t sleepTime = calculateSleepUntilTime(6, 0);
+    // } else {
+    //   // Day mode: wake every 5 minutes
+    //   uint64_t sleepTime = calculateSleepTime(5);
+    // }
+    
+    enterDeepSleep(sleepTime);
   }
 }
