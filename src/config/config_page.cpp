@@ -5,8 +5,54 @@
 #include "api/rmv_api.h"
 #include "config/config_struct.h"
 #include "../util/util.h"
+#include "esp_log.h"
+
+static const char* TAG = "CONFIG";
 
 extern float g_lat, g_lon;
+
+// Load configuration from JSON file into g_stationConfig
+bool loadConfig(MyStationConfig &config) {
+    if (!LittleFS.exists("/config.json")) {
+        ESP_LOGW(TAG, "Config file not found, using defaults");
+        return false;
+    }
+    
+    File f = LittleFS.open("/config.json", "r");
+    if (!f) {
+        ESP_LOGE(TAG, "Failed to open config file");
+        return false;
+    }
+    
+    DynamicJsonDocument doc(1024);
+    DeserializationError err = deserializeJson(doc, f);
+    f.close();
+    
+    if (err) {
+        ESP_LOGE(TAG, "Failed to parse config JSON: %s", err.c_str());
+        return false;
+    }
+    
+    // Load values from JSON into config struct
+    if (doc.containsKey("city")) config.cityName = doc["city"].as<String>();
+    if (doc.containsKey("cityLat")) config.latitude = doc["cityLat"].as<float>();
+    if (doc.containsKey("cityLon")) config.longitude = doc["cityLon"].as<float>();
+    if (doc.containsKey("stopId")) config.selectedStopId = doc["stopId"].as<String>();
+    if (doc.containsKey("stopName")) config.selectedStopName = doc["stopName"].as<String>();
+    
+    // Load ÖPNV filters
+    if (doc.containsKey("filters")) {
+        config.oepnvFilters.clear();
+        JsonArray filters = doc["filters"];
+        for (JsonVariant v : filters) {
+            config.oepnvFilters.push_back(v.as<String>());
+        }
+    }
+    
+    ESP_LOGI(TAG, "Config loaded: City=%s, Stop=%s, Filters=%d", 
+             config.cityName.c_str(), config.selectedStopName.c_str(), config.oepnvFilters.size());
+    return true;
+}
 
 void handleStationSelect(WebServer &server) {
     extern MyStationConfig g_stationConfig;
