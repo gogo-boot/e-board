@@ -15,6 +15,7 @@
 #include "api/dwd_weather_api.h"
 #include "util/util.h"
 #include "config/config_page.h"
+#include "config/config_manager.h" // Add new config manager
 #include "api/google_api.h" // Add this if getCityFromLatLon is declared here
 #include "util/power.h"
 #include "util/weather_print.h"
@@ -101,6 +102,21 @@ void setup()
   esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
   ESP_LOGI(TAG, "System starting...");
   
+  ConfigManager& configMgr = ConfigManager::getInstance();
+  
+  // Fast path: Try to load critical config from RTC memory first (after deep sleep)
+  if (!configMgr.isFirstBoot() && configMgr.loadCriticalFromRTC(g_stationConfig)) {
+    ESP_LOGI(TAG, "Fast wake: Using RTC config");
+    // We have the essential data, skip full setup for speed
+    if (!inConfigMode && g_stationConfig.selectedStopId.length() > 0) {
+      ESP_LOGI(TAG, "Fast wake complete, skipping full setup");
+      return; // Ultra-fast wake for regular operation
+    }
+  }
+  
+  // Slow path: Full boot or first-time setup
+  ESP_LOGI(TAG, "Full boot: Loading complete configuration");
+  
   // Initialize config with defaults
   g_stationConfig.latitude = 0.0;
   g_stationConfig.longitude = 0.0;
@@ -118,13 +134,15 @@ void setup()
     }
   }
 
-  // Load saved configuration if available
-  if (loadConfig(g_stationConfig)) {
-    ESP_LOGI(TAG, "Loaded saved configuration");
-    // If we have a valid config and not in config mode, skip WiFi setup for faster boot
+  // Load complete configuration from NVS (slower but complete)
+  if (configMgr.loadConfig(g_stationConfig)) {
+    ESP_LOGI(TAG, "Loaded complete configuration from NVS");
+    // If we have a valid config and not in config mode, we can still optimize
     if (!inConfigMode && g_stationConfig.selectedStopId.length() > 0) {
-      ESP_LOGI(TAG, "Using saved config, skipping full setup");
-      return; // Skip the rest of setup for faster wake from deep sleep
+      ESP_LOGI(TAG, "Using saved config, minimal setup");
+      // Still need WiFi for API calls, but can skip location lookup
+      setupWiFiAndMDNS(wm, g_stationConfig);
+      return;
     }
   } else {
     ESP_LOGI(TAG, "No saved config found, entering config mode");
