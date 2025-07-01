@@ -86,11 +86,13 @@ void getNearbyStops() {
           const char* name = stop["name"] | "";
           float lon = stop["lon"] | 0.0;
           float lat = stop["lat"] | 0.0;
+          int dist = stop["dist"] | 0; 
           int products = stop["products"] | 0;
           String type = (products & 64) ? "train" : "bus"; // Example: RMV uses bitmask for products
           stations.push_back({String(id), String(name), type});
           g_stationConfig.stopIds.push_back(id);
           g_stationConfig.stopNames.push_back(name);
+          g_stationConfig.stopDistances.push_back(dist);
           ESP_LOGI(TAG, "Stop ID: %s, Name: %s, Lon: %f, Lat: %f, Type: %s", id, name, lon, lat, type.c_str());
         }
       }
