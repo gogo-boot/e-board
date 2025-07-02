@@ -743,8 +743,8 @@
         document.getElementById('weekend-config').style.display = 'block';
       }
       
-      // Set saved filter chips - this should be replaced with actual data
-      var savedFilters = []; // Replace {{SAVED_FILTERS}} with actual array
+      // Set saved filter chips from server template
+      var savedFilters = {{SAVED_FILTERS}};
       if (savedFilters && savedFilters.length > 0) {
         var allChips = document.querySelectorAll('.chip');
         allChips.forEach(function(chip) {

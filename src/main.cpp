@@ -183,8 +183,7 @@ bool hasConfigInNVS() {
   ConfigManager& configMgr = ConfigManager::getInstance();
   
   // Load configuration from NVS
-  MyStationConfig testConfig;
-  bool configExists = configMgr.loadConfig(testConfig);
+  bool configExists = configMgr.loadConfig(g_stationConfig);
   
   if (!configExists) {
     ESP_LOGI(TAG, "No configuration found in NVS");
@@ -192,16 +191,17 @@ bool hasConfigInNVS() {
   }
   
   // Validate critical configuration fields
-  bool hasValidConfig = (testConfig.selectedStopId.length() > 0 && 
-                        testConfig.ssid.length() > 0 &&
-                        testConfig.latitude != 0.0 && 
-                        testConfig.longitude != 0.0);
+  bool hasValidConfig = (g_stationConfig.selectedStopId.length() > 0 && 
+                        g_stationConfig.ssid.length() > 0 &&
+                        g_stationConfig.latitude != 0.0 && 
+                        g_stationConfig.longitude != 0.0);
   
+  ESP_LOGI(TAG, "- SSID: %s", g_stationConfig.ssid.c_str());
+  ESP_LOGI(TAG, "- Stop: %s (%s)", g_stationConfig.selectedStopName.c_str(), g_stationConfig.selectedStopId.c_str());
+  ESP_LOGI(TAG, "- Location: %s (%f, %f)", g_stationConfig.cityName.c_str(), g_stationConfig.latitude, g_stationConfig.longitude);
+
   if (hasValidConfig) {
     ESP_LOGI(TAG, "Valid configuration found in NVS");
-    ESP_LOGI(TAG, "- SSID: %s", testConfig.ssid.c_str());
-    ESP_LOGI(TAG, "- Stop: %s (%s)", testConfig.selectedStopName.c_str(), testConfig.selectedStopId.c_str());
-    ESP_LOGI(TAG, "- Location: %s (%f, %f)", testConfig.cityName.c_str(), testConfig.latitude, testConfig.longitude);
     return true;
   } else {
     ESP_LOGI(TAG, "Incomplete configuration in NVS, missing critical fields");

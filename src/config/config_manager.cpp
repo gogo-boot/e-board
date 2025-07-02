@@ -19,7 +19,7 @@ bool ConfigManager::loadConfig(MyStationConfig &config) {
     }
     
     // Load from NVS (slower but complete data)
-    config.latitude = preferences.getFloat("lat", 0.0);
+    config.latitude = preferences.getFloat("cityLat", 0.0);
     config.longitude = preferences.getFloat("lon", 0.0);
     config.cityName = preferences.getString("city", "");
     config.selectedStopId = preferences.getString("stopId", "");
@@ -135,29 +135,4 @@ bool ConfigManager::loadCriticalFromRTC(MyStationConfig &config) {
 
 bool ConfigManager::isFirstBoot() {
     return !ConfigManager::rtcConfig.isValid;
-}
-
-bool ConfigManager::loadConfigMode() {
-    if (!preferences.begin("mystation", true)) { // readonly mode
-        ESP_LOGE(TAG, "Failed to open NVS for reading config mode");
-        return true; // Default to config mode if NVS access fails
-    }
-    
-    bool configMode = preferences.getBool("configMode", true); // Default to true (config mode)
-    preferences.end();
-    
-    ESP_LOGI(TAG, "Config mode loaded from NVS: %s", configMode ? "true" : "false");
-    return configMode;
-}
-
-void ConfigManager::saveConfigMode(bool configMode) {
-    if (!preferences.begin("mystation", false)) { // read-write mode
-        ESP_LOGE(TAG, "Failed to open NVS for writing config mode");
-        return;
-    }
-    
-    preferences.putBool("configMode", configMode);
-    preferences.end();
-    
-    ESP_LOGI(TAG, "Config mode saved to NVS: %s", configMode ? "true" : "false");
 }

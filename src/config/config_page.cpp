@@ -7,6 +7,7 @@
 #include "config/config_manager.h"
 #include "../util/util.h"
 #include "esp_log.h"
+#include <util/sleep_utils.h>
 
 static const char* TAG = "CONFIG";
 
@@ -119,7 +120,7 @@ void handleConfigPage(WebServer &server) {
   // Separate Router (SSID) and IP info
   page.replace("{{ROUTER}}", g_stationConfig.ssid);
   page.replace("{{IP}}", g_stationConfig.ipAddress); // Replace with IP info if available
-  page.replace("{{MDNS}}", g_stationConfig.ssid + ".local"); // mDNS hostname
+  page.replace("{{MDNS}}", ".local"); // mDNS hostname
   
   // Replace configuration values with current settings
   page.replace("{{WEATHER_INTERVAL}}", String(g_stationConfig.weatherInterval));
@@ -224,6 +225,8 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
     #endif
     
     server.send(200, "application/json", "{\"status\":\"ok\"}");
+
+    enterDeepSleep(1 * 1000000); // Enter deep sleep for 1 seconds
 }
 
 // AJAX handler to resolve station/stop name (GET /api/stop?q=...)
