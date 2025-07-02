@@ -32,6 +32,10 @@ public:
     // Check if this is first boot or wake from deep sleep
     bool isFirstBoot();
     
+    // Config mode state management (persists across power loss)
+    bool loadConfigMode();
+    void saveConfigMode(bool configMode);
+    
 private:
     ConfigManager() = default;
     Preferences preferences;

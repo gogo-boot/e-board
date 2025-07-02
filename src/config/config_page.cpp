@@ -214,6 +214,9 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
     
     inConfigMode = false;
     
+    // Save config mode to NVS (persists across power loss)
+    configMgr.saveConfigMode(false);
+    
     // Switch to station mode only
     #ifdef ESP32
     WiFi.mode(WIFI_STA);

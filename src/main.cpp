@@ -33,7 +33,7 @@ bool loadConfig(MyStationConfig &config);
 
 // --- Globals ---
 WebServer server(80);
-RTC_DATA_ATTR bool inConfigMode = true;
+RTC_DATA_ATTR bool inConfigMode = true; // RTC memory for fast access during deep sleep
 RTC_DATA_ATTR unsigned long loopCount = 0;
 
 float g_lat = 0.0, g_lon = 0.0;
@@ -164,6 +164,19 @@ void setup() {
   ESP_LOGI(TAG, "System starting...");
   
   ConfigManager& configMgr = ConfigManager::getInstance();
+  
+  // On power-up (not deep sleep wake), load config mode state from NVS
+  // This ensures config mode persists across power loss (battery change)
+  if (configMgr.isFirstBoot()) {
+    // This is a fresh boot (power loss/reset), load config mode from NVS
+    bool nvsConfigMode = configMgr.loadConfigMode();
+    inConfigMode = nvsConfigMode; // Sync RTC variable with NVS value
+    ESP_LOGI(TAG, "Fresh boot: Loaded config mode from NVS: %s", 
+             inConfigMode ? "true" : "false");
+  } else {
+    ESP_LOGI(TAG, "Deep sleep wake: Using RTC config mode: %s", 
+             inConfigMode ? "true" : "false");
+  }
   
   // Fast path: After deep sleep wake-up
   if (!configMgr.isFirstBoot() && configMgr.loadCriticalFromRTC(g_stationConfig)) {
@@ -296,6 +309,9 @@ void setup() {
   } else {
     ESP_LOGI(TAG, "No saved config found, entering config mode");
     inConfigMode = true;
+    
+    // Save config mode to NVS (persists across power loss)
+    configMgr.saveConfigMode(true);
   }
 
   // Full initial configuration setup (only for first time or config mode)
