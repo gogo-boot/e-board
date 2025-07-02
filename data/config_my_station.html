@@ -227,7 +227,7 @@
           </span>
         </div>
         <div class="config-row">
-          <select id="rmv-interval">
+          <select id="transport-interval">
             <option value="1">Jede Minute</option>
             <option value="2">Alle 2 Minuten</option>
             <option value="3" selected>Alle 3 Minuten</option>
@@ -248,7 +248,7 @@
           </span>
         </div>
         <div class="config-row">
-          <input type="number" id="walking-time" min="0" max="30" value="5" style="width: 100px;">
+          <input type="number" id="walking-time" min="0" max="30" value="{{WALKING_TIME}}" style="width: 100px;">
           <span>Minuten</span>
         </div>
         <div class="help-text">Filtert zu kurzfristige Abfahrten aus. Standard: 5 Minuten Gehzeit.</div>
@@ -265,9 +265,9 @@
       <div class="config-row">
         <div class="time-range">
           <span>Von:</span>
-          <input type="time" id="rmv-active-start" value="06:00">
+          <input type="time" id="transport-active-start" value="{{TRANSPORT_ACTIVE_START}}">
           <span>Bis:</span>
-          <input type="time" id="rmv-active-end" value="09:00">
+          <input type="time" id="transport-active-end" value="{{TRANSPORT_ACTIVE_END}}">
         </div>
       </div>
       <div class="help-text">Nur während dieser Zeiten werden Abfahrten aktualisiert. Außerhalb: Deep Sleep spart Batterie.</div>
@@ -286,9 +286,9 @@
       <div class="config-row">
         <div class="time-range">
           <span>Nachtruhe von:</span>
-          <input type="time" id="sleep-start" value="22:30">
+          <input type="time" id="sleep-start" value="{{SLEEP_START}}">
           <span>bis:</span>
-          <input type="time" id="sleep-end" value="05:30">
+          <input type="time" id="sleep-end" value="{{SLEEP_END}}">
         </div>
       </div>
       <div class="warning">
@@ -304,24 +304,24 @@
         </span>
       </div>
       <div class="config-row">
-        <input type="checkbox" id="weekend-mode">
+        <input type="checkbox" id="weekend-mode" {{WEEKEND_MODE}}>
         <span>Andere Zeiten am Wochenende</span>
       </div>
       <div id="weekend-config" style="display: none; margin-top: 0.5em;">
         <div class="config-row">
           <div class="time-range">
             <span>Wochenende Abfahrten aktiv:</span>
-            <input type="time" id="weekend-rmv-start" value="08:00">
+            <input type="time" id="weekend-transport-start" value="{{WEEKEND_TRANSPORT_START}}">
             <span>bis:</span>
-            <input type="time" id="weekend-rmv-end" value="20:00">
+            <input type="time" id="weekend-transport-end" value="{{WEEKEND_TRANSPORT_END}}">
           </div>
         </div>
         <div class="config-row">
           <div class="time-range">
             <span>Wochenende Sleep:</span>
-            <input type="time" id="weekend-sleep-start" value="23:00">
+            <input type="time" id="weekend-sleep-start" value="{{WEEKEND_SLEEP_START}}">
             <span>bis:</span>
-            <input type="time" id="weekend-sleep-end" value="07:00">
+            <input type="time" id="weekend-sleep-end" value="{{WEEKEND_SLEEP_END}}">
           </div>
         </div>
       </div>
@@ -653,15 +653,15 @@
       
       // Collect new configuration values
       var weatherInterval = document.getElementById('weather-interval').value;
-      var rmvInterval = document.getElementById('rmv-interval').value;
-      var rmvActiveStart = document.getElementById('rmv-active-start').value;
-      var rmvActiveEnd = document.getElementById('rmv-active-end').value;
+      var transportInterval = document.getElementById('transport-interval').value;
+      var transportActiveStart = document.getElementById('transport-active-start').value;
+      var transportActiveEnd = document.getElementById('transport-active-end').value;
       var walkingTime = document.getElementById('walking-time').value;
       var sleepStart = document.getElementById('sleep-start').value;
       var sleepEnd = document.getElementById('sleep-end').value;
       var weekendMode = document.getElementById('weekend-mode').checked;
-      var weekendRmvStart = document.getElementById('weekend-rmv-start').value;
-      var weekendRmvEnd = document.getElementById('weekend-rmv-end').value;
+      var weekendTransportStart = document.getElementById('weekend-transport-start').value;
+      var weekendTransportEnd = document.getElementById('weekend-transport-end').value;
       var weekendSleepStart = document.getElementById('weekend-sleep-start').value;
       var weekendSleepEnd = document.getElementById('weekend-sleep-end').value;
       
@@ -673,15 +673,15 @@
         stopName: stopName,
         filters: filters,
         weatherInterval: parseInt(weatherInterval),
-        rmvInterval: parseInt(rmvInterval),
-        rmvActiveStart: rmvActiveStart,
-        rmvActiveEnd: rmvActiveEnd,
+        transportInterval: parseInt(transportInterval),
+        transportActiveStart: transportActiveStart,
+        transportActiveEnd: transportActiveEnd,
         walkingTime: parseInt(walkingTime),
         sleepStart: sleepStart,
         sleepEnd: sleepEnd,
         weekendMode: weekendMode,
-        weekendRmvStart: weekendRmvStart,
-        weekendRmvEnd: weekendRmvEnd,
+        weekendTransportStart: weekendTransportStart,
+        weekendTransportEnd: weekendTransportEnd,
         weekendSleepStart: weekendSleepStart,
         weekendSleepEnd: weekendSleepEnd
       };
@@ -715,9 +715,9 @@
     function calculateBatteryUsage() {
       // Get current settings
       var weatherInterval = parseInt(document.getElementById('weather-interval').value) || 3;
-      var transportInterval = parseInt(document.getElementById('rmv-interval').value) || 3;
-      var activeStart = document.getElementById('rmv-active-start').value || "06:00";
-      var activeEnd = document.getElementById('rmv-active-end').value || "09:00";
+      var transportInterval = parseInt(document.getElementById('transport-interval').value) || 3;
+      var activeStart = document.getElementById('transport-active-start').value || "06:00";
+      var activeEnd = document.getElementById('transport-active-end').value || "09:00";
       var sleepStart = document.getElementById('sleep-start').value || "22:30";
       var sleepEnd = document.getElementById('sleep-end').value || "05:30";
       
@@ -773,14 +773,53 @@
     
     // Add event listeners to recalculate on changes
     document.getElementById('weather-interval').addEventListener('change', calculateBatteryUsage);
-    document.getElementById('rmv-interval').addEventListener('change', calculateBatteryUsage);
-    document.getElementById('rmv-active-start').addEventListener('change', calculateBatteryUsage);
-    document.getElementById('rmv-active-end').addEventListener('change', calculateBatteryUsage);
+    document.getElementById('transport-interval').addEventListener('change', calculateBatteryUsage);
+    document.getElementById('transport-active-start').addEventListener('change', calculateBatteryUsage);
+    document.getElementById('transport-active-end').addEventListener('change', calculateBatteryUsage);
     document.getElementById('sleep-start').addEventListener('change', calculateBatteryUsage);
     document.getElementById('sleep-end').addEventListener('change', calculateBatteryUsage);
     
     // Calculate on page load
     setTimeout(calculateBatteryUsage, 100);
+    
+    // Set saved configuration values on page load
+    setTimeout(function() {
+      // Set weather interval selection
+      var weatherInterval = "{{WEATHER_INTERVAL}}";
+      if (weatherInterval && document.getElementById('weather-interval')) {
+        document.getElementById('weather-interval').value = weatherInterval;
+      }
+      
+      // Set transport interval selection  
+      var transportInterval = "{{TRANSPORT_INTERVAL}}";
+      if (transportInterval && document.getElementById('transport-interval')) {
+        document.getElementById('transport-interval').value = transportInterval;
+      }
+      
+      // Set weekend mode display if enabled
+      var weekendMode = "{{WEEKEND_MODE}}" === "checked";
+      if (weekendMode && document.getElementById('weekend-config')) {
+        document.getElementById('weekend-config').style.display = 'block';
+      }
+      
+      // Set saved filter chips
+      var savedFilters = {{SAVED_FILTERS}};
+      if (savedFilters && savedFilters.length > 0) {
+        // First deactivate all chips
+        var allChips = document.querySelectorAll('.chip');
+        allChips.forEach(function(chip) {
+          chip.classList.remove('active');
+        });
+        
+        // Then activate saved filters
+        savedFilters.forEach(function(filterType) {
+          var chip = document.querySelector('.chip[data-type="' + filterType + '"]');
+          if (chip) {
+            chip.classList.add('active');
+          }
+        });
+      }
+    }, 150);
   </script>
 </body>
 </html>
