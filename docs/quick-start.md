@@ -8,6 +8,28 @@ Get your MyStation E-Board up and running in 5 minutes!
 - [ ] API keys configured (Google, RMV)
 - [ ] Firmware compiled and uploaded
 
+## Understanding Device Boot Process
+
+### First Boot (Fresh Device)
+When you power on the device for the first time:
+- Device automatically detects it has no saved configuration
+- Enters **Configuration Mode** and creates WiFi hotspot
+- Waits for user to complete initial setup
+- All settings are permanently saved to flash memory
+
+### Subsequent Boots
+After initial configuration:
+- Device loads saved settings from flash memory
+- Connects directly to your WiFi network
+- Starts normal operation (fetch data → display → sleep)
+- No manual intervention needed
+
+### Power Loss Recovery
+If battery dies or power is disconnected:
+- Configuration remains safely stored in flash memory
+- Device automatically resumes normal operation when powered on
+- No need to reconfigure WiFi or preferences
+
 ## Step 1: First Boot
 
 ### Power On
@@ -16,12 +38,17 @@ Get your MyStation E-Board up and running in 5 minutes!
 3. Look for startup messages:
    ```
    [MAIN] System starting...
+   [MAIN] Fresh boot: Loaded config mode from NVS: true
    [MAIN] WiFiManager AP mode started
    [MAIN] AP SSID: MyStation-ABCD1234
    ```
 
 ### Initial Configuration Mode
-The device starts in **configuration mode** on first boot.
+The device starts in **configuration mode** on first boot and will:
+- Create a WiFi access point for setup
+- Wait for user configuration via web interface
+- Save all settings permanently to flash memory
+- Switch to operational mode after configuration
 
 ## Step 2: WiFi Setup
 
@@ -85,10 +112,38 @@ The configuration page allows you to:
 3. **Wait for confirmation** message
 4. **Device will restart** in operational mode
 
-## Step 5: Normal Operation
+## Step 5: Configuration Complete & Transition
+
+### What Happens After Saving
+When you save the configuration:
+
+1. **Settings Stored Permanently**: All preferences saved to flash memory (NVS)
+   - WiFi credentials
+   - Selected transport stop and filters
+   - Update intervals and display preferences
+   - Location coordinates and city name
+
+2. **Device Restarts Automatically**: Switches from configuration mode to operational mode
+
+3. **Normal Operation Begins**: Device will now:
+   - Connect directly to your WiFi
+   - Start fetching real-time data
+   - Update the display
+   - Enter power-saving deep sleep between updates
+
+### Future Boots
+From now on, every time the device powers on:
+- **Loads saved configuration** from permanent storage
+- **Connects to WiFi automatically** (no hotspot created)
+- **Starts normal operation immediately** (no configuration needed)
+- **Runs indefinitely** with your saved preferences
+
+> **💡 Important**: Configuration persists across power loss, battery changes, and firmware updates. The device only enters configuration mode again if explicitly reset or if configuration is corrupted.
+
+## Step 6: Normal Operation
 
 ### Operational Mode
-After configuration, the device:
+In normal operation, the device:
 1. **Wakes up** at configured intervals
 2. **Fetches data**: Transport departures + weather
 3. **Updates display**: Shows current information
@@ -111,7 +166,7 @@ After configuration, the device:
 - **Status indicators**: WiFi connection, battery level
 - **Last updated**: Timestamp of data refresh
 
-## Step 6: Verification
+## Step 7: Verification
 
 ### Check Operation
 Monitor for 15-30 minutes to verify:

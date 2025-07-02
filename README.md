@@ -81,7 +81,79 @@ flowchart TD
 - **Deep Sleep**: Battery-optimized operation
 - **Web Interface**: Configuration and status
 
-## 🔋 Power Management
+## � Boot Process & Device States
+
+### First Boot (Initial Setup)
+When the device is powered on for the first time:
+
+1. **Enters Configuration Mode** automatically
+2. **Creates WiFi Access Point** (`MyStation-XXXXXXXX`)
+3. **Waits for user setup** via web interface at `http://10.0.1.1`
+4. **User configures**:
+   - WiFi SSID and password
+   - Preferred transport stations and filters
+   - Update intervals and display preferences
+5. **Saves configuration permanently** to flash memory (NVS)
+6. **Switches to operational mode** and begins normal operation
+
+### After Configuration (Normal Operation)
+Once configured, the device operates autonomously:
+
+1. **Connects to saved WiFi network** automatically
+2. **Fetches real-time data** (departures, weather)
+3. **Updates e-paper display** with current information
+4. **Enters deep sleep** until next scheduled update
+5. **Repeats cycle** based on configured intervals
+
+### Power Loss and Restart
+When power is restored after battery change or power interruption:
+
+1. **Loads configuration from flash memory** (NVS - Non-Volatile Storage)
+2. **Resumes normal operation** with saved preferences
+3. **No reconfiguration needed** - all settings persist
+4. **Continues with scheduled updates** as configured
+
+### Reboot/Reset
+After manual reset or firmware update:
+
+1. **Detects previous configuration** in flash memory
+2. **Automatically resumes operational mode** if configured
+3. **Preserves all user settings** including:
+   - WiFi credentials
+   - Station preferences and filters
+   - Update intervals
+   - Location data
+4. **Skips configuration mode** and starts normal operation immediately
+
+> **💡 Configuration Persistence**: All settings are permanently stored in flash memory and survive power loss, reboots, and firmware updates. The device only enters configuration mode on first boot or when explicitly requested.
+
+### Boot Process Flow
+```mermaid
+flowchart TD
+    Start([Power On / Reset]) --> CheckConfig{Configuration\nExists?}
+    CheckConfig -->|No| ConfigMode[Configuration Mode]
+    CheckConfig -->|Yes| LoadConfig[Load Saved Settings]
+    
+    ConfigMode --> CreateAP[Create WiFi Hotspot\nMyStation-XXXXXXXX]
+    CreateAP --> WebServer[Start Web Server\nhttp://10.0.1.1]
+    WebServer --> UserConfig[User Configures\nWiFi & Preferences]
+    UserConfig --> SaveConfig[Save to Flash Memory\n+ NVS Storage]
+    SaveConfig --> Restart[Device Restarts]
+    Restart --> LoadConfig
+    
+    LoadConfig --> ConnectWiFi[Connect to\nSaved WiFi Network]
+    ConnectWiFi --> FetchData[Fetch Transport\n+ Weather Data]
+    FetchData --> UpdateDisplay[Update\nE-Paper Display]
+    UpdateDisplay --> DeepSleep[Enter Deep Sleep\nUntil Next Interval]
+    DeepSleep --> WakeUp[Wake Up Timer]
+    WakeUp --> ConnectWiFi
+    
+    style ConfigMode fill:#ff9999
+    style LoadConfig fill:#99ff99
+    style DeepSleep fill:#9999ff
+```
+
+## �🔋 Power Management
 
 - **Active Mode**: ~100mA (during data fetch)
 - **Deep Sleep**: <50μA (between updates)  
