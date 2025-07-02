@@ -41,6 +41,20 @@ bool loadConfig(MyStationConfig &config) {
     if (doc.containsKey("stopId")) config.selectedStopId = doc["stopId"].as<String>();
     if (doc.containsKey("stopName")) config.selectedStopName = doc["stopName"].as<String>();
     
+    // Load new configuration values
+    if (doc.containsKey("weatherInterval")) config.weatherInterval = doc["weatherInterval"].as<int>();
+    if (doc.containsKey("transportInterval")) config.transportInterval = doc["transportInterval"].as<int>();
+    if (doc.containsKey("transportActiveStart")) config.transportActiveStart = doc["transportActiveStart"].as<String>();
+    if (doc.containsKey("transportActiveEnd")) config.transportActiveEnd = doc["transportActiveEnd"].as<String>();
+    if (doc.containsKey("walkingTime")) config.walkingTime = doc["walkingTime"].as<int>();
+    if (doc.containsKey("sleepStart")) config.sleepStart = doc["sleepStart"].as<String>();
+    if (doc.containsKey("sleepEnd")) config.sleepEnd = doc["sleepEnd"].as<String>();
+    if (doc.containsKey("weekendMode")) config.weekendMode = doc["weekendMode"].as<bool>();
+    if (doc.containsKey("weekendTransportStart")) config.weekendTransportStart = doc["weekendTransportStart"].as<String>();
+    if (doc.containsKey("weekendTransportEnd")) config.weekendTransportEnd = doc["weekendTransportEnd"].as<String>();
+    if (doc.containsKey("weekendSleepStart")) config.weekendSleepStart = doc["weekendSleepStart"].as<String>();
+    if (doc.containsKey("weekendSleepEnd")) config.weekendSleepEnd = doc["weekendSleepEnd"].as<String>();
+    
     // Load ÖPNV filters
     if (doc.containsKey("filters")) {
         config.oepnvFilters.clear();
@@ -105,6 +119,30 @@ void handleConfigPage(WebServer &server) {
   // Separate Router (SSID) and IP info
   page.replace("{{ROUTER}}", g_stationConfig.ssid);
   page.replace("{{IP}}", g_stationConfig.ipAddress); // Replace with IP info if available
+  page.replace("{{MDNS}}", g_stationConfig.ssid + ".local"); // mDNS hostname
+  
+  // Replace configuration values with current settings
+  page.replace("{{WEATHER_INTERVAL}}", String(g_stationConfig.weatherInterval));
+  page.replace("{{TRANSPORT_INTERVAL}}", String(g_stationConfig.transportInterval));
+  page.replace("{{TRANSPORT_ACTIVE_START}}", g_stationConfig.transportActiveStart);
+  page.replace("{{TRANSPORT_ACTIVE_END}}", g_stationConfig.transportActiveEnd);
+  page.replace("{{WALKING_TIME}}", String(g_stationConfig.walkingTime));
+  page.replace("{{SLEEP_START}}", g_stationConfig.sleepStart);
+  page.replace("{{SLEEP_END}}", g_stationConfig.sleepEnd);
+  page.replace("{{WEEKEND_MODE}}", g_stationConfig.weekendMode ? "checked" : "");
+  page.replace("{{WEEKEND_TRANSPORT_START}}", g_stationConfig.weekendTransportStart);
+  page.replace("{{WEEKEND_TRANSPORT_END}}", g_stationConfig.weekendTransportEnd);
+  page.replace("{{WEEKEND_SLEEP_START}}", g_stationConfig.weekendSleepStart);
+  page.replace("{{WEEKEND_SLEEP_END}}", g_stationConfig.weekendSleepEnd);
+  
+  // Build JavaScript array for saved filters
+  String filtersJs = "[";
+  for (size_t i = 0; i < g_stationConfig.oepnvFilters.size(); i++) {
+    if (i > 0) filtersJs += ",";
+    filtersJs += "\"" + g_stationConfig.oepnvFilters[i] + "\"";
+  }
+  filtersJs += "]";
+  page.replace("{{SAVED_FILTERS}}", filtersJs);
 
   server.send(200, "text/html; charset=utf-8", page);
 }
@@ -144,6 +182,29 @@ void handleSaveConfig(WebServer &server,bool &inConfigMode) {
     if (doc.containsKey("cityLon")) g_stationConfig.longitude = doc["cityLon"].as<float>();
     if (doc.containsKey("stopId")) g_stationConfig.selectedStopId = doc["stopId"].as<String>();
     if (doc.containsKey("stopName")) g_stationConfig.selectedStopName = doc["stopName"].as<String>();
+    
+    // Update ÖPNV filters
+    if (doc.containsKey("filters")) {
+        g_stationConfig.oepnvFilters.clear();
+        JsonArray filters = doc["filters"];
+        for (JsonVariant v : filters) {
+            g_stationConfig.oepnvFilters.push_back(v.as<String>());
+        }
+    }
+    
+    // Update new configuration values
+    if (doc.containsKey("weatherInterval")) g_stationConfig.weatherInterval = doc["weatherInterval"].as<int>();
+    if (doc.containsKey("transportInterval")) g_stationConfig.transportInterval = doc["transportInterval"].as<int>();
+    if (doc.containsKey("transportActiveStart")) g_stationConfig.transportActiveStart = doc["transportActiveStart"].as<String>();
+    if (doc.containsKey("transportActiveEnd")) g_stationConfig.transportActiveEnd = doc["transportActiveEnd"].as<String>();
+    if (doc.containsKey("walkingTime")) g_stationConfig.walkingTime = doc["walkingTime"].as<int>();
+    if (doc.containsKey("sleepStart")) g_stationConfig.sleepStart = doc["sleepStart"].as<String>();
+    if (doc.containsKey("sleepEnd")) g_stationConfig.sleepEnd = doc["sleepEnd"].as<String>();
+    if (doc.containsKey("weekendMode")) g_stationConfig.weekendMode = doc["weekendMode"].as<bool>();
+    if (doc.containsKey("weekendTransportStart")) g_stationConfig.weekendTransportStart = doc["weekendTransportStart"].as<String>();
+    if (doc.containsKey("weekendTransportEnd")) g_stationConfig.weekendTransportEnd = doc["weekendTransportEnd"].as<String>();
+    if (doc.containsKey("weekendSleepStart")) g_stationConfig.weekendSleepStart = doc["weekendSleepStart"].as<String>();
+    if (doc.containsKey("weekendSleepEnd")) g_stationConfig.weekendSleepEnd = doc["weekendSleepEnd"].as<String>();
     
     // Save to NVS (and RTC memory automatically)
     if (!configMgr.saveConfig(g_stationConfig)) {

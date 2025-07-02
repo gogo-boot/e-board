@@ -7,6 +7,7 @@
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #f4f6fa; color: #222; }
     .container { max-width: 800px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; box-sizing: border-box; width: 100%; }
+    .container { max-width: 800px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; box-sizing: border-box; width: 100%; }
     h1 { font-size: 1.7em; margin-bottom: 1em; text-align: center; letter-spacing: 1px; }
     .chapter { font-size: 1.15em; font-weight: 600; color: #007aff; margin-top: 2em; margin-bottom: 0.5em; border-left: 4px solid #007aff; padding-left: 0.7em; background: #eaf6ff; border-radius: 6px; }
     .section { margin-bottom: 1.5em; }
@@ -14,9 +15,78 @@
     .row { display: flex; align-items: center; justify-content: space-between; }
     .edit-btn { background: none; border: none; color: #007aff; font-size: 1em; cursor: pointer; margin-left: 0.5em; }
     input[type=text], input[type=number], input[type=time], select { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+    input[type=text], input[type=number], input[type=time], select { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.3em; justify-content: flex-start; }
     .chip { display: inline-block; padding: 0.25em 0.8em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; font-size: 0.97em; margin-right: 0.2em; margin-bottom: 0.2em; white-space: nowrap; min-width: unset; }
     .chip.active { background: #007aff; color: #fff; }
+    .config-item {
+      margin-bottom: 1em;
+      padding: 0.8em;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 3px solid #007aff;
+    }
+    .config-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin-bottom: 0.5em;
+    }
+    .config-row:last-child {
+      margin-bottom: 0;
+    }
+    .time-range {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    .time-range input[type=time] {
+      width: auto;
+      min-width: 120px;
+    }
+    .help-text {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 0.3em;
+      font-style: italic;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 3px solid #ffc107;
+      padding: 0.5em;
+      margin-top: 0.5em;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: #856404;
+    }
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      color: #007aff;
+      margin-left: 0.3em;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 0.8em;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
     .config-item {
       margin-bottom: 1em;
       padding: 0.8em;
@@ -132,12 +202,77 @@
     }
     @media (min-width: 1024px) {
       .container { max-width: 1200px; }
+      .config-row { flex-direction: column; align-items: flex-start; }
+      .time-range { flex-direction: column; width: 100%; }
+      .time-range input[type=time] { width: 100%; min-width: unset; }
+      .container { max-width: 100%; margin: 0.5em; }
+    }
+    @media (min-width: 768px) {
+      .container { max-width: 900px; }
+      .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; }
+      .config-item { margin-bottom: 0; }
+    }
+    @media (min-width: 1024px) {
+      .container { max-width: 1200px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>MyStation Status</h1>
+    
+    <!-- Weather Configuration Section -->
+    <div class="chapter">🌤️ Wetter-Konfiguration</div>
+    
+    <div class="config-item">
+      <div class="label">
+        Mein Standort 
+        <span class="tooltip">ℹ️
+          <span class="tooltiptext">Standort wird für Wetter- und Verkehrsdaten verwendet.</span>
+        </span>
+      </div>
+      <div class="config-row">
+        <span id="city-display">{{CITY}}</span>
+        <input type="text" id="city-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;" placeholder="Stadt eingeben..." autocomplete="off">
+        <button type="button" class="edit-btn" onclick="editCity()">✏️</button>
+        <input type="hidden" id="city-lat" value="{{LAT}}">
+        <input type="hidden" id="city-lon" value="{{LON}}">
+      </div>
+      <div id="city-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+      <div class="help-text">
+        Breitengrad: <span id="lat-display">{{LAT}}</span>, Längengrad: <span id="lon-display">{{LON}}</span>
+      </div>
+    </div>
+    
+    <div class="config-item">
+      <div class="label">
+        Wetter-API Aktualisierungsintervall 
+        <span class="tooltip">ℹ️
+          <span class="tooltiptext">Empfohlen: alle 3 Stunden. Längere Intervalle sparen Batterie und reduzieren Aktualisierungen.</span>
+        </span>
+      </div>
+      <div class="config-row">
+        <select id="weather-interval">
+          <option value="1">Jede Stunde</option>
+          <option value="2">Alle 2 Stunden</option>
+          <option value="3" selected>Alle 3 Stunden (empfohlen)</option>
+          <option value="6">Alle 6 Stunden</option>
+          <option value="12">Alle 12 Stunden</option>
+          <option value="24">Einmal täglich</option>
+        </select>
+      </div>
+      <div class="help-text">Wetter ändert sich nicht so schnell. 3 Stunden Intervall ist optimal für Batterielebensdauer.</div>
+    </div>
+
+    <!-- ÖPNV Configuration Section -->
+    <div class="chapter">🚌 ÖPNV-Konfiguration</div>
+    
+    <div class="config-item">
+      <div class="label">
+        Meine Haltestelle 
+        <span class="tooltip">ℹ️
+          <span class="tooltiptext">Wählen Sie Ihre häufig genutzte Haltestelle aus oder geben Sie sie manuell ein.</span>
+        </span>
     
     <!-- Weather Configuration Section -->
     <div class="chapter">🌤️ Wetter-Konfiguration</div>
@@ -208,6 +343,22 @@
           <span class="tooltiptext">Wählen Sie die Verkehrsmittel aus, die Sie nutzen möchten.</span>
         </span>
       </div>
+      <div class="config-row">
+        <select id="stop-select" style="width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;">{{STOPS}}</select>
+        <input type="text" id="stop-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px; margin-left:0.5em;" placeholder="Haltestelle eingeben..." autocomplete="off">
+        <button type="button" class="edit-btn" onclick="editStop()">✏️</button>
+      </div>
+      <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+      <div class="help-text">Automatisch gefundene Haltestellen oder manuell eingeben</div>
+    </div>
+
+    <div class="config-item">
+      <div class="label">
+        Verkehrsmittel-Filter 
+        <span class="tooltip">ℹ️
+          <span class="tooltiptext">Wählen Sie die Verkehrsmittel aus, die Sie nutzen möchten.</span>
+        </span>
+      </div>
       <div class="chips" id="filter-chips" style="display: flex; flex-wrap: wrap; gap: 0.3em; justify-content: flex-start;">
         <div class="chip active" data-type="RE" onclick="toggleChip(this)">RE</div>
         <div class="chip active" data-type="R" onclick="toggleChip(this)">R</div>
@@ -227,7 +378,7 @@
           </span>
         </div>
         <div class="config-row">
-          <select id="rmv-interval">
+          <select id="transport-interval">
             <option value="1">Jede Minute</option>
             <option value="2">Alle 2 Minuten</option>
             <option value="3" selected>Alle 3 Minuten</option>
@@ -248,7 +399,7 @@
           </span>
         </div>
         <div class="config-row">
-          <input type="number" id="walking-time" min="0" max="30" value="5" style="width: 100px;">
+          <input type="number" id="walking-time" min="0" max="30" value="{{WALKING_TIME}}" style="width: 100px;">
           <span>Minuten</span>
         </div>
         <div class="help-text">Filtert zu kurzfristige Abfahrten aus. Standard: 5 Minuten Gehzeit.</div>
@@ -265,9 +416,9 @@
       <div class="config-row">
         <div class="time-range">
           <span>Von:</span>
-          <input type="time" id="rmv-active-start" value="06:00">
+          <input type="time" id="transport-active-start" value="{{TRANSPORT_ACTIVE_START}}">
           <span>Bis:</span>
-          <input type="time" id="rmv-active-end" value="09:00">
+          <input type="time" id="transport-active-end" value="{{TRANSPORT_ACTIVE_END}}">
         </div>
       </div>
       <div class="help-text">Nur während dieser Zeiten werden Abfahrten aktualisiert. Außerhalb: Deep Sleep spart Batterie.</div>
@@ -286,9 +437,9 @@
       <div class="config-row">
         <div class="time-range">
           <span>Nachtruhe von:</span>
-          <input type="time" id="sleep-start" value="22:30">
+          <input type="time" id="sleep-start" value="{{SLEEP_START}}">
           <span>bis:</span>
-          <input type="time" id="sleep-end" value="05:30">
+          <input type="time" id="sleep-end" value="{{SLEEP_END}}">
         </div>
       </div>
       <div class="warning">
@@ -304,24 +455,24 @@
         </span>
       </div>
       <div class="config-row">
-        <input type="checkbox" id="weekend-mode">
+        <input type="checkbox" id="weekend-mode" {{WEEKEND_MODE}}>
         <span>Andere Zeiten am Wochenende</span>
       </div>
       <div id="weekend-config" style="display: none; margin-top: 0.5em;">
         <div class="config-row">
           <div class="time-range">
             <span>Wochenende Abfahrten aktiv:</span>
-            <input type="time" id="weekend-rmv-start" value="08:00">
+            <input type="time" id="weekend-transport-start" value="{{WEEKEND_TRANSPORT_START}}">
             <span>bis:</span>
-            <input type="time" id="weekend-rmv-end" value="20:00">
+            <input type="time" id="weekend-transport-end" value="{{WEEKEND_TRANSPORT_END}}">
           </div>
         </div>
         <div class="config-row">
           <div class="time-range">
             <span>Wochenende Sleep:</span>
-            <input type="time" id="weekend-sleep-start" value="23:00">
+            <input type="time" id="weekend-sleep-start" value="{{WEEKEND_SLEEP_START}}">
             <span>bis:</span>
-            <input type="time" id="weekend-sleep-end" value="07:00">
+            <input type="time" id="weekend-sleep-end" value="{{WEEKEND_SLEEP_END}}">
           </div>
         </div>
       </div>
@@ -394,6 +545,7 @@
       <button id="save-btn" style="background:#007aff;color:#fff;border:none;padding:0.8em 2em;font-size:1.1em;border-radius:6px;cursor:pointer;box-shadow:0 1px 4px #0002;">Speichern</button>
     </div>
     <div class="privacy" style="margin-top:2em; margin-left:auto; margin-right:auto; max-width:800px; width:100%; box-sizing:border-box; display:block; text-align:left;">
+    <div class="privacy" style="margin-top:2em; margin-left:auto; margin-right:auto; max-width:800px; width:100%; box-sizing:border-box; display:block; text-align:left;">
       <strong>Datenschutzhinweis:</strong> Ihr Standort wird ausschließlich über die IP-Adresse Ihres Routers und öffentliche Geodatenbanken ermittelt. Es werden keine GPS-Daten oder persönliche Bewegungsprofile verwendet. Die Standortdaten werden nur zur Anzeige und für die Wetter-/Stationssuche genutzt und nicht an Dritte weitergegeben.
     </div>
   </div>
@@ -403,6 +555,21 @@
       document.getElementById('city-display').style.display = 'none';
       document.getElementById('city-input').style.display = '';
       document.getElementById('city-input').focus();
+      document.getElementById('city-input').value = document.getElementById('city-display').textContent;
+    }
+    
+    // --- Haltestelle bearbeiten ---
+    function editStop() {
+      document.getElementById('stop-select').style.display = 'none';
+      document.getElementById('stop-input').style.display = '';
+      document.getElementById('stop-input').focus();
+      // Copy current selection to input field
+      var currentSelection = document.getElementById('stop-select');
+      if (currentSelection.selectedIndex >= 0) {
+        document.getElementById('stop-input').value = currentSelection.options[currentSelection.selectedIndex].text;
+      }
+    }
+    
       document.getElementById('city-input').value = document.getElementById('city-display').textContent;
     }
     
@@ -562,6 +729,117 @@
       }
     });
     
+    var cityInput = document.getElementById('city-input');
+    var citySuggestions = document.getElementById('city-suggestions');
+    
+    // Handle manual stop entry switching back to select
+    stopInput.addEventListener('blur', function() {
+      setTimeout(function() { 
+        stopSuggestions.style.display = 'none';
+        // If user clicks away without selecting, show select again
+        if (stopInput.style.display !== 'none' && stopInput.value.trim() === '') {
+          stopInput.style.display = 'none';
+          stopSelect.style.display = '';
+        }
+      }, 200);
+    });
+    
+    // Handle manual city entry
+    cityInput.addEventListener('blur', function() {
+      setTimeout(function() { 
+        citySuggestions.style.display = 'none';
+        // If user clicks away without entering anything, show original city
+        if (cityInput.style.display !== 'none' && cityInput.value.trim() === '') {
+          cityInput.style.display = 'none';
+          document.getElementById('city-display').style.display = '';
+        } else if (cityInput.value.trim() !== '') {
+          // Update city display with new value
+          document.getElementById('city-display').textContent = cityInput.value.trim();
+          cityInput.style.display = 'none';
+          document.getElementById('city-display').style.display = '';
+        }
+      }, 200);
+    });
+    
+    // Handle city input suggestions
+    cityInput.addEventListener('input', function() {
+      var q = cityInput.value.trim();
+      if (q.length < 2) {
+        citySuggestions.style.display = 'none';
+        return;
+      }
+      // TODO: Replace with actual city API endpoint
+      fetch('/api/city?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(suggestions => {
+          citySuggestions.innerHTML = '';
+          suggestions.forEach(function(cityData) {
+            var div = document.createElement('div');
+            div.textContent = cityData.name || cityData;
+            div.style.padding = '0.5em';
+            div.style.cursor = 'pointer';
+            div.onclick = function() {
+              cityInput.value = cityData.name || cityData;
+              // Update coordinates if available
+              if (cityData.lat && cityData.lon) {
+                document.getElementById('city-lat').value = cityData.lat;
+                document.getElementById('city-lon').value = cityData.lon;
+                document.getElementById('lat-display').textContent = cityData.lat;
+                document.getElementById('lon-display').textContent = cityData.lon;
+              }
+              citySuggestions.style.display = 'none';
+            };
+            citySuggestions.appendChild(div);
+          });
+          if (suggestions.length > 0) {
+            citySuggestions.style.display = '';
+            var rect = cityInput.getBoundingClientRect();
+            citySuggestions.style.top = (cityInput.offsetTop + cityInput.offsetHeight) + 'px';
+            citySuggestions.style.left = cityInput.offsetLeft + 'px';
+            citySuggestions.style.width = cityInput.offsetWidth + 'px';
+          } else {
+            citySuggestions.style.display = 'none';
+          }
+        })
+        .catch(function() {
+          // Fallback: show entered city as suggestion
+          citySuggestions.innerHTML = '';
+          var div = document.createElement('div');
+          div.textContent = q;
+          div.style.padding = '0.5em';
+          div.style.cursor = 'pointer';
+          div.onclick = function() {
+            cityInput.value = q;
+            citySuggestions.style.display = 'none';
+          };
+          citySuggestions.appendChild(div);
+          citySuggestions.style.display = '';
+        });
+    });
+    
+    // Handle Enter key for city input
+    cityInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        if (cityInput.value.trim() !== '') {
+          document.getElementById('city-display').textContent = cityInput.value.trim();
+        }
+        cityInput.style.display = 'none';
+        document.getElementById('city-display').style.display = '';
+      }
+    });
+    
+    // Handle Enter key for stop input
+    stopInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        stopSuggestions.style.display = 'none';
+        // Keep the manual input visible if user entered something
+        if (stopInput.value.trim() === '') {
+          stopInput.style.display = 'none';
+          stopSelect.style.display = '';
+        }
+      }
+    });
+    
     stopSelect.addEventListener('change', function() {
       if (stopSelect.value === '__manual__') {
         stopSelect.style.display = 'none';
@@ -570,6 +848,7 @@
         stopInput.focus();
       }
     });
+    // Hide suggestions on blur
     // Hide suggestions on blur
     stopInput.addEventListener('input', function() {
       var q = stopInput.value.trim();
@@ -582,11 +861,19 @@
         .then(suggestions => {
           stopSuggestions.innerHTML = '';
           suggestions.forEach(function(stopData) {
+          suggestions.forEach(function(stopData) {
             var div = document.createElement('div');
+            div.textContent = stopData.name || stopData;
             div.textContent = stopData.name || stopData;
             div.style.padding = '0.5em';
             div.style.cursor = 'pointer';
             div.onclick = function() {
+              stopInput.value = stopData.name || stopData;
+              // Update stop ID if available
+              if (stopData.id) {
+                // Could store the ID for later use
+                stopInput.setAttribute('data-stop-id', stopData.id);
+              }
               stopInput.value = stopData.name || stopData;
               // Update stop ID if available
               if (stopData.id) {
@@ -620,10 +907,35 @@
           };
           stopSuggestions.appendChild(div);
           stopSuggestions.style.display = '';
+        })
+        .catch(function() {
+          // Fallback: show entered stop as suggestion
+          stopSuggestions.innerHTML = '';
+          var div = document.createElement('div');
+          div.textContent = q;
+          div.style.padding = '0.5em';
+          div.style.cursor = 'pointer';
+          div.onclick = function() {
+            stopInput.value = q;
+            stopSuggestions.style.display = 'none';
+          };
+          stopSuggestions.appendChild(div);
+          stopSuggestions.style.display = '';
         });
     });
     // --- Save config handler ---
     document.getElementById('save-btn').onclick = function() {
+      // Get city from either display or input field
+      var city = '';
+      var cityDisplay = document.getElementById('city-display');
+      var cityInput = document.getElementById('city-input');
+      if (cityInput.style.display !== 'none') {
+        city = cityInput.value.trim();
+        if (city) cityDisplay.textContent = city; // Update display
+      } else {
+        city = cityDisplay.textContent;
+      }
+      
       // Get city from either display or input field
       var city = '';
       var cityDisplay = document.getElementById('city-display');
@@ -653,15 +965,15 @@
       
       // Collect new configuration values
       var weatherInterval = document.getElementById('weather-interval').value;
-      var rmvInterval = document.getElementById('rmv-interval').value;
-      var rmvActiveStart = document.getElementById('rmv-active-start').value;
-      var rmvActiveEnd = document.getElementById('rmv-active-end').value;
+      var transportInterval = document.getElementById('transport-interval').value;
+      var transportActiveStart = document.getElementById('transport-active-start').value;
+      var transportActiveEnd = document.getElementById('transport-active-end').value;
       var walkingTime = document.getElementById('walking-time').value;
       var sleepStart = document.getElementById('sleep-start').value;
       var sleepEnd = document.getElementById('sleep-end').value;
       var weekendMode = document.getElementById('weekend-mode').checked;
-      var weekendRmvStart = document.getElementById('weekend-rmv-start').value;
-      var weekendRmvEnd = document.getElementById('weekend-rmv-end').value;
+      var weekendTransportStart = document.getElementById('weekend-transport-start').value;
+      var weekendTransportEnd = document.getElementById('weekend-transport-end').value;
       var weekendSleepStart = document.getElementById('weekend-sleep-start').value;
       var weekendSleepEnd = document.getElementById('weekend-sleep-end').value;
       
@@ -673,18 +985,19 @@
         stopName: stopName,
         filters: filters,
         weatherInterval: parseInt(weatherInterval),
-        rmvInterval: parseInt(rmvInterval),
-        rmvActiveStart: rmvActiveStart,
-        rmvActiveEnd: rmvActiveEnd,
+        transportInterval: parseInt(transportInterval),
+        transportActiveStart: transportActiveStart,
+        transportActiveEnd: transportActiveEnd,
         walkingTime: parseInt(walkingTime),
         sleepStart: sleepStart,
         sleepEnd: sleepEnd,
         weekendMode: weekendMode,
-        weekendRmvStart: weekendRmvStart,
-        weekendRmvEnd: weekendRmvEnd,
+        weekendTransportStart: weekendTransportStart,
+        weekendTransportEnd: weekendTransportEnd,
         weekendSleepStart: weekendSleepStart,
         weekendSleepEnd: weekendSleepEnd
       };
+      
       
       fetch('/save_config', {
         method: 'POST',
@@ -715,9 +1028,9 @@
     function calculateBatteryUsage() {
       // Get current settings
       var weatherInterval = parseInt(document.getElementById('weather-interval').value) || 3;
-      var transportInterval = parseInt(document.getElementById('rmv-interval').value) || 3;
-      var activeStart = document.getElementById('rmv-active-start').value || "06:00";
-      var activeEnd = document.getElementById('rmv-active-end').value || "09:00";
+      var transportInterval = parseInt(document.getElementById('transport-interval').value) || 3;
+      var activeStart = document.getElementById('transport-active-start').value || "06:00";
+      var activeEnd = document.getElementById('transport-active-end').value || "09:00";
       var sleepStart = document.getElementById('sleep-start').value || "22:30";
       var sleepEnd = document.getElementById('sleep-end').value || "05:30";
       
@@ -773,14 +1086,53 @@
     
     // Add event listeners to recalculate on changes
     document.getElementById('weather-interval').addEventListener('change', calculateBatteryUsage);
-    document.getElementById('rmv-interval').addEventListener('change', calculateBatteryUsage);
-    document.getElementById('rmv-active-start').addEventListener('change', calculateBatteryUsage);
-    document.getElementById('rmv-active-end').addEventListener('change', calculateBatteryUsage);
+    document.getElementById('transport-interval').addEventListener('change', calculateBatteryUsage);
+    document.getElementById('transport-active-start').addEventListener('change', calculateBatteryUsage);
+    document.getElementById('transport-active-end').addEventListener('change', calculateBatteryUsage);
     document.getElementById('sleep-start').addEventListener('change', calculateBatteryUsage);
     document.getElementById('sleep-end').addEventListener('change', calculateBatteryUsage);
     
     // Calculate on page load
     setTimeout(calculateBatteryUsage, 100);
+    
+    // Set saved configuration values on page load
+    setTimeout(function() {
+      // Set weather interval selection
+      var weatherInterval = "{{WEATHER_INTERVAL}}";
+      if (weatherInterval && document.getElementById('weather-interval')) {
+        document.getElementById('weather-interval').value = weatherInterval;
+      }
+      
+      // Set transport interval selection  
+      var transportInterval = "{{TRANSPORT_INTERVAL}}";
+      if (transportInterval && document.getElementById('transport-interval')) {
+        document.getElementById('transport-interval').value = transportInterval;
+      }
+      
+      // Set weekend mode display if enabled
+      var weekendMode = "{{WEEKEND_MODE}}" === "checked";
+      if (weekendMode && document.getElementById('weekend-config')) {
+        document.getElementById('weekend-config').style.display = 'block';
+      }
+      
+      // Set saved filter chips
+      var savedFilters = {{SAVED_FILTERS}};
+      if (savedFilters && savedFilters.length > 0) {
+        // First deactivate all chips
+        var allChips = document.querySelectorAll('.chip');
+        allChips.forEach(function(chip) {
+          chip.classList.remove('active');
+        });
+        
+        // Then activate saved filters
+        savedFilters.forEach(function(filterType) {
+          var chip = document.querySelector('.chip[data-type="' + filterType + '"]');
+          if (chip) {
+            chip.classList.add('active');
+          }
+        });
+      }
+    }, 150);
   </script>
 </body>
 </html>

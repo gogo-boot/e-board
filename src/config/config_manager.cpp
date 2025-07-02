@@ -27,6 +27,20 @@ bool ConfigManager::loadConfig(MyStationConfig &config) {
     config.ssid = preferences.getString("ssid", "");
     config.ipAddress = preferences.getString("ip", "");
     
+    // Load new configuration values with defaults
+    config.weatherInterval = preferences.getInt("weatherInt", 3);
+    config.transportInterval = preferences.getInt("transportInt", 3);
+    config.transportActiveStart = preferences.getString("transportStart", "06:00");
+    config.transportActiveEnd = preferences.getString("transportEnd", "09:00");
+    config.walkingTime = preferences.getInt("walkTime", 5);
+    config.sleepStart = preferences.getString("sleepStart", "22:30");
+    config.sleepEnd = preferences.getString("sleepEnd", "05:30");
+    config.weekendMode = preferences.getBool("weekendMode", false);
+    config.weekendTransportStart = preferences.getString("wTransportStart", "08:00");
+    config.weekendTransportEnd = preferences.getString("wTransportEnd", "20:00");
+    config.weekendSleepStart = preferences.getString("wSleepStart", "23:00");
+    config.weekendSleepEnd = preferences.getString("wSleepEnd", "07:00");
+    
     // Load ÖPNV filters
     size_t filterCount = preferences.getUInt("filterCount", 3);
     config.oepnvFilters.clear();
@@ -64,6 +78,20 @@ bool ConfigManager::saveConfig(const MyStationConfig &config) {
     preferences.putString("stopName", config.selectedStopName);
     preferences.putString("ssid", config.ssid);
     preferences.putString("ip", config.ipAddress);
+    
+    // Save new configuration values
+    preferences.putInt("weatherInt", config.weatherInterval);
+    preferences.putInt("transportInt", config.transportInterval);
+    preferences.putString("transportStart", config.transportActiveStart);
+    preferences.putString("transportEnd", config.transportActiveEnd);
+    preferences.putInt("walkTime", config.walkingTime);
+    preferences.putString("sleepStart", config.sleepStart);
+    preferences.putString("sleepEnd", config.sleepEnd);
+    preferences.putBool("weekendMode", config.weekendMode);
+    preferences.putString("wTransportStart", config.weekendTransportStart);
+    preferences.putString("wTransportEnd", config.weekendTransportEnd);
+    preferences.putString("wSleepStart", config.weekendSleepStart);
+    preferences.putString("wSleepEnd", config.weekendSleepEnd);
     
     // Save ÖPNV filters
     preferences.putUInt("filterCount", config.oepnvFilters.size());
