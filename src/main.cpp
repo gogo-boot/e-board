@@ -222,6 +222,8 @@ void runConfigurationMode() {
   // Initialize config with defaults
   g_stationConfig.latitude = 0.0;
   g_stationConfig.longitude = 0.0;
+  g_stationConfig.ssid = WiFi.SSID(); // Use current SSID if available
+  g_stationConfig.ipAddress = WiFi.localIP().toString();
   g_stationConfig.ssid = "";
   g_stationConfig.cityName = "";
   g_stationConfig.oepnvFilters = {"RE", "S-Bahn", "Bus"};
@@ -254,7 +256,7 @@ void runConfigurationMode() {
     g_lat = g_stationConfig.latitude;
     g_lon = g_stationConfig.longitude;
     ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", 
-      g_stationConfig.cityName.c_str(), g_lat, g_lon);
+    g_stationConfig.cityName.c_str(), g_lat, g_lon);
   }
 
   // Get nearby stops for configuration interface
@@ -264,7 +266,7 @@ void runConfigurationMode() {
   setupWebServer();
   
   ESP_LOGI(TAG, "Configuration mode active - web server running");
-  ESP_LOGI(TAG, "Access configuration at: http://10.0.1.1 or http://mystation.local");
+  ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local", g_stationConfig.ipAddress.c_str());
 }
 
 // --- Operational Mode ---
