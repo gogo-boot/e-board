@@ -13,34 +13,24 @@ void MyWiFiManager::reconnectWiFi() {
     
     ESP_LOGI(TAG, "WiFi disconnected, attempting to reconnect...");
     
-    // Get configuration from RTC
-    RTCConfigData& config = ConfigManager::getConfig();
+    // Try to reconnect using ESP32's stored credentials (from WiFiManager)
+    // This will use the credentials saved by WiFiManager automatically
+    WiFi.begin();  // No parameters = use stored credentials
     
-    // Try to reconnect using saved credentials
-    if (strlen(config.ssid) > 0) {
-        ESP_LOGI(TAG, "Attempting to connect to saved SSID: %s", config.ssid);
-        WiFi.begin(config.ssid);
-        
-        int attempts = 0;
-        while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-            delay(500);
-            ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
-            attempts++;
-        }
-        
-        if (WiFi.status() == WL_CONNECTED) {
-            ESP_LOGI(TAG, "WiFi reconnected successfully!");
-            ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
-            ConfigManager::setNetwork(config.ssid, WiFi.localIP().toString());
-            
-            // Save updated configuration to NVS
-            ConfigManager& configMgr = ConfigManager::getInstance();
-            configMgr.saveToNVS();
-        } else {
-            ESP_LOGW(TAG, "Failed to reconnect to WiFi with saved credentials");
-        }
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(500);
+        ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
+        attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        ESP_LOGI(TAG, "WiFi reconnected successfully!");
+        ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
+        ESP_LOGI(TAG, "Connected to SSID: %s", WiFi.SSID().c_str());
+
     } else {
-        ESP_LOGW(TAG, "No saved WiFi credentials available for reconnection");
+        ESP_LOGW(TAG, "Failed to reconnect to WiFi with saved credentials");
     }
 }
 
@@ -48,37 +38,30 @@ void MyWiFiManager::setupStationMode() {
     // Station mode only - connect to saved WiFi without AP mode
     ESP_LOGI(TAG, "Connecting to WiFi in station mode...");
     
-    RTCConfigData& config = ConfigManager::getConfig();
+    WiFi.mode(WIFI_STA);
+    WiFi.begin();  // Use ESP32's stored credentials from WiFiManager
     
-    if (strlen(config.ssid) > 0) {
-        WiFi.mode(WIFI_STA);
-        WiFi.begin(config.ssid);
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) { // 10 seconds timeout
+        delay(500);
+        ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
+        attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        ESP_LOGI(TAG, "WiFi connected successfully!");
+        ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
+        ESP_LOGI(TAG, "Connected to SSID: %s", WiFi.SSID().c_str());
         
-        int attempts = 0;
-        while (WiFi.status() != WL_CONNECTED && attempts < 20) { // 10 seconds timeout
-            delay(500);
-            ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
-            attempts++;
-        }
+        // Update our configuration with the current connection info
+        ConfigManager::setNetwork(WiFi.SSID(), WiFi.localIP().toString());
         
-        if (WiFi.status() == WL_CONNECTED) {
-            ESP_LOGI(TAG, "WiFi connected successfully!");
-            ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
-            ConfigManager::setNetwork(config.ssid, WiFi.localIP().toString());
-            
-            // Save updated IP address to NVS
-            ConfigManager& configMgr = ConfigManager::getInstance();
-            configMgr.saveToNVS();
-            
-            // Start mDNS in station mode
-            if (MDNS.begin("mystation")) {
-                ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
-            }
-        } else {
-            ESP_LOGW(TAG, "Failed to connect to WiFi in station mode");
+        // Start mDNS in station mode
+        if (MDNS.begin("mystation")) {
+            ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
         }
     } else {
-        ESP_LOGW(TAG, "No saved WiFi credentials available");
+        ESP_LOGW(TAG, "Failed to connect to WiFi in station mode");
     }
 }
 
