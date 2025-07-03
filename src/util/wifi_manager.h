@@ -7,7 +7,6 @@
 class MyWiFiManager {
 public:
     static void reconnectWiFi();
-    static void setupStationMode();
     static void setupAPMode(WiFiManager &wm);
     static bool isConnected();
     static String getLocalIP();

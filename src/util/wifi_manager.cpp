@@ -34,37 +34,6 @@ void MyWiFiManager::reconnectWiFi() {
     }
 }
 
-void MyWiFiManager::setupStationMode() {
-    // Station mode only - connect to saved WiFi without AP mode
-    ESP_LOGI(TAG, "Connecting to WiFi in station mode...");
-    
-    WiFi.mode(WIFI_STA);
-    WiFi.begin();  // Use ESP32's stored credentials from WiFiManager
-    
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) { // 10 seconds timeout
-        delay(500);
-        ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
-        attempts++;
-    }
-    
-    if (WiFi.status() == WL_CONNECTED) {
-        ESP_LOGI(TAG, "WiFi connected successfully!");
-        ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
-        ESP_LOGI(TAG, "Connected to SSID: %s", WiFi.SSID().c_str());
-        
-        // Update our configuration with the current connection info
-        ConfigManager::setNetwork(WiFi.SSID(), WiFi.localIP().toString());
-        
-        // Start mDNS in station mode
-        if (MDNS.begin("mystation")) {
-            ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
-        }
-    } else {
-        ESP_LOGW(TAG, "Failed to connect to WiFi in station mode");
-    }
-}
-
 void MyWiFiManager::setupAPMode(WiFiManager &wm) {
     ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
     const char *menu[] = {"wifi"};
