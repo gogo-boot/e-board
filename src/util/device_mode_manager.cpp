@@ -22,7 +22,7 @@ extern float g_lat, g_lon;
 extern WebServer server;
 
 ConfigManager& configMgr = ConfigManager::getInstance();
-extern ConfigOption g_configOption;
+extern ConfigOption g_webConfigPageData;
 
 // The parameter hasValidConfig will be set to true if the configuration is valid
 // the parameter is used to fast path the configuration mode without reloading the configuration
@@ -74,32 +74,32 @@ void DeviceModeManager::runConfigurationMode() {
     TimeManager::setupNTPTime();
     
     // Get location if not already saved
-    if (g_configOption.latitude == 0.0 && g_configOption.longitude == 0.0) {
-        getLocationFromGoogle(g_configOption.latitude, g_configOption.longitude);
+    if (g_webConfigPageData.latitude == 0.0 && g_webConfigPageData.longitude == 0.0) {
+        getLocationFromGoogle(g_webConfigPageData.latitude, g_webConfigPageData.longitude);
         // Get city name from lat/lon
-        ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", g_configOption.latitude, g_configOption.longitude);
+        ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", g_webConfigPageData.latitude, g_webConfigPageData.longitude);
 
-        g_configOption.cityName = getCityFromLatLon(g_configOption.latitude, g_configOption.longitude);
+        g_webConfigPageData.cityName = getCityFromLatLon(g_webConfigPageData.latitude, g_webConfigPageData.longitude);
         
         // put cityName into RTCConfigData
-        if (g_configOption.cityName.isEmpty()) {
+        if (g_webConfigPageData.cityName.isEmpty()) {
             ESP_LOGE(TAG, "Failed to get city name from lat/lon");
             // Set a default city name if fetching fails
-            g_configOption.cityName = "Unknown City";
+            g_webConfigPageData.cityName = "Unknown City";
         }
-        ESP_LOGI(TAG, "City name set: %s", g_configOption.cityName);
+        ESP_LOGI(TAG, "City name set: %s", g_webConfigPageData.cityName);
     } else {
-        ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", g_configOption.cityName, g_configOption.latitude, g_configOption.longitude);
+        ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", g_webConfigPageData.cityName, g_webConfigPageData.latitude, g_webConfigPageData.longitude);
     }
 
     // Get nearby stops for configuration interface
-    getNearbyStops(g_configOption.latitude, g_configOption.longitude);
+    getNearbyStops(g_webConfigPageData.latitude, g_webConfigPageData.longitude);
     
     // Start web server for configuration
     setupWebServer(server);
     
     ESP_LOGI(TAG, "Configuration mode active - web server running");
-    ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local", g_configOption.ipAddress);
+    ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local", g_webConfigPageData.ipAddress);
 }
 
 void DeviceModeManager::runOperationalMode() {
@@ -120,10 +120,9 @@ void DeviceModeManager::runOperationalMode() {
     
     // Set coordinates from saved config
     RTCConfigData& config = ConfigManager::getConfig();
-    g_configOption.latitude = config.latitude;
-    g_configOption.longitude = config.longitude;
-    ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", 
-        config.cityName, g_configOption.latitude, g_configOption.longitude);
+    g_webConfigPageData.latitude = config.latitude;
+    g_webConfigPageData.longitude = config.longitude;
+    ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", config.cityName, g_webConfigPageData.latitude, g_webConfigPageData.longitude);
     
     // Check if this is a deep sleep wake-up for fast path
     if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
@@ -139,7 +138,7 @@ void DeviceModeManager::runOperationalMode() {
     }
     
     // Connect to WiFi in station mode
-    MyWiFiManager::setupStationMode();
+    MyWiFiManager::reconnectWiFi();
     
     if (MyWiFiManager::isConnected()) {
         // Fetch and display data
@@ -154,7 +153,7 @@ void DeviceModeManager::runOperationalMode() {
         }
         
         WeatherInfo weather;
-        if (getWeatherFromDWD(g_configOption.latitude, g_configOption.longitude, weather)) {
+        if (getWeatherFromDWD(g_webConfigPageData.latitude, g_webConfigPageData.longitude, weather)) {
             printWeatherInfo(weather);
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
@@ -164,7 +163,8 @@ void DeviceModeManager::runOperationalMode() {
     }
 
     // Calculate sleep time and enter deep sleep
-    uint64_t sleepTime = calculateSleepTime(config.transportInterval);
+    // uint64_t sleepTime = calculateSleepTime(config.transportInterval);
+    uint64_t sleepTime = calculateSleepTime(1);
     ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTime);
     enterDeepSleep(sleepTime);
 }

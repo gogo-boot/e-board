@@ -33,4 +33,4 @@ struct ConfigOption {
     String weekendSleepEnd = "07:00";   // Weekend sleep end
 };
 
-extern ConfigOption g_configOption;
+extern ConfigOption g_webConfigPageData;

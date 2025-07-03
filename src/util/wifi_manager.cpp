@@ -22,7 +22,7 @@ void MyWiFiManager::reconnectWiFi() {
         WiFi.begin(config.ssid);
         
         int attempts = 0;
-        while (WiFi.status() != WL_CONNECTED && attempts < 3) {
+        while (WiFi.status() != WL_CONNECTED && attempts < 20) {
             delay(500);
             ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
             attempts++;
@@ -55,7 +55,7 @@ void MyWiFiManager::setupStationMode() {
         WiFi.begin(config.ssid);
         
         int attempts = 0;
-        while (WiFi.status() != WL_CONNECTED && attempts < 3) { // 10 seconds timeout
+        while (WiFi.status() != WL_CONNECTED && attempts < 20) { // 10 seconds timeout
             delay(500);
             ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
             attempts++;

@@ -73,10 +73,11 @@ void getNearbyStops(float lat, float lon) {
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
       stations.clear();
-      g_configOption.stopIds.clear();
-      g_configOption.stopNames.clear();
+      g_webConfigPageData.stopIds.clear();
+      g_webConfigPageData.stopNames.clear();
+      g_webConfigPageData.stopDistances.clear();
       JsonArray stops = doc["stopLocationOrCoordLocation"];
-      // extern ConfigOption g_configOption;
+      // extern ConfigOption g_webConfigPageData;
       for (JsonObject item : stops) {
         JsonObject stop = item["StopLocation"];
         if (!stop.isNull()) {
@@ -88,9 +89,9 @@ void getNearbyStops(float lat, float lon) {
           int products = stop["products"] | 0;
           String type = (products & 64) ? "train" : "bus"; // Example: RMV uses bitmask for products
           stations.push_back({String(id), String(name), type});
-          g_configOption.stopIds.push_back(id);
-          g_configOption.stopNames.push_back(name);
-          g_configOption.stopDistances.push_back(dist);
+          g_webConfigPageData.stopIds.push_back(id);
+          g_webConfigPageData.stopNames.push_back(name);
+          g_webConfigPageData.stopDistances.push_back(dist);
           ESP_LOGI(TAG, "Stop ID: %s, Name: %s, Lon: %f, Lat: %f, Type: %s", id, name, lon, lat, type.c_str());
         }
       }
