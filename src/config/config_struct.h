@@ -2,7 +2,10 @@
 #include <Arduino.h>
 #include <vector>
 
-struct MyStationConfig {
+// This Struct is only holding values from API ans for showing on configureation web interface
+// It is used to hold dynamic data like stopNames, stopIds, and stopDistances from API calls
+// The values will be temporarily stored in RAM, after deep sleep they will be removed
+struct ConfigOption {
     float latitude = 0.0;
     float longitude = 0.0;
     String ssid; // changed from routerName to ssid
@@ -12,8 +15,8 @@ struct MyStationConfig {
     std::vector<String> stopIds;   // all found stop IDs
     std::vector<String> stopNames; // all found stop names
     std::vector<int> stopDistances; // distances to stops
-    String selectedStopId;   // User's selected stop ID from config
-    String selectedStopName; // User's selected stop name from config
+    String selectedStopId = "";   // User's selected stop ID from config
+    String selectedStopName = ""; // User's selected stop name from config
     
     // New configuration values from the updated web interface
     int weatherInterval = 3;        // Weather update interval in hours (default: 3)
@@ -30,4 +33,4 @@ struct MyStationConfig {
     String weekendSleepEnd = "07:00";   // Weekend sleep end
 };
 
-extern MyStationConfig g_stationConfig;
+extern ConfigOption g_webConfigPageData;

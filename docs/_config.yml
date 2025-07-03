@@ -1,0 +1,16 @@
+theme: jekyll-theme-minimal
+title: MyStation E-Board Documentation
+description: ESP32-C3 powered public transport departure board
+show_downloads: false
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - README.md
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge

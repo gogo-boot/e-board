@@ -4,6 +4,7 @@
 #include "api/rmv_api.h"
 
 void handleConfigPage(WebServer &server);
-void handleConfigDone(WebServer &server, bool &inConfigMode);
-void handleSaveConfig(WebServer &server, bool &inConfigMode);
+void handleConfigDone(WebServer &server);
+void handleSaveConfig(WebServer &server);
 void handleStopAutocomplete(WebServer &server);
+void setupWebServer(WebServer &server);

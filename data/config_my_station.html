@@ -7,14 +7,12 @@
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #f4f6fa; color: #222; }
     .container { max-width: 800px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; box-sizing: border-box; width: 100%; }
-    .container { max-width: 800px; margin: 0 auto; padding: 1em; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; box-sizing: border-box; width: 100%; }
     h1 { font-size: 1.7em; margin-bottom: 1em; text-align: center; letter-spacing: 1px; }
     .chapter { font-size: 1.15em; font-weight: 600; color: #007aff; margin-top: 2em; margin-bottom: 0.5em; border-left: 4px solid #007aff; padding-left: 0.7em; background: #eaf6ff; border-radius: 6px; }
     .section { margin-bottom: 1.5em; }
     .label { font-weight: 500; margin-bottom: 0.2em; display: block; color: #333; }
     .row { display: flex; align-items: center; justify-content: space-between; }
     .edit-btn { background: none; border: none; color: #007aff; font-size: 1em; cursor: pointer; margin-left: 0.5em; }
-    input[type=text], input[type=number], input[type=time], select { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
     input[type=text], input[type=number], input[type=time], select { width: 100%; padding: 0.5em; font-size: 1em; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.3em; justify-content: flex-start; }
     .chip { display: inline-block; padding: 0.25em 0.8em; border-radius: 20px; background: #e0e0e0; cursor: pointer; user-select: none; font-size: 0.97em; margin-right: 0.2em; margin-bottom: 0.2em; white-space: nowrap; min-width: unset; }
@@ -87,133 +85,28 @@
       visibility: visible;
       opacity: 1;
     }
-    .config-item {
-      margin-bottom: 1em;
-      padding: 0.8em;
-      background: #f8f9fa;
-      border-radius: 6px;
-      border-left: 3px solid #007aff;
-    }
-    .config-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5em;
-      margin-bottom: 0.5em;
-    }
-    .config-row:last-child {
-      margin-bottom: 0;
-    }
-    .time-range {
-      display: flex;
-      align-items: center;
-      gap: 0.5em;
-    }
-    .time-range input[type=time] {
-      width: auto;
-      min-width: 120px;
-    }
-    .help-text {
-      font-size: 0.85em;
-      color: #666;
-      margin-top: 0.3em;
-      font-style: italic;
-    }
-    .warning {
-      background: #fff3cd;
-      border-left: 3px solid #ffc107;
-      padding: 0.5em;
-      margin-top: 0.5em;
-      border-radius: 4px;
-      font-size: 0.85em;
-      color: #856404;
-    }
-    .tooltip {
-      position: relative;
-      display: inline-block;
-      cursor: help;
-      color: #007aff;
-      margin-left: 0.3em;
-    }
-    .tooltip .tooltiptext {
-      visibility: hidden;
-      width: 200px;
-      background-color: #333;
-      color: #fff;
-      text-align: center;
-      border-radius: 6px;
-      padding: 5px;
-      position: absolute;
-      z-index: 1;
-      bottom: 125%;
-      left: 50%;
-      margin-left: -100px;
-      opacity: 0;
-      transition: opacity 0.3s;
-      font-size: 0.8em;
-    }
-    .tooltip:hover .tooltiptext {
-      visibility: visible;
-      opacity: 1;
-    }
     .privacy { font-size: 0.95em; color: #555; background: #eaf6ff; border-left: 4px solid #007aff; padding: 0.7em 1em; border-radius: 7px; margin-bottom: 1em; margin-top: 2em; max-width: 480px; width: 100%; box-sizing: border-box; display: block; text-align: left; margin-left: auto; margin-right: auto; }
-    .subnav {
-      display: block;
-      margin-bottom: 1.2em;
-      background: #eaf6ff;
-      border-radius: 6px;
-      padding: 0.5em 0.5em 0.5em 0.5em;
-      box-shadow: 0 1px 4px #007aff22;
-      position: sticky;
-      top: 0;
-      z-index: 20;
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1em;
     }
-    .subnav a {
-      display: flex;
-      align-items: center;
-      gap: 0.5em;
-      color: #007aff;
-      text-decoration: none;
-      font-weight: 500;
-      padding: 0.6em 1em;
-      border-radius: 20px;
-      transition: background 0.2s, color 0.2s;
-      font-size: 1em;
-      margin-bottom: 0.3em;
-    }
-    .subnav a .icon {
-      font-size: 1.1em;
-    }
-    .subnav a:hover, .subnav a.active {
-      background: #007aff;
-      color: #fff;
-    }
-    @media (max-width: 600px) {
-      .subnav { padding: 0.3em; }
-      .subnav a { font-size: 0.97em; padding: 0.5em 0.7em; }
-      .config-row { flex-direction: column; align-items: flex-start; }
-      .time-range { flex-direction: column; width: 100%; }
-      .time-range input[type=time] { width: 100%; min-width: unset; }
-      .container { max-width: 100%; margin: 0.5em; }
-    }
-    @media (min-width: 768px) {
-      .container { max-width: 900px; }
-      .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; }
-      .config-item { margin-bottom: 0; }
-    }
-    @media (min-width: 1024px) {
-      .container { max-width: 1200px; }
-      .config-row { flex-direction: column; align-items: flex-start; }
-      .time-range { flex-direction: column; width: 100%; }
-      .time-range input[type=time] { width: 100%; min-width: unset; }
-      .container { max-width: 100%; margin: 0.5em; }
-    }
-    @media (min-width: 768px) {
-      .container { max-width: 900px; }
-      .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1em; }
-      .config-item { margin-bottom: 0; }
-    }
-    @media (min-width: 1024px) {
-      .container { max-width: 1200px; }
+    @media (max-width: 768px) {
+      .config-grid {
+        grid-template-columns: 1fr;
+      }
+      .config-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .time-range {
+        flex-direction: column;
+        width: 100%;
+      }
+      .time-range input[type=time] {
+        width: 100%;
+        min-width: unset;
+      }
     }
   </style>
 </head>
@@ -272,75 +165,6 @@
         Meine Haltestelle 
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Wählen Sie Ihre häufig genutzte Haltestelle aus oder geben Sie sie manuell ein.</span>
-        </span>
-    
-    <!-- Weather Configuration Section -->
-    <div class="chapter">🌤️ Wetter-Konfiguration</div>
-    
-    <div class="config-item">
-      <div class="label">
-        Mein Standort 
-        <span class="tooltip">ℹ️
-          <span class="tooltiptext">Standort wird für Wetter- und Verkehrsdaten verwendet.</span>
-        </span>
-      </div>
-      <div class="config-row">
-        <span id="city-display">{{CITY}}</span>
-        <input type="text" id="city-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;" placeholder="Stadt eingeben..." autocomplete="off">
-        <button type="button" class="edit-btn" onclick="editCity()">✏️</button>
-        <input type="hidden" id="city-lat" value="{{LAT}}">
-        <input type="hidden" id="city-lon" value="{{LON}}">
-      </div>
-      <div id="city-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
-      <div class="help-text">
-        Breitengrad: <span id="lat-display">{{LAT}}</span>, Längengrad: <span id="lon-display">{{LON}}</span>
-      </div>
-    </div>
-    
-    <div class="config-item">
-      <div class="label">
-        Wetter-API Aktualisierungsintervall 
-        <span class="tooltip">ℹ️
-          <span class="tooltiptext">Empfohlen: alle 3 Stunden. Längere Intervalle sparen Batterie und reduzieren Aktualisierungen.</span>
-        </span>
-      </div>
-      <div class="config-row">
-        <select id="weather-interval">
-          <option value="1">Jede Stunde</option>
-          <option value="2">Alle 2 Stunden</option>
-          <option value="3" selected>Alle 3 Stunden (empfohlen)</option>
-          <option value="6">Alle 6 Stunden</option>
-          <option value="12">Alle 12 Stunden</option>
-          <option value="24">Einmal täglich</option>
-        </select>
-      </div>
-      <div class="help-text">Wetter ändert sich nicht so schnell. 3 Stunden Intervall ist optimal für Batterielebensdauer.</div>
-    </div>
-
-    <!-- ÖPNV Configuration Section -->
-    <div class="chapter">🚌 ÖPNV-Konfiguration</div>
-    
-    <div class="config-item">
-      <div class="label">
-        Meine Haltestelle 
-        <span class="tooltip">ℹ️
-          <span class="tooltiptext">Wählen Sie Ihre häufig genutzte Haltestelle aus oder geben Sie sie manuell ein.</span>
-        </span>
-      </div>
-      <div class="config-row">
-        <select id="stop-select" style="width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;">{{STOPS}}</select>
-        <input type="text" id="stop-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px; margin-left:0.5em;" placeholder="Haltestelle eingeben..." autocomplete="off">
-        <button type="button" class="edit-btn" onclick="editStop()">✏️</button>
-      </div>
-      <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
-      <div class="help-text">Automatisch gefundene Haltestellen oder manuell eingeben</div>
-    </div>
-
-    <div class="config-item">
-      <div class="label">
-        Verkehrsmittel-Filter 
-        <span class="tooltip">ℹ️
-          <span class="tooltiptext">Wählen Sie die Verkehrsmittel aus, die Sie nutzen möchten.</span>
         </span>
       </div>
       <div class="config-row">
@@ -541,14 +365,16 @@
       </div>
       <div class="help-text">Erreichbar über: http://{{MDNS}} (falls mDNS im Netzwerk unterstützt wird)</div>
     </div>
+
     <div class="section" style="text-align:center; margin-top:2em;">
       <button id="save-btn" style="background:#007aff;color:#fff;border:none;padding:0.8em 2em;font-size:1.1em;border-radius:6px;cursor:pointer;box-shadow:0 1px 4px #0002;">Speichern</button>
     </div>
-    <div class="privacy" style="margin-top:2em; margin-left:auto; margin-right:auto; max-width:800px; width:100%; box-sizing:border-box; display:block; text-align:left;">
+
     <div class="privacy" style="margin-top:2em; margin-left:auto; margin-right:auto; max-width:800px; width:100%; box-sizing:border-box; display:block; text-align:left;">
       <strong>Datenschutzhinweis:</strong> Ihr Standort wird ausschließlich über die IP-Adresse Ihres Routers und öffentliche Geodatenbanken ermittelt. Es werden keine GPS-Daten oder persönliche Bewegungsprofile verwendet. Die Standortdaten werden nur zur Anzeige und für die Wetter-/Stationssuche genutzt und nicht an Dritte weitergegeben.
     </div>
   </div>
+
   <script>
     // --- Stadt bearbeiten ---
     function editCity() {
@@ -570,29 +396,12 @@
       }
     }
     
-      document.getElementById('city-input').value = document.getElementById('city-display').textContent;
+    // --- Filter Chips ---
+    function toggleChip(el) {
+      el.classList.toggle('active');
     }
     
-    // --- Haltestelle bearbeiten ---
-    function editStop() {
-      document.getElementById('stop-select').style.display = 'none';
-      document.getElementById('stop-input').style.display = '';
-      document.getElementById('stop-input').focus();
-      // Copy current selection to input field
-      var currentSelection = document.getElementById('stop-select');
-      if (currentSelection.selectedIndex >= 0) {
-        document.getElementById('stop-input').value = currentSelection.options[currentSelection.selectedIndex].text;
-      }
-    }
-    
-    function autocompleteCity(query) {
-      // TODO: AJAX-Aufruf an Backend für Städte-Autovervollständigung
-    }
-    function showCitySuggestions(suggestions) {
-      // TODO: Vorschläge in #city-suggestions anzeigen, Klick zum Auswählen
-    }
     // --- Stop select population ---
-    // Populate stop-select with stopsData if available
     function populateStops() {
       var select = document.getElementById('stop-select');
       if (!window.stopsData) return;
@@ -603,18 +412,13 @@
         opt.textContent = stop.name;
         select.appendChild(opt);
       });
-      // Optionally select the current stop
       if (window.selectedStopId) {
         select.value = window.selectedStopId;
       }
     }
     if (window.stopsData) populateStops();
-    // --- Filter Chips ---
-    function toggleChip(el) {
-      el.classList.toggle('active');
-      // TODO: Filterstatus speichern
-    }
-    // --- Stop select/manual entry toggle ---
+    
+    // --- Event Handlers ---
     var stopSelect = document.getElementById('stop-select');
     var stopInput = document.getElementById('stop-input');
     var stopSuggestions = document.getElementById('stop-suggestions');
@@ -625,7 +429,6 @@
     stopInput.addEventListener('blur', function() {
       setTimeout(function() { 
         stopSuggestions.style.display = 'none';
-        // If user clicks away without selecting, show select again
         if (stopInput.style.display !== 'none' && stopInput.value.trim() === '') {
           stopInput.style.display = 'none';
           stopSelect.style.display = '';
@@ -637,12 +440,10 @@
     cityInput.addEventListener('blur', function() {
       setTimeout(function() { 
         citySuggestions.style.display = 'none';
-        // If user clicks away without entering anything, show original city
         if (cityInput.style.display !== 'none' && cityInput.value.trim() === '') {
           cityInput.style.display = 'none';
           document.getElementById('city-display').style.display = '';
         } else if (cityInput.value.trim() !== '') {
-          // Update city display with new value
           document.getElementById('city-display').textContent = cityInput.value.trim();
           cityInput.style.display = 'none';
           document.getElementById('city-display').style.display = '';
@@ -657,7 +458,6 @@
         citySuggestions.style.display = 'none';
         return;
       }
-      // TODO: Replace with actual city API endpoint
       fetch('/api/city?q=' + encodeURIComponent(q))
         .then(r => r.json())
         .then(suggestions => {
@@ -669,7 +469,6 @@
             div.style.cursor = 'pointer';
             div.onclick = function() {
               cityInput.value = cityData.name || cityData;
-              // Update coordinates if available
               if (cityData.lat && cityData.lon) {
                 document.getElementById('city-lat').value = cityData.lat;
                 document.getElementById('city-lon').value = cityData.lon;
@@ -682,7 +481,6 @@
           });
           if (suggestions.length > 0) {
             citySuggestions.style.display = '';
-            var rect = cityInput.getBoundingClientRect();
             citySuggestions.style.top = (cityInput.offsetTop + cityInput.offsetHeight) + 'px';
             citySuggestions.style.left = cityInput.offsetLeft + 'px';
             citySuggestions.style.width = cityInput.offsetWidth + 'px';
@@ -691,7 +489,6 @@
           }
         })
         .catch(function() {
-          // Fallback: show entered city as suggestion
           citySuggestions.innerHTML = '';
           var div = document.createElement('div');
           div.textContent = q;
@@ -721,7 +518,6 @@
     stopInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         stopSuggestions.style.display = 'none';
-        // Keep the manual input visible if user entered something
         if (stopInput.value.trim() === '') {
           stopInput.style.display = 'none';
           stopSelect.style.display = '';
@@ -729,127 +525,7 @@
       }
     });
     
-    var cityInput = document.getElementById('city-input');
-    var citySuggestions = document.getElementById('city-suggestions');
-    
-    // Handle manual stop entry switching back to select
-    stopInput.addEventListener('blur', function() {
-      setTimeout(function() { 
-        stopSuggestions.style.display = 'none';
-        // If user clicks away without selecting, show select again
-        if (stopInput.style.display !== 'none' && stopInput.value.trim() === '') {
-          stopInput.style.display = 'none';
-          stopSelect.style.display = '';
-        }
-      }, 200);
-    });
-    
-    // Handle manual city entry
-    cityInput.addEventListener('blur', function() {
-      setTimeout(function() { 
-        citySuggestions.style.display = 'none';
-        // If user clicks away without entering anything, show original city
-        if (cityInput.style.display !== 'none' && cityInput.value.trim() === '') {
-          cityInput.style.display = 'none';
-          document.getElementById('city-display').style.display = '';
-        } else if (cityInput.value.trim() !== '') {
-          // Update city display with new value
-          document.getElementById('city-display').textContent = cityInput.value.trim();
-          cityInput.style.display = 'none';
-          document.getElementById('city-display').style.display = '';
-        }
-      }, 200);
-    });
-    
-    // Handle city input suggestions
-    cityInput.addEventListener('input', function() {
-      var q = cityInput.value.trim();
-      if (q.length < 2) {
-        citySuggestions.style.display = 'none';
-        return;
-      }
-      // TODO: Replace with actual city API endpoint
-      fetch('/api/city?q=' + encodeURIComponent(q))
-        .then(r => r.json())
-        .then(suggestions => {
-          citySuggestions.innerHTML = '';
-          suggestions.forEach(function(cityData) {
-            var div = document.createElement('div');
-            div.textContent = cityData.name || cityData;
-            div.style.padding = '0.5em';
-            div.style.cursor = 'pointer';
-            div.onclick = function() {
-              cityInput.value = cityData.name || cityData;
-              // Update coordinates if available
-              if (cityData.lat && cityData.lon) {
-                document.getElementById('city-lat').value = cityData.lat;
-                document.getElementById('city-lon').value = cityData.lon;
-                document.getElementById('lat-display').textContent = cityData.lat;
-                document.getElementById('lon-display').textContent = cityData.lon;
-              }
-              citySuggestions.style.display = 'none';
-            };
-            citySuggestions.appendChild(div);
-          });
-          if (suggestions.length > 0) {
-            citySuggestions.style.display = '';
-            var rect = cityInput.getBoundingClientRect();
-            citySuggestions.style.top = (cityInput.offsetTop + cityInput.offsetHeight) + 'px';
-            citySuggestions.style.left = cityInput.offsetLeft + 'px';
-            citySuggestions.style.width = cityInput.offsetWidth + 'px';
-          } else {
-            citySuggestions.style.display = 'none';
-          }
-        })
-        .catch(function() {
-          // Fallback: show entered city as suggestion
-          citySuggestions.innerHTML = '';
-          var div = document.createElement('div');
-          div.textContent = q;
-          div.style.padding = '0.5em';
-          div.style.cursor = 'pointer';
-          div.onclick = function() {
-            cityInput.value = q;
-            citySuggestions.style.display = 'none';
-          };
-          citySuggestions.appendChild(div);
-          citySuggestions.style.display = '';
-        });
-    });
-    
-    // Handle Enter key for city input
-    cityInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        if (cityInput.value.trim() !== '') {
-          document.getElementById('city-display').textContent = cityInput.value.trim();
-        }
-        cityInput.style.display = 'none';
-        document.getElementById('city-display').style.display = '';
-      }
-    });
-    
-    // Handle Enter key for stop input
-    stopInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        stopSuggestions.style.display = 'none';
-        // Keep the manual input visible if user entered something
-        if (stopInput.value.trim() === '') {
-          stopInput.style.display = 'none';
-          stopSelect.style.display = '';
-        }
-      }
-    });
-    
-    stopSelect.addEventListener('change', function() {
-      if (stopSelect.value === '__manual__') {
-        stopSelect.style.display = 'none';
-        stopInput.style.display = '';
-        stopInput.value = '';
-        stopInput.focus();
-      }
-    });
-    // Hide suggestions on blur
-    // Hide suggestions on blur
+    // Handle stop input suggestions
     stopInput.addEventListener('input', function() {
       var q = stopInput.value.trim();
       if (q.length < 2) {
@@ -861,23 +537,13 @@
         .then(suggestions => {
           stopSuggestions.innerHTML = '';
           suggestions.forEach(function(stopData) {
-          suggestions.forEach(function(stopData) {
             var div = document.createElement('div');
-            div.textContent = stopData.name || stopData;
             div.textContent = stopData.name || stopData;
             div.style.padding = '0.5em';
             div.style.cursor = 'pointer';
             div.onclick = function() {
               stopInput.value = stopData.name || stopData;
-              // Update stop ID if available
               if (stopData.id) {
-                // Could store the ID for later use
-                stopInput.setAttribute('data-stop-id', stopData.id);
-              }
-              stopInput.value = stopData.name || stopData;
-              // Update stop ID if available
-              if (stopData.id) {
-                // Could store the ID for later use
                 stopInput.setAttribute('data-stop-id', stopData.id);
               }
               stopSuggestions.style.display = 'none';
@@ -886,7 +552,6 @@
           });
           if (suggestions.length > 0) {
             stopSuggestions.style.display = '';
-            var rect = stopInput.getBoundingClientRect();
             stopSuggestions.style.top = (stopInput.offsetTop + stopInput.offsetHeight) + 'px';
             stopSuggestions.style.left = stopInput.offsetLeft + 'px';
             stopSuggestions.style.width = stopInput.offsetWidth + 'px';
@@ -895,21 +560,6 @@
           }
         })
         .catch(function() {
-          // Fallback: show entered stop as suggestion
-          stopSuggestions.innerHTML = '';
-          var div = document.createElement('div');
-          div.textContent = q;
-          div.style.padding = '0.5em';
-          div.style.cursor = 'pointer';
-          div.onclick = function() {
-            stopInput.value = q;
-            stopSuggestions.style.display = 'none';
-          };
-          stopSuggestions.appendChild(div);
-          stopSuggestions.style.display = '';
-        })
-        .catch(function() {
-          // Fallback: show entered stop as suggestion
           stopSuggestions.innerHTML = '';
           var div = document.createElement('div');
           div.textContent = q;
@@ -923,26 +573,15 @@
           stopSuggestions.style.display = '';
         });
     });
+    
     // --- Save config handler ---
     document.getElementById('save-btn').onclick = function() {
-      // Get city from either display or input field
       var city = '';
       var cityDisplay = document.getElementById('city-display');
       var cityInput = document.getElementById('city-input');
       if (cityInput.style.display !== 'none') {
         city = cityInput.value.trim();
-        if (city) cityDisplay.textContent = city; // Update display
-      } else {
-        city = cityDisplay.textContent;
-      }
-      
-      // Get city from either display or input field
-      var city = '';
-      var cityDisplay = document.getElementById('city-display');
-      var cityInput = document.getElementById('city-input');
-      if (cityInput.style.display !== 'none') {
-        city = cityInput.value.trim();
-        if (city) cityDisplay.textContent = city; // Update display
+        if (city) cityDisplay.textContent = city;
       } else {
         city = cityDisplay.textContent;
       }
@@ -963,7 +602,6 @@
       var filterChips = document.querySelectorAll('.chip.active');
       var filters = Array.from(filterChips).map(function(chip) { return chip.getAttribute('data-type'); });
       
-      // Collect new configuration values
       var weatherInterval = document.getElementById('weather-interval').value;
       var transportInterval = document.getElementById('transport-interval').value;
       var transportActiveStart = document.getElementById('transport-active-start').value;
@@ -998,7 +636,6 @@
         weekendSleepEnd: weekendSleepEnd
       };
       
-      
       fetch('/save_config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1021,12 +658,11 @@
       } else {
         weekendConfig.style.display = 'none';
       }
-      calculateBatteryUsage(); // Recalculate when weekend mode changes
+      calculateBatteryUsage();
     });
 
     // --- Battery Usage Calculator ---
     function calculateBatteryUsage() {
-      // Get current settings
       var weatherInterval = parseInt(document.getElementById('weather-interval').value) || 3;
       var transportInterval = parseInt(document.getElementById('transport-interval').value) || 3;
       var activeStart = document.getElementById('transport-active-start').value || "06:00";
@@ -1034,13 +670,11 @@
       var sleepStart = document.getElementById('sleep-start').value || "22:30";
       var sleepEnd = document.getElementById('sleep-end').value || "05:30";
       
-      // Calculate active hours per day
       var activeStartMinutes = timeToMinutes(activeStart);
       var activeEndMinutes = timeToMinutes(activeEnd);
       var sleepStartMinutes = timeToMinutes(sleepStart);
       var sleepEndMinutes = timeToMinutes(sleepEnd);
       
-      // Handle overnight sleep (e.g., 22:30 to 05:30)
       var sleepDuration = sleepEndMinutes < sleepStartMinutes ? 
         (24 * 60 - sleepStartMinutes + sleepEndMinutes) : 
         (sleepEndMinutes - sleepStartMinutes);
@@ -1048,33 +682,30 @@
       var activeDuration = activeEndMinutes - activeStartMinutes;
       var sleepHours = Math.round(sleepDuration / 60 * 10) / 10;
       
-      // Calculate updates per day
       var weatherCallsPerDay = Math.floor(24 / weatherInterval);
       var transportActiveHours = Math.max(0, activeDuration / 60);
       var transportCallsPerDay = Math.floor(transportActiveHours * 60 / transportInterval);
       var totalCallsPerDay = weatherCallsPerDay + transportCallsPerDay;
       
-      // Update display
       document.getElementById('total-calls-per-day').textContent = totalCallsPerDay;
       document.getElementById('weather-calls').textContent = weatherCallsPerDay;
       document.getElementById('transport-calls').textContent = transportCallsPerDay;
       document.getElementById('sleep-hours').textContent = sleepHours;
       
-      // Update background color and recommendation
       var batteryInfo = document.getElementById('battery-usage-info');
       var recommendation = document.getElementById('battery-recommendation');
       
       if (totalCallsPerDay <= 50) {
-        batteryInfo.style.background = '#e8f5e8'; // Green
+        batteryInfo.style.background = '#e8f5e8';
         recommendation.textContent = '🔋 Exzellent! Sehr batteriefreundliche Einstellung - maximale Laufzeit.';
       } else if (totalCallsPerDay <= 100) {
-        batteryInfo.style.background = '#fff3cd'; // Yellow
+        batteryInfo.style.background = '#fff3cd';
         recommendation.textContent = '🔋 Gut! Ausgewogene Einstellung zwischen Updates und Batterieverbrauch.';
       } else if (totalCallsPerDay <= 200) {
-        batteryInfo.style.background = '#ffeaa7'; // Orange
+        batteryInfo.style.background = '#ffeaa7';
         recommendation.textContent = '⚠️ Mittel. Häufige Updates verbrauchen mehr Batterie.';
       } else {
-        batteryInfo.style.background = '#fab1a0'; // Red
+        batteryInfo.style.background = '#fab1a0';
         recommendation.textContent = '🔴 Hoch! Sehr häufige Updates - kurze Batterielebensdauer erwartet.';
       }
     }
@@ -1084,7 +715,7 @@
       return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
     
-    // Add event listeners to recalculate on changes
+    // Add event listeners for battery calculation
     document.getElementById('weather-interval').addEventListener('change', calculateBatteryUsage);
     document.getElementById('transport-interval').addEventListener('change', calculateBatteryUsage);
     document.getElementById('transport-active-start').addEventListener('change', calculateBatteryUsage);
@@ -1097,34 +728,29 @@
     
     // Set saved configuration values on page load
     setTimeout(function() {
-      // Set weather interval selection
       var weatherInterval = "{{WEATHER_INTERVAL}}";
       if (weatherInterval && document.getElementById('weather-interval')) {
         document.getElementById('weather-interval').value = weatherInterval;
       }
       
-      // Set transport interval selection  
       var transportInterval = "{{TRANSPORT_INTERVAL}}";
       if (transportInterval && document.getElementById('transport-interval')) {
         document.getElementById('transport-interval').value = transportInterval;
       }
       
-      // Set weekend mode display if enabled
       var weekendMode = "{{WEEKEND_MODE}}" === "checked";
       if (weekendMode && document.getElementById('weekend-config')) {
         document.getElementById('weekend-config').style.display = 'block';
       }
       
-      // Set saved filter chips
+      // Set saved filter chips from server template
       var savedFilters = {{SAVED_FILTERS}};
       if (savedFilters && savedFilters.length > 0) {
-        // First deactivate all chips
         var allChips = document.querySelectorAll('.chip');
         allChips.forEach(function(chip) {
           chip.classList.remove('active');
         });
         
-        // Then activate saved filters
         savedFilters.forEach(function(filterType) {
           var chip = document.querySelector('.chip[data-type="' + filterType + '"]');
           if (chip) {

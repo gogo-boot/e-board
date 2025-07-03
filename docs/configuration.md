@@ -4,16 +4,43 @@ Detailed configuration options for the MyStation E-Board web interface.
 
 ## Accessing Configuration
 
-### Configuration Mode
-The device enters configuration mode when:
-- **First boot** (no saved configuration)
-- **Manual trigger** (specific button combination)
-- **Configuration reset** (via web interface)
+## Accessing Configuration
+
+### Device Boot States
+The device operates in two main states:
+
+#### Configuration Mode
+Triggered when:
+- **First boot** (no saved configuration found)
+- **Configuration corruption** (invalid settings detected)
+- **Manual trigger** (specific button combination - if implemented)
+- **Explicit reset** (via web interface factory reset)
+
+In configuration mode:
+- Creates WiFi access point (`MyStation-XXXXXXXX`)
+- Starts web server on `http://10.0.1.1`
+- Waits for user configuration
+- Device stays awake (no deep sleep)
+
+#### Operational Mode  
+Normal operation after configuration:
+- Loads settings from permanent storage (NVS)
+- Connects to saved WiFi network
+- Fetches and displays data
+- Enters deep sleep between updates
+- No web interface (power saving)
+
+### Configuration Persistence
+All settings are stored in **Non-Volatile Storage (NVS)** which:
+- ✅ Survives power loss and battery changes
+- ✅ Persists through firmware updates  
+- ✅ Maintains settings across reboots
+- ✅ Only requires configuration once
 
 ### Web Interface Access
+- **Initial Setup**: `http://10.0.1.1` (configuration mode)
 - **Local Network**: `http://[device-ip]` (check serial monitor)
 - **mDNS**: `http://mystation.local` (if supported by your network)
-- **Direct AP**: `http://10.0.1.1` (when in WiFi setup mode)
 
 ## Configuration Sections
 

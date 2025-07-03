@@ -7,6 +7,7 @@
 #include "../util/util.h"
 #include "esp_log.h"
 #include "config/config_struct.h"
+#include "config/config_manager.h"
 
 static const char* TAG = "RMV_API";
 
@@ -48,11 +49,8 @@ void printDepartures(const String& payload) {
 
 std::vector<Station> stations;
 
-void getNearbyStops() {
+void getNearbyStops(float lat, float lon) {
   Util::printFreeHeap("Before RMV request:");
-  extern MyStationConfig g_stationConfig;
-  float lat = g_stationConfig.latitude;
-  float lon = g_stationConfig.longitude;
   HTTPClient http;
   String url = "https://www.rmv.de/hapi/location.nearbystops?accessId=" + String(RMV_API_KEY) +
                "&originCoordLat=" + String(lat, 6) +
@@ -75,10 +73,11 @@ void getNearbyStops() {
     DeserializationError error = deserializeJson(doc, payload);
     if (!error) {
       stations.clear();
-      g_stationConfig.stopIds.clear();
-      g_stationConfig.stopNames.clear();
+      g_webConfigPageData.stopIds.clear();
+      g_webConfigPageData.stopNames.clear();
+      g_webConfigPageData.stopDistances.clear();
       JsonArray stops = doc["stopLocationOrCoordLocation"];
-      extern MyStationConfig g_stationConfig;
+      // extern ConfigOption g_webConfigPageData;
       for (JsonObject item : stops) {
         JsonObject stop = item["StopLocation"];
         if (!stop.isNull()) {
@@ -90,9 +89,9 @@ void getNearbyStops() {
           int products = stop["products"] | 0;
           String type = (products & 64) ? "train" : "bus"; // Example: RMV uses bitmask for products
           stations.push_back({String(id), String(name), type});
-          g_stationConfig.stopIds.push_back(id);
-          g_stationConfig.stopNames.push_back(name);
-          g_stationConfig.stopDistances.push_back(dist);
+          g_webConfigPageData.stopIds.push_back(id);
+          g_webConfigPageData.stopNames.push_back(name);
+          g_webConfigPageData.stopDistances.push_back(dist);
           ESP_LOGI(TAG, "Stop ID: %s, Name: %s, Lon: %f, Lat: %f, Type: %s", id, name, lon, lat, type.c_str());
         }
       }

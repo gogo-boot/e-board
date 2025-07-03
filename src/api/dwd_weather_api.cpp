@@ -5,7 +5,7 @@
 #include "esp_log.h"
 
 // Get city/location name from lat/lon using Nominatim (OpenStreetMap)
-void getCityFromLatLon(float lat, float lon) {
+String getCityFromLatLon(float lat, float lon) {
     String url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=" + String(lat, 6) + "&lon=" + String(lon, 6) + "&zoom=10&addressdetails=1";
     HTTPClient http;
     http.begin(url);
@@ -30,8 +30,13 @@ void getCityFromLatLon(float lat, float lon) {
         }
     }
     http.end();
-    extern MyStationConfig g_stationConfig;
-    g_stationConfig.cityName = city; // Store city name in global config
+    // return city if found, otherwise empty string
+    if (city.isEmpty()) {
+        ESP_LOGW("DWD_CITY", "No city found for lat: %.6f, lon: %.6f", lat, lon);
+        return "";
+    }
+    ESP_LOGI("DWD_CITY", "Found city: %s for lat: %.6f, lon: %.6f", city.c_str(), lat, lon);
+    return city;
 }
 
 // Map Open-Meteo weather codes to human-readable strings
