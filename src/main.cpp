@@ -31,22 +31,22 @@ static const char* TAG = "MAIN";
 // --- Globals (shared across modules) ---
 WebServer server(80);
 RTC_DATA_ATTR unsigned long loopCount = 0;
+RTC_DATA_ATTR bool hasValidConfig = false; // Flag to track if valid config exists
 
-// Temporary global config for dynamic data (API results)
-// This is only used for stopNames, stopIds, and stopDistances from API calls
-MyStationConfig g_stationConfig;
-
-float g_lat = 0.0, g_lon = 0.0;
+// This Struct is only for showing on configureation web interface
+// It is used to hold dynamic data like stopNames, stopIds, and stopDistances from API calls
+// This will not be used to store configuration data in NVS
+ConfigOption g_configOption;
 
 void setup() {
   Serial.begin(115200);
-  delay(1000); // Allow time for serial monitor to connect
+  delay(1000); // Allow time for serial monitor to connect, only for local debugging, todo remove in production or activate by flag
 
-  esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
+  // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
   ESP_LOGI(TAG, "System starting...");
   
   // Determine device mode based on saved configuration
-  if (DeviceModeManager::hasValidConfiguration()) {
+  if ( hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
     DeviceModeManager::runOperationalMode();
   } else {
     DeviceModeManager::runConfigurationMode();

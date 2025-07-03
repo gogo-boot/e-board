@@ -13,65 +13,9 @@ static const char* TAG = "CONFIG";
 
 extern float g_lat, g_lon;
 
-// Load configuration from JSON file into g_stationConfig
-bool loadConfig(MyStationConfig &config) {
-    if (!LittleFS.exists("/config.json")) {
-        ESP_LOGW(TAG, "Config file not found, using defaults");
-        return false;
-    }
-    
-    File f = LittleFS.open("/config.json", "r");
-    if (!f) {
-        ESP_LOGE(TAG, "Failed to open config file");
-        return false;
-    }
-    
-    DynamicJsonDocument doc(1024);
-    DeserializationError err = deserializeJson(doc, f);
-    f.close();
-    
-    if (err) {
-        ESP_LOGE(TAG, "Failed to parse config JSON: %s", err.c_str());
-        return false;
-    }
-    
-    // Load values from JSON into config struct
-    if (doc.containsKey("city")) config.cityName = doc["city"].as<String>();
-    if (doc.containsKey("cityLat")) config.latitude = doc["cityLat"].as<float>();
-    if (doc.containsKey("cityLon")) config.longitude = doc["cityLon"].as<float>();
-    if (doc.containsKey("stopId")) config.selectedStopId = doc["stopId"].as<String>();
-    if (doc.containsKey("stopName")) config.selectedStopName = doc["stopName"].as<String>();
-    
-    // Load new configuration values
-    if (doc.containsKey("weatherInterval")) config.weatherInterval = doc["weatherInterval"].as<int>();
-    if (doc.containsKey("transportInterval")) config.transportInterval = doc["transportInterval"].as<int>();
-    if (doc.containsKey("transportActiveStart")) config.transportActiveStart = doc["transportActiveStart"].as<String>();
-    if (doc.containsKey("transportActiveEnd")) config.transportActiveEnd = doc["transportActiveEnd"].as<String>();
-    if (doc.containsKey("walkingTime")) config.walkingTime = doc["walkingTime"].as<int>();
-    if (doc.containsKey("sleepStart")) config.sleepStart = doc["sleepStart"].as<String>();
-    if (doc.containsKey("sleepEnd")) config.sleepEnd = doc["sleepEnd"].as<String>();
-    if (doc.containsKey("weekendMode")) config.weekendMode = doc["weekendMode"].as<bool>();
-    if (doc.containsKey("weekendTransportStart")) config.weekendTransportStart = doc["weekendTransportStart"].as<String>();
-    if (doc.containsKey("weekendTransportEnd")) config.weekendTransportEnd = doc["weekendTransportEnd"].as<String>();
-    if (doc.containsKey("weekendSleepStart")) config.weekendSleepStart = doc["weekendSleepStart"].as<String>();
-    if (doc.containsKey("weekendSleepEnd")) config.weekendSleepEnd = doc["weekendSleepEnd"].as<String>();
-    
-    // Load ÖPNV filters
-    if (doc.containsKey("filters")) {
-        config.oepnvFilters.clear();
-        JsonArray filters = doc["filters"];
-        for (JsonVariant v : filters) {
-            config.oepnvFilters.push_back(v.as<String>());
-        }
-    }
-    
-    ESP_LOGI(TAG, "Config loaded: City=%s, Stop=%s, Filters=%d", 
-             config.cityName.c_str(), config.selectedStopName.c_str(), config.oepnvFilters.size());
-    return true;
-}
+extern ConfigOption g_configOption;
 
 void handleStationSelect(WebServer &server) {
-    extern MyStationConfig g_stationConfig;
     File file = LittleFS.open("/station_select.html", "r");
     if (!file) {
         server.send(500, "text/plain", "Template not found");
@@ -80,10 +24,10 @@ void handleStationSelect(WebServer &server) {
     String page = file.readString();
     file.close();
     String html;
-    for (size_t i = 0; i < g_stationConfig.stopNames.size(); ++i) {
+    for (size_t i = 0; i < g_configOption.stopNames.size(); ++i) {
         html += "<div class='station'>";
-        html += "<input type='radio' name='station' value='" + g_stationConfig.stopIds[i] + "'>";
-        html += g_stationConfig.stopNames[i] + " (ID: " + g_stationConfig.stopIds[i] + ")";
+        html += "<input type='radio' name='station' value='" + g_configOption.stopIds[i] + "'>";
+        html += g_configOption.stopNames[i] + " (ID: " + g_configOption.stopIds[i] + ")";
         html += "</div>";
     }
     page.replace("{{stations}}", html);
@@ -92,7 +36,6 @@ void handleStationSelect(WebServer &server) {
 
 // Update the config page handler to serve config_my_station.html
 void handleConfigPage(WebServer &server) {
-  extern MyStationConfig g_stationConfig;
   File file = LittleFS.open("/config_my_station.html", "r");
   if (!file) {
     server.send(404, "text/plain", "Konfigurationsseite nicht gefunden");
@@ -101,49 +44,46 @@ void handleConfigPage(WebServer &server) {
   String page = file.readString();
   file.close();
 
-  // Get current configuration from RTC memory
-  RTCConfigData& config = ConfigManager::getConfig();
-
-  // Replace reserved keywords with RTC config data
-  page.replace("{{LAT}}", String(config.latitude, 6));
-  page.replace("{{LON}}", String(config.longitude, 6));
+  // Replace reserved keywords
+  page.replace("{{LAT}}", String(g_configOption.latitude, 6));
+  page.replace("{{LON}}", String(g_configOption.longitude, 6));
 
   // Build <option> list for stops, add manual entry option
   String stopsHtml = "<option value=''>Bitte wählen...</option>";
-  for (size_t i = 0; i < g_stationConfig.stopNames.size(); ++i) {
-    String encodedId = Util::urlEncode(g_stationConfig.stopIds[i]);
-    stopsHtml += "<option value='" + encodedId + "'>" + g_stationConfig.stopNames[i] + "   ("+g_stationConfig.stopDistances[i]+"m)</option>";
+  for (size_t i = 0; i < g_configOption.stopNames.size(); ++i) {
+    String encodedId = Util::urlEncode(g_configOption.stopIds[i]);
+    stopsHtml += "<option value='" + encodedId + "'>" + g_configOption.stopNames[i] + "   ("+g_configOption.stopDistances[i]+"m)</option>";
   }
   stopsHtml += "<option value='__manual__'>Manuell eingeben...</option>";
-  if (g_stationConfig.stopNames.size() == 0) stopsHtml = "<option>Keine Haltestellen gefunden</option>";
+  if (g_configOption.stopNames.size() == 0) stopsHtml = "<option>Keine Haltestellen gefunden</option>";
   page.replace("{{STOPS}}", stopsHtml);
 
-  // Replace city, ssid, etc. with RTC config data
-  page.replace("{{CITY}}", config.cityName);
-  page.replace("{{ROUTER}}", config.ssid);
-  page.replace("{{IP}}", config.ipAddress);
+  // Replace city, ssid, etc.
+  page.replace("{{CITY}}", g_configOption.cityName);
+  // Separate Router (SSID) and IP info
+  page.replace("{{ROUTER}}", g_configOption.ssid);
+  page.replace("{{IP}}", g_configOption.ipAddress); // Replace with IP info if available
   page.replace("{{MDNS}}", ".local"); // mDNS hostname
   
-  // Replace configuration values with current RTC settings
-  page.replace("{{WEATHER_INTERVAL}}", String(config.weatherInterval));
-  page.replace("{{TRANSPORT_INTERVAL}}", String(config.transportInterval));
-  page.replace("{{TRANSPORT_ACTIVE_START}}", config.transportActiveStart);
-  page.replace("{{TRANSPORT_ACTIVE_END}}", config.transportActiveEnd);
-  page.replace("{{WALKING_TIME}}", String(config.walkingTime));
-  page.replace("{{SLEEP_START}}", config.sleepStart);
-  page.replace("{{SLEEP_END}}", config.sleepEnd);
-  page.replace("{{WEEKEND_MODE}}", config.weekendMode ? "checked" : "");
-  page.replace("{{WEEKEND_TRANSPORT_START}}", config.weekendTransportStart);
-  page.replace("{{WEEKEND_TRANSPORT_END}}", config.weekendTransportEnd);
-  page.replace("{{WEEKEND_SLEEP_START}}", config.weekendSleepStart);
-  page.replace("{{WEEKEND_SLEEP_END}}", config.weekendSleepEnd);
+  // Replace configuration values with current settings
+  page.replace("{{WEATHER_INTERVAL}}", String(g_configOption.weatherInterval));
+  page.replace("{{TRANSPORT_INTERVAL}}", String(g_configOption.transportInterval));
+  page.replace("{{TRANSPORT_ACTIVE_START}}", g_configOption.transportActiveStart);
+  page.replace("{{TRANSPORT_ACTIVE_END}}", g_configOption.transportActiveEnd);
+  page.replace("{{WALKING_TIME}}", String(g_configOption.walkingTime));
+  page.replace("{{SLEEP_START}}", g_configOption.sleepStart);
+  page.replace("{{SLEEP_END}}", g_configOption.sleepEnd);
+  page.replace("{{WEEKEND_MODE}}", g_configOption.weekendMode ? "checked" : "");
+  page.replace("{{WEEKEND_TRANSPORT_START}}", g_configOption.weekendTransportStart);
+  page.replace("{{WEEKEND_TRANSPORT_END}}", g_configOption.weekendTransportEnd);
+  page.replace("{{WEEKEND_SLEEP_START}}", g_configOption.weekendSleepStart);
+  page.replace("{{WEEKEND_SLEEP_END}}", g_configOption.weekendSleepEnd);
   
-  // Build JavaScript array for saved filters from RTC config
+  // Build JavaScript array for saved filters
   String filtersJs = "[";
-  std::vector<String> activeFilters = ConfigManager::getActiveFilters();
-  for (size_t i = 0; i < activeFilters.size(); i++) {
+  for (size_t i = 0; i < g_configOption.oepnvFilters.size(); i++) {
     if (i > 0) filtersJs += ",";
-    filtersJs += "\"" + activeFilters[i] + "\"";
+    filtersJs += "\"" + g_configOption.oepnvFilters[i] + "\"";
   }
   filtersJs += "]";
   page.replace("{{SAVED_FILTERS}}", filtersJs);
@@ -158,8 +98,8 @@ void handleSaveConfig(WebServer &server) {
         return;
     }
     
-    extern MyStationConfig g_stationConfig;
     ConfigManager& configMgr = ConfigManager::getInstance();
+    RTCConfigData& config = configMgr.getConfig(); 
     
     // Parse JSON body
     DynamicJsonDocument doc(1024);
@@ -180,77 +120,44 @@ void handleSaveConfig(WebServer &server) {
     serializeJsonPretty(doc, docStr);
     ESP_LOGI("CONFIG", "[Config] Received JSON:\n%s", docStr.c_str());
 
-    // Update configuration via ConfigManager (saves to RTC memory)
-    if (doc.containsKey("city") && doc.containsKey("cityLat") && doc.containsKey("cityLon")) {
-        ConfigManager::setLocation(doc["cityLat"].as<float>(), doc["cityLon"].as<float>(), doc["city"].as<String>());
-    }
-    if (doc.containsKey("stopId") && doc.containsKey("stopName")) {
-        ConfigManager::setStop(doc["stopId"].as<String>(), doc["stopName"].as<String>());
-    }
-    
-    // Update timing configuration
-    if (doc.containsKey("weatherInterval") || doc.containsKey("transportInterval") || doc.containsKey("walkingTime")) {
-        int weatherInt = doc.containsKey("weatherInterval") ? doc["weatherInterval"].as<int>() : ConfigManager::getConfig().weatherInterval;
-        int transportInt = doc.containsKey("transportInterval") ? doc["transportInterval"].as<int>() : ConfigManager::getConfig().transportInterval;
-        int walkTime = doc.containsKey("walkingTime") ? doc["walkingTime"].as<int>() : ConfigManager::getConfig().walkingTime;
-        ConfigManager::setTimingConfig(weatherInt, transportInt, walkTime);
-    }
-    
-    // Update active hours
-    if (doc.containsKey("transportActiveStart") && doc.containsKey("transportActiveEnd")) {
-        ConfigManager::setActiveHours(doc["transportActiveStart"].as<String>(), doc["transportActiveEnd"].as<String>());
-    }
-    
-    // Update sleep hours
-    if (doc.containsKey("sleepStart") && doc.containsKey("sleepEnd")) {
-        ConfigManager::setSleepHours(doc["sleepStart"].as<String>(), doc["sleepEnd"].as<String>());
-    }
-    
-    // Update weekend mode
-    if (doc.containsKey("weekendMode")) {
-        ConfigManager::setWeekendMode(doc["weekendMode"].as<bool>());
-    }
-    
-    // Update weekend hours
-    if (doc.containsKey("weekendTransportStart") && doc.containsKey("weekendTransportEnd") && 
-        doc.containsKey("weekendSleepStart") && doc.containsKey("weekendSleepEnd")) {
-        ConfigManager::setWeekendHours(
-            doc["weekendTransportStart"].as<String>(), doc["weekendTransportEnd"].as<String>(),
-            doc["weekendSleepStart"].as<String>(), doc["weekendSleepEnd"].as<String>()
-        );
-    }
+    // Update global config structure
+    if (doc.containsKey("city")) strncpy(config.cityName, doc["city"].as<const char*>(), sizeof(config.cityName) - 1);
+    if (doc.containsKey("cityLat")) config.latitude = doc["cityLat"].as<float>();
+    if (doc.containsKey("cityLon")) config.longitude = doc["cityLon"].as<float>();
+    if (doc.containsKey("stopId")) strncpy(config.selectedStopId, doc["stopId"].as<const char*>(), sizeof(config.selectedStopId) - 1);
+    if (doc.containsKey("stopName")) strncpy(config.selectedStopName, doc["stopName"].as<const char*>(), sizeof(config.selectedStopName) - 1);
     
     // Update ÖPNV filters
     if (doc.containsKey("filters")) {
-        std::vector<String> filters;
-        JsonArray filterArray = doc["filters"];
-        for (JsonVariant v : filterArray) {
-            filters.push_back(v.as<String>());
+        g_configOption.oepnvFilters.clear();
+        JsonArray filters = doc["filters"];
+        for (JsonVariant v : filters) {
+            g_configOption.oepnvFilters.push_back(v.as<String>());
         }
-        ConfigManager::setActiveFilters(filters);
     }
     
-    // Also update the global config for web interface compatibility
-    if (doc.containsKey("city")) g_stationConfig.cityName = doc["city"].as<String>();
-    if (doc.containsKey("cityLat")) g_stationConfig.latitude = doc["cityLat"].as<float>();
-    if (doc.containsKey("cityLon")) g_stationConfig.longitude = doc["cityLon"].as<float>();
-    if (doc.containsKey("stopId")) g_stationConfig.selectedStopId = doc["stopId"].as<String>();
-    if (doc.containsKey("stopName")) g_stationConfig.selectedStopName = doc["stopName"].as<String>();
+    // Update new configuration values
+    if (doc.containsKey("weatherInterval")) config.weatherInterval = doc["weatherInterval"].as<int>();
+    if (doc.containsKey("transportInterval")) config.transportInterval = doc["transportInterval"].as<int>();
+    if (doc.containsKey("transportActiveStart")) strncpy(config.transportActiveStart, doc["transportActiveStart"].as<const char*>(), sizeof(config.transportActiveStart) - 1);
+    if (doc.containsKey("transportActiveEnd")) strncpy(config.transportActiveEnd, doc["transportActiveEnd"].as<const char*>(), sizeof(config.transportActiveEnd) - 1);
+    if (doc.containsKey("walkingTime")) config.walkingTime = doc["walkingTime"].as<int>();
+    if (doc.containsKey("sleepStart")) strncpy(config.sleepStart, doc["sleepStart"].as<const char*>(), sizeof(config.sleepStart) - 1);
+    if (doc.containsKey("sleepEnd")) strncpy(config.sleepEnd, doc["sleepEnd"].as<const char*>(), sizeof(config.sleepEnd) - 1);
+    if (doc.containsKey("weekendMode")) config.weekendMode = doc["weekendMode"].as<bool>();
+    if (doc.containsKey("weekendTransportStart")) strncpy(config.weekendTransportStart, doc["weekendTransportStart"].as<const char*>(), sizeof(config.weekendTransportStart) - 1);
+    if (doc.containsKey("weekendTransportEnd")) strncpy(config.weekendTransportEnd, doc["weekendTransportEnd"].as<const char*>(), sizeof(config.weekendTransportEnd) - 1);
+    if (doc.containsKey("weekendSleepStart")) strncpy(config.weekendSleepStart, doc["weekendSleepStart"].as<const char*>(), sizeof(config.weekendSleepStart) - 1);
+    if (doc.containsKey("weekendSleepEnd")) strncpy(config.weekendSleepEnd, doc["weekendSleepEnd"].as<const char*>(), sizeof(config.weekendSleepEnd) - 1);
+
+    // Save config mode to NVS (persists across power loss)
+    configMgr.setConfigMode(false);
     
-    // Mark configuration as valid and ready for operational mode
-    RTCConfigData& config = ConfigManager::getConfig();
-    config.isValid = true;
-    
-    // Save to NVS (saves RTC memory to persistent storage)
+    // Save to NVS (and RTC memory automatically)
     if (!configMgr.saveToNVS()) {
         server.send(500, "text/plain", "Failed to save config to NVS");
         return;
     }
-    
-    // Set configuration mode to false (operational mode)
-    ConfigManager::setConfigMode(false);
-    
-    ESP_LOGI("CONFIG", "Configuration saved successfully. Switching to operational mode.");
     
     // Switch to station mode only
     #ifdef ESP32
@@ -283,22 +190,32 @@ static WebServer* g_server = nullptr;
 
 // Callback wrapper functions
 void handleConfigPageWrapper() {
-  handleConfigPage(*g_server);
+    handleConfigPage(*g_server);
 }
 
 void handleSaveConfigWrapper() {
-  handleSaveConfig(*g_server);
+    handleSaveConfig(*g_server);
 }
 
 void handleStopAutocompleteWrapper() {
-  handleStopAutocomplete(*g_server);
+    handleStopAutocomplete(*g_server);
 }
 
 void setupWebServer(WebServer &server) {
-  g_server = &server;
-  server.on("/", handleConfigPageWrapper);
-  server.on("/save_config", HTTP_POST, handleSaveConfigWrapper);
-  server.on("/api/stop", HTTP_GET, handleStopAutocompleteWrapper);
-  server.begin();
-  ESP_LOGI("WEB_SERVER", "HTTP server started.");
+
+    // Initialize filesystem
+    // It need to be done before load configurration html files
+    if (!LittleFS.begin()) {
+        ESP_LOGE(TAG, "LittleFS mount failed! Please check filesystem or flash.");
+        while (true) {
+            delay(1000);
+        }
+    }
+    ESP_LOGI(TAG, "Setting up web server...");
+    g_server = &server;
+    server.on("/", handleConfigPageWrapper);
+    server.on("/save_config", HTTP_POST, handleSaveConfigWrapper);
+    server.on("/api/stop", HTTP_GET, handleStopAutocompleteWrapper);
+    server.begin();
+    ESP_LOGI("WEB_SERVER", "HTTP server started.");
 }

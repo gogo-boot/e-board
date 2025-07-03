@@ -42,9 +42,6 @@ bool getLocationFromGoogle(float &lat, float &lon) {
     if (!error) {
       lat = doc["location"]["lat"];
       lon = doc["location"]["lng"];
-      extern MyStationConfig g_stationConfig;
-      g_stationConfig.latitude = lat;
-      g_stationConfig.longitude = lon;
       ESP_LOGI(TAG, "Location found: lat=%.6f, lon=%.6f", lat, lon);
       http.end();
       return true;

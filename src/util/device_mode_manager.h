@@ -3,7 +3,7 @@
 
 class DeviceModeManager {
 public:
-    static bool hasValidConfiguration();
+    static bool hasValidConfiguration(bool &hasValidConfig);
     static void runConfigurationMode();
     static void runOperationalMode();
 };

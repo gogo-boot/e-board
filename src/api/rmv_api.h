@@ -10,5 +10,5 @@ struct Station {
 
 extern std::vector<Station> stations;
 
-void getNearbyStops();
+void getNearbyStops(float lat, float lon);
 void getDepartureBoard(const char* stopId);

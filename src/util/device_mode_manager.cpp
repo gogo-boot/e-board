@@ -21,8 +21,12 @@ static const char* TAG = "DEVICE_MODE";
 extern float g_lat, g_lon;
 extern WebServer server;
 
-bool DeviceModeManager::hasValidConfiguration() {
-    ConfigManager& configMgr = ConfigManager::getInstance();
+ConfigManager& configMgr = ConfigManager::getInstance();
+extern ConfigOption g_configOption;
+
+// The parameter hasValidConfig will be set to true if the configuration is valid
+// the parameter is used to fast path the configuration mode without reloading the configuration
+bool DeviceModeManager::hasValidConfiguration(bool &hasValidConfig) {
     
     // Load configuration from NVS
     bool configExists = configMgr.loadFromNVS();
@@ -34,8 +38,9 @@ bool DeviceModeManager::hasValidConfiguration() {
     
     // Validate critical configuration fields
     RTCConfigData& config = ConfigManager::getConfig();
-    bool hasValidConfig = (strlen(config.selectedStopId) > 0 && 
+    hasValidConfig = (strlen(config.selectedStopId) > 0 && 
                           strlen(config.ssid) > 0 &&
+                          strlen(config.selectedStopId) > 0 && // Ensure selectedStopId is not empty
                           config.latitude != 0.0 && 
                           config.longitude != 0.0);
     
@@ -56,23 +61,10 @@ bool DeviceModeManager::hasValidConfiguration() {
 void DeviceModeManager::runConfigurationMode() {
     ESP_LOGI(TAG, "=== ENTERING CONFIGURATION MODE ===");
     
-    ConfigManager& configMgr = ConfigManager::getInstance();
-    
     // Set configuration mode flag
     ConfigManager::setConfigMode(true);
     
-    // Initialize config with defaults if needed
-    if (!ConfigManager::hasValidConfig()) {
-        ConfigManager::setDefaults();
-    }
-
-    // Initialize filesystem
-    if (!LittleFS.begin()) {
-        ESP_LOGE(TAG, "LittleFS mount failed! Please check filesystem or flash.");
-        while (true) {
-            delay(1000);
-        }
-    }
+    ConfigManager::setDefaults();
 
     // Setup WiFi with access point for configuration
     WiFiManager wm;
@@ -81,31 +73,33 @@ void DeviceModeManager::runConfigurationMode() {
     // Setup time synchronization
     TimeManager::setupNTPTime();
     
-    // Load any existing partial configuration
-    configMgr.loadFromNVS();
-    
     // Get location if not already saved
-    RTCConfigData& config = ConfigManager::getConfig();
-    if (config.latitude == 0.0 && config.longitude == 0.0) {
-        getLocationFromGoogle(g_lat, g_lon);
-        getCityFromLatLon(g_lat, g_lon);
-        ESP_LOGI(TAG, "City set in setup: %s", config.cityName);
+    if (g_configOption.latitude == 0.0 && g_configOption.longitude == 0.0) {
+        getLocationFromGoogle(g_configOption.latitude, g_configOption.longitude);
+        // Get city name from lat/lon
+        ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", g_configOption.latitude, g_configOption.longitude);
+
+        g_configOption.cityName = getCityFromLatLon(g_configOption.latitude, g_configOption.longitude);
+        
+        // put cityName into RTCConfigData
+        if (g_configOption.cityName.isEmpty()) {
+            ESP_LOGE(TAG, "Failed to get city name from lat/lon");
+            // Set a default city name if fetching fails
+            g_configOption.cityName = "Unknown City";
+        }
+        ESP_LOGI(TAG, "City name set: %s", g_configOption.cityName);
     } else {
-        // Use saved coordinates
-        g_lat = config.latitude;
-        g_lon = config.longitude;
-        ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", 
-        config.cityName, g_lat, g_lon);
+        ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", g_configOption.cityName, g_configOption.latitude, g_configOption.longitude);
     }
 
     // Get nearby stops for configuration interface
-    getNearbyStops();
+    getNearbyStops(g_configOption.latitude, g_configOption.longitude);
     
     // Start web server for configuration
     setupWebServer(server);
     
     ESP_LOGI(TAG, "Configuration mode active - web server running");
-    ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local", config.ipAddress);
+    ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local", g_configOption.ipAddress);
 }
 
 void DeviceModeManager::runOperationalMode() {
@@ -126,10 +120,10 @@ void DeviceModeManager::runOperationalMode() {
     
     // Set coordinates from saved config
     RTCConfigData& config = ConfigManager::getConfig();
-    g_lat = config.latitude;
-    g_lon = config.longitude;
+    g_configOption.latitude = config.latitude;
+    g_configOption.longitude = config.longitude;
     ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", 
-        config.cityName, g_lat, g_lon);
+        config.cityName, g_configOption.latitude, g_configOption.longitude);
     
     // Check if this is a deep sleep wake-up for fast path
     if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
@@ -160,7 +154,7 @@ void DeviceModeManager::runOperationalMode() {
         }
         
         WeatherInfo weather;
-        if (getWeatherFromDWD(g_lat, g_lon, weather)) {
+        if (getWeatherFromDWD(g_configOption.latitude, g_configOption.longitude, weather)) {
             printWeatherInfo(weather);
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
