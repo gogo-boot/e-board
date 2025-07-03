@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.title | default: site.title }}</title>
+    <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    <style>
+      .nav-menu {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-bottom: 2rem;
+      }
+      .nav-menu h3 {
+        margin-top: 0;
+        color: #333;
+      }
+      .nav-menu ul {
+        list-style: none;
+        padding: 0;
+      }
+      .nav-menu li {
+        margin: 0.5rem 0;
+      }
+      .nav-menu a {
+        text-decoration: none;
+        color: #007acc;
+      }
+      .nav-menu a:hover {
+        text-decoration: underline;
+      }
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+      .feature-card {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #007acc;
+      }
+      .feature-card h3 {
+        margin-top: 0;
+        color: #333;
+      }
+      .badge {
+        display: inline-block;
+        background: #007acc;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-lg px-3 my-5 markdown-body">
+      <h1><a href="{{ '/' | relative_url }}">{{ site.title | default: site.github.repository_name }}</a></h1>
+      
+      {% if page.title != site.title %}
+      <div class="nav-menu">
+        <h3>📚 Documentation Menu</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div>
+            <strong>🚀 Getting Started</strong>
+            <ul>
+              <li><a href="{{ '/quick-start.md' | relative_url }}">Quick Start</a></li>
+              <li><a href="{{ '/hardware-setup.md' | relative_url }}">Hardware Setup</a></li>
+              <li><a href="{{ '/software-setup.md' | relative_url }}">Software Setup</a></li>
+            </ul>
+          </div>
+          <div>
+            <strong>⚙️ Configuration</strong>
+            <ul>
+              <li><a href="{{ '/configuration.md' | relative_url }}">Configuration Guide</a></li>
+              <li><a href="{{ '/configuration-data-flow.md' | relative_url }}">Data Flow</a></li>
+              <li><a href="{{ '/configuration-keys-mapping.md' | relative_url }}">Keys Mapping</a></li>
+            </ul>
+          </div>
+          <div>
+            <strong>🔧 Technical</strong>
+            <ul>
+              <li><a href="{{ '/architecture.md' | relative_url }}">Architecture</a></li>
+              <li><a href="{{ '/api-reference.md' | relative_url }}">API Reference</a></li>
+              <li><a href="{{ '/troubleshooting.md' | relative_url }}">Troubleshooting</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      
+      {{ content }}
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/4.1.0/anchor.min.js"></script>
+    <script>anchors.add();</script>
+  </body>
+</html>
