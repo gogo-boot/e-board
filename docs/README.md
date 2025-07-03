@@ -13,6 +13,8 @@ Comprehensive documentation for the ESP32-C3 powered public transport departure 
 - [Configuration Guide](./configuration.md) - Web interface setup and options
 - [Configuration Keys Mapping](./configuration-keys-mapping.md) - Complete key mapping across all layers
 - [Configuration Keys Quick Reference](./configuration-keys-quick-reference.md) - Developer quick reference
+- [Configuration Data Flow](./configuration-data-flow.md) - Complete save/load process documentation
+- [Configuration Flowchart](./configuration-flowchart.md) - Visual process flow diagrams
 - [API Keys Setup](./api-keys.md) - Required API keys and configuration
 - [Deep Sleep Configuration](./deep-sleep.md) - Power management and sleep scheduling
 

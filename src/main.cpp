@@ -87,6 +87,10 @@ void reconnectWiFi() {
       ESP_LOGI(TAG, "WiFi reconnected successfully!");
       ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
       g_stationConfig.ipAddress = WiFi.localIP().toString();
+      
+      // Save updated IP address to NVS
+      ConfigManager& configMgr = ConfigManager::getInstance();
+      configMgr.saveConfig(g_stationConfig);
     } else {
       ESP_LOGW(TAG, "Failed to reconnect to WiFi with saved credentials");
     }
@@ -115,6 +119,10 @@ void setupWiFiStationMode(MyStationConfig &config) {
       ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
       config.ipAddress = WiFi.localIP().toString();
       
+      // Save updated IP address to NVS
+      ConfigManager& configMgr = ConfigManager::getInstance();
+      configMgr.saveConfig(config);
+      
       // Start mDNS in station mode
       if (MDNS.begin("mystation")) {
         ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
@@ -142,13 +150,18 @@ void setupWiFiAndMDNS(WiFiManager &wm, MyStationConfig &config) {
   }
   ESP_LOGI(TAG, "WiFi connected!");
   config.ssid = wm.getWiFiSSID();
+  config.ipAddress = WiFi.localIP().toString();
+  
+  // Save WiFi credentials immediately to NVS
+  ConfigManager& configMgr = ConfigManager::getInstance();
+  ESP_LOGI(TAG, "Saving WiFi credentials to NVS: SSID=%s, IP=%s", 
+           config.ssid.c_str(), config.ipAddress.c_str());
+  configMgr.saveConfig(config);
   if (MDNS.begin("mystation")) {
     ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
   } else {
     ESP_LOGW(TAG, "mDNS responder failed to start");
   }
-  ESP_LOGI(TAG, "ESP32 IP address: %s", WiFi.localIP().toString().c_str());
-  config.ipAddress = WiFi.localIP().toString();
 }
 
 void setupTime() {
@@ -199,6 +212,7 @@ bool hasConfigInNVS() {
   ESP_LOGI(TAG, "- SSID: %s", g_stationConfig.ssid.c_str());
   ESP_LOGI(TAG, "- Stop: %s (%s)", g_stationConfig.selectedStopName.c_str(), g_stationConfig.selectedStopId.c_str());
   ESP_LOGI(TAG, "- Location: %s (%f, %f)", g_stationConfig.cityName.c_str(), g_stationConfig.latitude, g_stationConfig.longitude);
+  ESP_LOGI(TAG, "- IP Address: %s", g_stationConfig.ipAddress.c_str());
 
   if (hasValidConfig) {
     ESP_LOGI(TAG, "Valid configuration found in NVS");
@@ -222,9 +236,6 @@ void runConfigurationMode() {
   // Initialize config with defaults
   g_stationConfig.latitude = 0.0;
   g_stationConfig.longitude = 0.0;
-  g_stationConfig.ssid = WiFi.SSID(); // Use current SSID if available
-  g_stationConfig.ipAddress = WiFi.localIP().toString();
-  g_stationConfig.ssid = "";
   g_stationConfig.cityName = "";
   g_stationConfig.oepnvFilters = {"RE", "S-Bahn", "Bus"};
 

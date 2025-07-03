@@ -12,8 +12,8 @@ struct MyStationConfig {
     std::vector<String> stopIds;   // all found stop IDs
     std::vector<String> stopNames; // all found stop names
     std::vector<int> stopDistances; // distances to stops
-    String selectedStopId;   // User's selected stop ID from config
-    String selectedStopName; // User's selected stop name from config
+    String selectedStopId = "";   // User's selected stop ID from config
+    String selectedStopName = ""; // User's selected stop name from config
     
     // New configuration values from the updated web interface
     int weatherInterval = 3;        // Weather update interval in hours (default: 3)
