@@ -277,3 +277,28 @@ void handleStopAutocomplete(WebServer &server) {
     serializeJson(doc, out);
     server.send(200, "application/json", out);
 }
+
+// Global server reference for callback access
+static WebServer* g_server = nullptr;
+
+// Callback wrapper functions
+void handleConfigPageWrapper() {
+  handleConfigPage(*g_server);
+}
+
+void handleSaveConfigWrapper() {
+  handleSaveConfig(*g_server);
+}
+
+void handleStopAutocompleteWrapper() {
+  handleStopAutocomplete(*g_server);
+}
+
+void setupWebServer(WebServer &server) {
+  g_server = &server;
+  server.on("/", handleConfigPageWrapper);
+  server.on("/save_config", HTTP_POST, handleSaveConfigWrapper);
+  server.on("/api/stop", HTTP_GET, handleStopAutocompleteWrapper);
+  server.begin();
+  ESP_LOGI("WEB_SERVER", "HTTP server started.");
+}

@@ -180,14 +180,13 @@ bool ConfigManager::loadCriticalFromRTC(MyStationConfig &config) {
 
 ### Configuration Mode Behavior
 ```cpp
-void runConfigurationMode() {
+void DeviceModeManager::runConfigurationMode() {
     // Set mode flags
-    inConfigMode = true;
-    configMgr.saveConfigMode(true);
+    ConfigManager::setConfigMode(true);
     
     // Setup WiFi AP mode for configuration
     WiFiManager wm;
-    setupWiFiAndMDNS(wm, g_stationConfig);
+    MyWiFiManager::setupAPMode(wm);
     
     // Get location and nearby stops
     getLocationFromGoogle(g_lat, g_lon);
@@ -195,7 +194,7 @@ void runConfigurationMode() {
     getNearbyStops();
     
     // Start web server
-    setupWebServer();
+    setupWebServer(server);
     
     // Stay in loop() to handle web requests
 }
@@ -203,23 +202,22 @@ void runConfigurationMode() {
 
 ### Operational Mode Behavior
 ```cpp
-void runOperationalMode() {
+void DeviceModeManager::runOperationalMode() {
     // Set mode flags
-    inConfigMode = false;
-    configMgr.saveConfigMode(false);
+    ConfigManager::setConfigMode(false);
     
     // Load configuration (NVS + RTC fast path)
-    configMgr.loadConfig(g_stationConfig);
+    configMgr.loadFromNVS();
     
     // Connect to WiFi in station mode
-    setupWiFiStationMode(g_stationConfig);
+    MyWiFiManager::setupStationMode();
     
     // Fetch data and update display
-    getDepartureBoard(g_stationConfig.selectedStopId);
+    getDepartureBoard(config.selectedStopId);
     getWeatherFromDWD(g_lat, g_lon, weather);
     
     // Calculate sleep time and enter deep sleep
-    uint64_t sleepTime = calculateSleepTime(g_stationConfig.transportInterval);
+    uint64_t sleepTime = calculateSleepTime(config.transportInterval);
     enterDeepSleep(sleepTime);
 }
 ```

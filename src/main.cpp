@@ -2,12 +2,12 @@
  * MyStation E-Board - ESP32-C3 Public Transport Departure Board
  * 
  * Boot Process Flow:
- * 1. System starts and calls hasConfigInNVS()
- * 2. If no valid config -> runConfigurationMode()
+ * 1. System starts and calls DeviceModeManager::hasValidConfiguration()
+ * 2. If no valid config -> DeviceModeManager::runConfigurationMode()
  *    - Creates WiFi hotspot for setup
  *    - Starts web server for user configuration
  *    - Stays awake to handle configuration
- * 3. If valid config exists -> runOperationalMode()
+ * 3. If valid config exists -> DeviceModeManager::runOperationalMode()
  *    - Connects to saved WiFi
  *    - Fetches transport and weather data
  *    - Updates display and enters deep sleep
@@ -20,40 +20,15 @@
 
 #define ARDUINOJSON_DECODE_NESTING_LIMIT 200
 #include <Arduino.h>
-#include <WiFiManager.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
-#include <WiFi.h>
-#include "esp_log.h"
-#include "secrets/google_secrets.h"
-#include "secrets/rmv_secrets.h"
 #include <WebServer.h>
-#include <FS.h>
-#include <LittleFS.h>
-#include "api/rmv_api.h"
-#include "api/google_api.h"
-#include "api/dwd_weather_api.h"
-#include "util/util.h"
-#include "config/config_page.h"
-#include "config/config_manager.h" // Add new config manager
-#include "api/google_api.h" // Add this if getCityFromLatLon is declared here
-#include "util/power.h"
-#include "util/weather_print.h"
-#include "util/sleep_utils.h"
-#include <time.h>
+#include "esp_log.h"
 #include "config/config_struct.h"
-#include "config/pins.h"
-#include <ESPmDNS.h>
-#include "esp_sleep.h"
+#include "config/config_manager.h"
+#include "util/device_mode_manager.h"
 
 static const char* TAG = "MAIN";
 
-// Function declarations
-bool hasValidConfigInRTC();
-void runConfigurationMode();
-void runOperationalMode();
-
-// --- Globals ---
+// --- Globals (shared across modules) ---
 WebServer server(80);
 RTC_DATA_ATTR unsigned long loopCount = 0;
 
@@ -63,324 +38,6 @@ MyStationConfig g_stationConfig;
 
 float g_lat = 0.0, g_lon = 0.0;
 
-// --- Modularized Setup Functions ---
-void reconnectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) {
-    ESP_LOGD(TAG, "WiFi already connected: %s", WiFi.localIP().toString().c_str());
-    return; // Already connected
-  }
-  
-  ESP_LOGI(TAG, "WiFi disconnected, attempting to reconnect...");
-  
-  // Get configuration from RTC
-  RTCConfigData& config = ConfigManager::getConfig();
-  
-  // Try to reconnect using saved credentials
-  if (strlen(config.ssid) > 0) {
-    ESP_LOGI(TAG, "Attempting to connect to saved SSID: %s", config.ssid);
-    WiFi.begin(config.ssid);
-    
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 3) {
-      delay(500);
-      ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
-      attempts++;
-    }
-    
-    if (WiFi.status() == WL_CONNECTED) {
-      ESP_LOGI(TAG, "WiFi reconnected successfully!");
-      ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
-      ConfigManager::setNetwork(config.ssid, WiFi.localIP().toString());
-      
-      // Save updated configuration to NVS
-      ConfigManager& configMgr = ConfigManager::getInstance();
-      configMgr.saveToNVS();
-    } else {
-      ESP_LOGW(TAG, "Failed to reconnect to WiFi with saved credentials");
-    }
-  } else {
-    ESP_LOGW(TAG, "No saved WiFi credentials available for reconnection");
-  }
-}
-
-void setupWiFiStationMode() {
-  // Station mode only - connect to saved WiFi without AP mode
-  ESP_LOGI(TAG, "Connecting to WiFi in station mode...");
-  
-  RTCConfigData& config = ConfigManager::getConfig();
-  
-  if (strlen(config.ssid) > 0) {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(config.ssid);
-    
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 3) { // 10 seconds timeout
-      delay(500);
-      ESP_LOGD(TAG, "Connecting to WiFi... attempt %d", attempts + 1);
-      attempts++;
-    }
-    
-    if (WiFi.status() == WL_CONNECTED) {
-      ESP_LOGI(TAG, "WiFi connected successfully!");
-      ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
-      ConfigManager::setNetwork(config.ssid, WiFi.localIP().toString());
-      
-      // Save updated IP address to NVS
-      ConfigManager& configMgr = ConfigManager::getInstance();
-      configMgr.saveToNVS();
-      
-      // Start mDNS in station mode
-      if (MDNS.begin("mystation")) {
-        ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
-      }
-    } else {
-      ESP_LOGW(TAG, "Failed to connect to WiFi in station mode");
-    }
-  } else {
-    ESP_LOGW(TAG, "No saved WiFi credentials available");
-  }
-}
-
-void setupWiFiAndMDNS(WiFiManager &wm) {
-  ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
-  const char *menu[] = {"wifi"};
-  wm.setMenu(menu, 1);
-  wm.setAPStaticIPConfig(IPAddress(10, 0, 1, 1), IPAddress(10, 0, 1, 1), IPAddress(255, 255, 255, 0));
-  String apName = Util::getUniqueSSID("MyStation");
-  ESP_LOGD(TAG, "AP SSID: %s", apName.c_str());
-  bool res = wm.autoConnect(apName.c_str());
-  ESP_LOGD(TAG, "autoConnect() returned");
-  if (!res) {
-    ESP_LOGE(TAG, "Failed to connect");
-    return;
-  }
-  ESP_LOGI(TAG, "WiFi connected!");
-  
-  // Update configuration with new network info
-  ConfigManager::setNetwork(wm.getWiFiSSID(), WiFi.localIP().toString());
-  
-  // Save WiFi credentials immediately to NVS
-  ConfigManager& configMgr = ConfigManager::getInstance();
-  ESP_LOGI(TAG, "Saving WiFi credentials to NVS: SSID=%s, IP=%s", 
-           wm.getWiFiSSID().c_str(), WiFi.localIP().toString().c_str());
-  configMgr.saveToNVS();
-  
-  if (MDNS.begin("mystation")) {
-    ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
-  } else {
-    ESP_LOGW(TAG, "mDNS responder failed to start");
-  }
-}
-
-void setupTime() {
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  ESP_LOGI(TAG, "Waiting for NTP time sync");
-  time_t now = time(nullptr);
-  int retry = 0;
-  const int retry_count = 30;
-  while (now < 8 * 3600 * 2 && retry < retry_count) { // year < 1971
-    delay(500);
-    ESP_LOGD(TAG, ".");
-    now = time(nullptr);
-    retry++;
-  }
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  ESP_LOGI(TAG, "NTP time set: %04d-%02d-%02d %02d:%02d:%02d",
-    timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-    timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-}
-
-void setupWebServer() {
-  server.on("/", []() { handleConfigPage(server); });
-  server.on("/save_config", HTTP_POST, []() { handleSaveConfig(server); });
-  server.on("/api/stop", HTTP_GET, []() { handleStopAutocomplete(server); });
-  server.begin();
-  ESP_LOGI(TAG, "HTTP server started.");
-}
-
-// --- Mode Detection Function ---
-bool hasConfigInNVS() {
-  ConfigManager& configMgr = ConfigManager::getInstance();
-  
-  // Load configuration from NVS
-  bool configExists = configMgr.loadFromNVS();
-  
-  if (!configExists) {
-    ESP_LOGI(TAG, "No configuration found in NVS");
-    return false;
-  }
-  
-  // Validate critical configuration fields
-  RTCConfigData& config = ConfigManager::getConfig();
-  bool hasValidConfig = (strlen(config.selectedStopId) > 0 && 
-                        strlen(config.ssid) > 0 &&
-                        config.latitude != 0.0 && 
-                        config.longitude != 0.0);
-  
-  ESP_LOGI(TAG, "- SSID: %s", config.ssid);
-  ESP_LOGI(TAG, "- Stop: %s (%s)", config.selectedStopName, config.selectedStopId);
-  ESP_LOGI(TAG, "- Location: %s (%f, %f)", config.cityName, config.latitude, config.longitude);
-  ESP_LOGI(TAG, "- IP Address: %s", config.ipAddress);
-
-  if (hasValidConfig) {
-    ESP_LOGI(TAG, "Valid configuration found in NVS");
-    return true;
-  } else {
-    ESP_LOGI(TAG, "Incomplete configuration in NVS, missing critical fields");
-    return false;
-  }
-}
-
-// --- Configuration Mode ---
-void runConfigurationMode() {
-  ESP_LOGI(TAG, "=== ENTERING CONFIGURATION MODE ===");
-  
-  ConfigManager& configMgr = ConfigManager::getInstance();
-  
-  // Set configuration mode flag
-  ConfigManager::setConfigMode(true);
-  
-  // Initialize config with defaults if needed
-  if (!ConfigManager::hasValidConfig()) {
-    ConfigManager::setDefaults();
-  }
-
-  // Initialize filesystem
-  if (!LittleFS.begin()) {
-    ESP_LOGE(TAG, "LittleFS mount failed! Please check filesystem or flash.");
-    while (true) {
-      delay(1000);
-    }
-  }
-
-  // Setup WiFi with access point for configuration
-  WiFiManager wm;
-  setupWiFiAndMDNS(wm);
-  
-  // Setup time synchronization
-  setupTime();
-  
-  // Load any existing partial configuration
-  configMgr.loadFromNVS();
-  
-  // Get location if not already saved
-  RTCConfigData& config = ConfigManager::getConfig();
-  if (config.latitude == 0.0 && config.longitude == 0.0) {
-    getLocationFromGoogle(g_lat, g_lon);
-    getCityFromLatLon(g_lat, g_lon);
-    ESP_LOGI(TAG, "City set in setup: %s", config.cityName);
-  } else {
-    // Use saved coordinates
-    g_lat = config.latitude;
-    g_lon = config.longitude;
-    ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", 
-    config.cityName, g_lat, g_lon);
-  }
-
-  // Get nearby stops for configuration interface
-  getNearbyStops();
-  
-  // Start web server for configuration
-  setupWebServer();
-  
-  ESP_LOGI(TAG, "Configuration mode active - web server running");
-  ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local", config.ipAddress);
-}
-
-// --- Operational Mode ---
-void runOperationalMode() {
-  ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
-  
-  ConfigManager& configMgr = ConfigManager::getInstance();
-  
-  // Set operational mode flag
-  ConfigManager::setConfigMode(false);
-  
-  // Load complete configuration from NVS
-  if (!configMgr.loadFromNVS()) {
-    ESP_LOGE(TAG, "Failed to load configuration in operational mode!");
-    ESP_LOGI(TAG, "Switching to configuration mode...");
-    runConfigurationMode();
-    return;
-  }
-  
-  // Set coordinates from saved config
-  RTCConfigData& config = ConfigManager::getConfig();
-  g_lat = config.latitude;
-  g_lon = config.longitude;
-  ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", 
-    config.cityName, g_lat, g_lon);
-  
-  // Check if this is a deep sleep wake-up for fast path
-  if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
-    ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
-    loopCount++;
-    
-    // Print wakeup reason and current time
-    printWakeupReason();
-    ESP_LOGI(TAG, "Loop count: %lu", loopCount);
-    
-    time_t now = time(nullptr);
-    struct tm *timeinfo = localtime(&now);
-    ESP_LOGI(TAG, "Current time: %04d-%02d-%02d %02d:%02d:%02d",
-      timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
-      timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
-  }
-  
-  // Connect to WiFi in station mode
-  setupWiFiStationMode();
-  
-  if (WiFi.status() == WL_CONNECTED) {
-    // Fetch and display data
-    String stopIdToUse = strlen(config.selectedStopId) > 0 ? 
-                         String(config.selectedStopId) : 
-                         (!stations.empty() ? stations[0].id : "");
-    
-    if (stopIdToUse.length() > 0) {
-      ESP_LOGI(TAG, "Using stop ID: %s (%s)", stopIdToUse.c_str(), config.selectedStopName);
-      getDepartureBoard(stopIdToUse.c_str());
-    } else {
-      ESP_LOGW(TAG, "No stop configured and no stations found.");
-    }
-    
-    WeatherInfo weather;
-    if (getWeatherFromDWD(g_lat, g_lon, weather)) {
-      printWeatherInfo(weather);
-    } else {
-      ESP_LOGE(TAG, "Failed to get weather information from DWD.");
-    }
-  } else {
-    ESP_LOGW(TAG, "WiFi not connected");
-  }
-
-      // Option 1: Wake up every 5 minutes (0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
-    // uint64_t sleepTime = calculateSleepTime(1);
-    
-    // Option 2: Wake up every 3 minutes (0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57)
-    // uint64_t sleepTime = calculateSleepTime(3);
-    
-    // Option 3: Wake up every 10 minutes (0, 10, 20, 30, 40, 50)
-    // uint64_t sleepTime = calculateSleepTime(10);
-    
-    // Option 4: Wake up at specific time (e.g., 01:00 every day)
-    // uint64_t sleepTime = calculateSleepUntilTime(1, 0); // 01:00
-    
-    // Option 5: Wake up at multiple specific times
-    // if (timeinfo->tm_hour >= 22 || timeinfo->tm_hour < 6) {
-    //   // Night mode: sleep until 06:00
-    //   uint64_t sleepTime = calculateSleepUntilTime(6, 0);
-    // } else {
-    //   // Day mode: wake every 5 minutes
-    //   uint64_t sleepTime = calculateSleepTime(5);
-    // }
-
-  // Calculate sleep time and enter deep sleep
-  uint64_t sleepTime = calculateSleepTime(config.transportInterval);
-  ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTime);
-  enterDeepSleep(sleepTime);
-}
-
 void setup() {
   Serial.begin(115200);
   delay(1000); // Allow time for serial monitor to connect
@@ -389,10 +46,10 @@ void setup() {
   ESP_LOGI(TAG, "System starting...");
   
   // Determine device mode based on saved configuration
-  if (hasConfigInNVS()) {
-    runOperationalMode();
+  if (DeviceModeManager::hasValidConfiguration()) {
+    DeviceModeManager::runOperationalMode();
   } else {
-    runConfigurationMode();
+    DeviceModeManager::runConfigurationMode();
   }
 }
 
