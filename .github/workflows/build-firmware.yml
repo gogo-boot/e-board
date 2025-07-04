@@ -72,7 +72,7 @@ jobs:
           echo "PlatformIO Version: ${{ env.PLATFORMIO_CORE_VERSION }}" >> build_info.txt
           
       - name: Upload firmware artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: firmware-${{ matrix.environment }}-${{ github.sha }}
           path: |
@@ -84,7 +84,7 @@ jobs:
           retention-days: 30
           
       - name: Upload filesystem artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: filesystem-${{ matrix.environment }}-${{ github.sha }}
           path: |
@@ -102,7 +102,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         
       - name: Create release package
         run: |
