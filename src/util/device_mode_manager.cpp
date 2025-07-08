@@ -155,6 +155,7 @@ void DeviceModeManager::runOperationalMode() {
         WeatherInfo weather;
         if (getWeatherFromDWD(g_webConfigPageData.latitude, g_webConfigPageData.longitude, weather)) {
             printWeatherInfo(weather);
+            displayWeatherInfo(weather);
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
