@@ -130,3 +130,84 @@ void getDepartureBoard(const char* stopId) {
   }
   http.end();
 }
+
+bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
+    ESP_LOGI(TAG, "Fetching departure data for stop: %s", stopId);
+    
+    HTTPClient http;
+    String encodedId = Util::urlEncode(String(stopId));
+    String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
+                 "&id=" + encodedId +
+                 "&format=json&maxJourneys=10";
+    
+    String urlForLog = url;
+    int keyPos = urlForLog.indexOf("accessId=");
+    if (keyPos != -1) {
+        int keyEnd = urlForLog.indexOf('&', keyPos);
+        if (keyEnd == -1) keyEnd = urlForLog.length();
+        urlForLog.replace(urlForLog.substring(keyPos, keyEnd), "accessId=***");
+    }
+    
+    ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
+    http.begin(url);
+    int httpCode = http.GET();
+    
+    if (httpCode != HTTP_CODE_OK) {
+        ESP_LOGE(TAG, "HTTP GET failed, error: %s", http.errorToString(httpCode).c_str());
+        http.end();
+        return false;
+    }
+    
+    String payload = http.getString();
+    http.end();
+    
+    ESP_LOGD(TAG, "Departure board response: %s", payload.c_str());
+    
+    // Parse JSON response
+    initDepartureFilter();
+    DynamicJsonDocument doc(20480);
+    DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(departureFilter));
+    
+    if (error) {
+        ESP_LOGE(TAG, "Failed to parse RMV departureBoard JSON: %s", error.c_str());
+        return false;
+    }
+    
+    // Clear previous data
+    departData.departures.clear();
+    departData.stopId = String(stopId);
+    departData.departureCount = 0;
+    
+    // Extract stop name if available
+    if (doc.containsKey("serverInfo") && doc["serverInfo"].containsKey("stopName")) {
+        departData.stopName = doc["serverInfo"]["stopName"].as<String>();
+    } else {
+        departData.stopName = "Unknown Stop";
+    }
+    
+    // Parse departures
+    JsonArray departures = doc["Departure"];
+    for (JsonObject dep : departures) {
+        DepartureInfo info;
+        info.line = dep["name"] | "";
+        info.direction = dep["direction"] | "";
+        info.time = dep["time"] | "";
+        info.rtTime = dep["rtTime"] | "";
+        info.track = dep["track"] | "";
+        
+        if (dep.containsKey("Product") && dep["Product"].is<JsonArray>() && dep["Product"].size() > 0) {
+            info.category = dep["Product"][0]["catOut"] | "";
+        } else {
+            info.category = "";
+        }
+        
+        departData.departures.push_back(info);
+        departData.departureCount++;
+        
+        // Limit to reasonable number of departures
+        if (departData.departureCount >= 10) break;
+    }
+    
+    ESP_LOGI(TAG, "Successfully parsed %d departures for stop %s", departData.departureCount, departData.stopName.c_str());
+    return true;
+}

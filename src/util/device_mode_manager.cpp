@@ -7,6 +7,7 @@
 #include "time_manager.h"
 #include "sleep_utils.h"
 #include "weather_print.h"
+#include "departure_print.h"
 #include "api/rmv_api.h"
 #include "api/google_api.h"
 #include "api/dwd_weather_api.h"
@@ -141,20 +142,29 @@ void DeviceModeManager::runOperationalMode() {
     MyWiFiManager::reconnectWiFi();
     
     if (MyWiFiManager::isConnected()) {
-        // Fetch and display data
+        // Fetch and display departure data
         String stopIdToUse = strlen(config.selectedStopId) > 0 ? 
                              String(config.selectedStopId) : "";
         
         if (stopIdToUse.length() > 0) {
             ESP_LOGI(TAG, "Using stop ID: %s (%s)", stopIdToUse.c_str(), config.selectedStopName);
-            getDepartureBoard(stopIdToUse.c_str());
+            
+            DepartureData depart;
+            if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
+                printDepartInfo(depart);
+                displayDepartInfo(depart);
+            } else {
+                ESP_LOGE(TAG, "Failed to get departure information from RMV.");
+            }
         } else {
             ESP_LOGW(TAG, "No stop configured.");
         }
         
+        // Fetch and display weather data
         WeatherInfo weather;
         if (getWeatherFromDWD(g_webConfigPageData.latitude, g_webConfigPageData.longitude, weather)) {
             printWeatherInfo(weather);
+            displayWeatherInfo(weather);
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
