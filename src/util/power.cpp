@@ -1,7 +1,7 @@
-#include "power.h"
+#include "util/power.h"
 #include <Arduino.h>
-#include "esp_sleep.h"
-#include "esp_log.h"
+#include <esp_sleep.h>
+#include <esp_log.h>
 
 static const char* TAG = "POWER";
 

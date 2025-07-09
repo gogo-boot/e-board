@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include <vector>
-#include "esp_sleep.h"
+#include <esp_sleep.h>
 
 // Complete RTC memory structure (survives deep sleep, lost on power loss)
 struct RTCConfigData {
