@@ -1,8 +1,8 @@
-#include "dwd_weather_api.h"
+#include "api/dwd_weather_api.h"
 #include "config/config_struct.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include "esp_log.h"
+#include <esp_log.h>
 
 // Get city/location name from lat/lon using Nominatim (OpenStreetMap)
 String getCityFromLatLon(float lat, float lon) {

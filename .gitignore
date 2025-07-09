@@ -6,5 +6,5 @@
 .vscode/ipch
 
 # Ignore all secret headers except example files
-src/secrets/*.h
-!src/secrets/*.h.example
+include/secrets/*.h
+!include/secrets/*.h.example

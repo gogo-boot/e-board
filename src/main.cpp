@@ -21,7 +21,7 @@
 #define ARDUINOJSON_DECODE_NESTING_LIMIT 200
 #include <Arduino.h>
 #include <WebServer.h>
-#include "esp_log.h"
+#include <esp_log.h>
 #include "config/config_struct.h"
 #include "config/config_manager.h"
 #include "util/device_mode_manager.h"

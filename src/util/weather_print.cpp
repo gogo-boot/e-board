@@ -1,6 +1,6 @@
-#include "weather_print.h"
+#include "util/weather_print.h"
 #include <Arduino.h>
-#include "esp_log.h"
+#include <esp_log.h>
 
 // Include e-paper display libraries
 #include <GxEPD2_BW.h>

@@ -1,6 +1,6 @@
-#include "config_manager.h"
-#include "esp_log.h"
-#include "esp_sleep.h"
+#include "config/config_manager.h"
+#include <esp_log.h>
+#include <esp_sleep.h>
 #include <vector>
 
 static const char* TAG = "CONFIG_MGR";

@@ -1,9 +1,9 @@
-#include "google_api.h"
+#include "api/google_api.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include "secrets/google_secrets.h"
-#include "esp_log.h"
+#include <esp_log.h>
 #include "config/config_struct.h"
 
 static const char* TAG = "GOOGLE_API";
