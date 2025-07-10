@@ -4,7 +4,40 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-blue.svg)](https://platformio.org/)
-[![ESP32-C3](https://img.shields.io/badge/ESP32--C3-Supported-green.svg)](https://www.espressif.com/en/products/socs/esp32-c3)
+[![E## 🔋 Power Management
+
+- **Active Mode**: ~100mA (during data fetch)
+- **Deep Sleep**: <50μA (between updates)  
+- **Battery Life**: 2-4 weeks on 2000mAh (5-min intervals)
+- **Smart Scheduling**: Reduced updates during night hours
+
+### Battery Selection Rationale
+
+The project uses **CR123A lithium batteries** for optimal efficiency and simplicity.
+
+#### Battery Types Compared
+
+- **CR123/CR123A**: 3.0V non-rechargeable lithium battery, stable output, direct ESP32 connection
+- **16340 (Li-ion/LiFePO₄)**: Rechargeable, 3.2–3.7V nominal, requires voltage regulator
+- **AA (Alkaline/NiMH)**: 1.5V (alkaline) or 1.2V (NiMH) per cell; 3-4 cells need regulator
+- **Li-Po/Li-ion single cell**: 3.7V nominal, 4.2V fully charged; needs regulator or boost converter
+
+#### Why CR123A Was Chosen
+
+- **✅ No regulator needed**: 3V output connects directly to ESP32-C3's 3.3V input
+- **✅ Maximum efficiency**: No voltage regulation = no energy loss as heat
+- **✅ Stable voltage**: Consistent 3V throughout discharge cycle supports WiFi current demands
+- **✅ Sufficient capacity**: Adequate mAh for weeks of operation with deep sleep
+- **⚠️ Drawback**: Less common than AA batteries, higher cost per unit
+
+#### Why Not Other Batteries?
+
+- **AA batteries**: Require voltage regulator; voltage drops cause instability below 70% charge
+- **Li-ion/Li-Po/16340**: Voltage too high when full (4.2V), too low when empty (3.0V); need regulation, reducing efficiency
+
+**Result**: CR123A provides the simplest, most efficient power solution with direct ESP32 connection and stable operation throughout battery life.
+
+## 🌍 Coverage(https://img.shields.io/badge/ESP32--C3-Supported-green.svg)](https://www.espressif.com/en/products/socs/esp32-c3)
 
 ## ✨ Features
 
