@@ -8,6 +8,7 @@
 #include "util/sleep_utils.h"
 #include "util/weather_print.h"
 #include "util/departure_print.h"
+#include "util/display_manager.h"
 #include "api/rmv_api.h"
 #include "api/google_api.h"
 #include "api/dwd_weather_api.h"
@@ -138,21 +139,29 @@ void DeviceModeManager::runOperationalMode() {
         TimeManager::printCurrentTime();
     }
     
+    // Initialize display manager (can be configured via config later)
+    DisplayManager::init(DisplayOrientation::LANDSCAPE);
+    DisplayManager::setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+    
     // Connect to WiFi in station mode
     MyWiFiManager::reconnectWiFi();
     
     if (MyWiFiManager::isConnected()) {
-        // Fetch and display departure data
+        DepartureData depart;
+        WeatherInfo weather;
+        bool hasTransport = false;
+        bool hasWeather = false;
+        
+        // Fetch departure data
         String stopIdToUse = strlen(config.selectedStopId) > 0 ? 
                              String(config.selectedStopId) : "";
         
         if (stopIdToUse.length() > 0) {
-            ESP_LOGI(TAG, "Using stop ID: %s (%s)", stopIdToUse.c_str(), config.selectedStopName);
+            ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)", stopIdToUse.c_str(), config.selectedStopName);
             
-            DepartureData depart;
             if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
                 printDepartInfo(depart);
-                displayDepartInfo(depart);
+                hasTransport = true;
             } else {
                 ESP_LOGE(TAG, "Failed to get departure information from RMV.");
             }
@@ -160,17 +169,35 @@ void DeviceModeManager::runOperationalMode() {
             ESP_LOGW(TAG, "No stop configured.");
         }
         
-        // Fetch and display weather data
-        WeatherInfo weather;
+        // Fetch weather data
+        ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)", g_webConfigPageData.latitude, g_webConfigPageData.longitude);
         if (getWeatherFromDWD(g_webConfigPageData.latitude, g_webConfigPageData.longitude, weather)) {
             printWeatherInfo(weather);
-            displayWeatherInfo(weather);
+            hasWeather = true;
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
+        
+        // Display using new display manager
+        if (hasWeather && hasTransport) {
+            ESP_LOGI(TAG, "Displaying both weather and transport data");
+            DisplayManager::displayHalfAndHalf(&weather, &depart);
+        } else if (hasWeather) {
+            ESP_LOGI(TAG, "Displaying weather only");
+            DisplayManager::displayWeatherOnly(weather);
+        } else if (hasTransport) {
+            ESP_LOGI(TAG, "Displaying transport only");
+            DisplayManager::displayDeparturesOnly(depart);
+        } else {
+            ESP_LOGW(TAG, "No data to display");
+        }
+        
     } else {
-        ESP_LOGW(TAG, "WiFi not connected");
+        ESP_LOGW(TAG, "WiFi not connected - cannot fetch data");
     }
+
+    // Hibernate display to save power
+    DisplayManager::hibernate();
 
     // Calculate sleep time and enter deep sleep
     // uint64_t sleepTime = calculateSleepTime(config.transportInterval);
