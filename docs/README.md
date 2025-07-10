@@ -18,6 +18,11 @@ Comprehensive documentation for the ESP32-C3 powered public transport departure 
 - [API Keys Setup](./api-keys.md) - Required API keys and configuration
 - [Deep Sleep Configuration](./deep-sleep.md) - Power management and sleep scheduling
 
+### Display & Interface
+- [Display Modes](./display-modes.md) - Comprehensive display system documentation
+- [Screen Orientations](./display-modes.md#orientations) - Portrait and landscape modes
+- [Partial Updates](./display-modes.md#partial-updates) - Efficient screen refresh strategies
+
 ### Technical Reference
 - [Pin Definitions](./pin-definitions.md) - ESP32-C3 Super Mini pin assignments
 - [API Reference](./api-reference.md) - Web endpoints and data structures
