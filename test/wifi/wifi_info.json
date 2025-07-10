@@ -1,2 +1,35 @@
-{"considerIp":false,"wifiAccessPoints":[{"macAddress":"78:DD:12:FA:0E:03","signalStrength":-73,"signalToNoiseRatio":0},{"macAddress":"D6:3F:CB:8D:14:25","signalStrength":-76,"signalToNoiseRatio":0},{"macAddress":"D4:3F:CB:8D:14:75","signalStrength":-77,"signalToNoiseRatio":0},{"macAddress":"88:71:B1:AB:9A:F2","signalStrength":-91,"signalToNoiseRatio":0},{"macAddress":"66:82:14:A0:80:06","signalStrength":-92,"signalToNoiseRatio":0},{"macAddress":"14:EB:B6:A2:E7:0C","signalStrength":-94,"signalToNoiseRatio":0}]}
-
+{
+    "considerIp": false,
+    "wifiAccessPoints": [
+        {
+            "macAddress": "78:DD:12:FA:0E:03",
+            "signalStrength": -73,
+            "signalToNoiseRatio": 0
+        },
+        {
+            "macAddress": "D6:3F:CB:8D:14:25",
+            "signalStrength": -76,
+            "signalToNoiseRatio": 0
+        },
+        {
+            "macAddress": "D4:3F:CB:8D:14:75",
+            "signalStrength": -77,
+            "signalToNoiseRatio": 0
+        },
+        {
+            "macAddress": "88:71:B1:AB:9A:F2",
+            "signalStrength": -91,
+            "signalToNoiseRatio": 0
+        },
+        {
+            "macAddress": "66:82:14:A0:80:06",
+            "signalStrength": -92,
+            "signalToNoiseRatio": 0
+        },
+        {
+            "macAddress": "14:EB:B6:A2:E7:0C",
+            "signalStrength": -94,
+            "signalToNoiseRatio": 0
+        }
+    ]
+}

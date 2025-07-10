@@ -4,7 +4,40 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-blue.svg)](https://platformio.org/)
-[![ESP32-C3](https://img.shields.io/badge/ESP32--C3-Supported-green.svg)](https://www.espressif.com/en/products/socs/esp32-c3)
+[![E## 🔋 Power Management
+
+- **Active Mode**: ~100mA (during data fetch)
+- **Deep Sleep**: <50μA (between updates)  
+- **Battery Life**: 2-4 weeks on 2000mAh (5-min intervals)
+- **Smart Scheduling**: Reduced updates during night hours
+
+### Battery Selection Rationale
+
+The project uses **CR123A lithium batteries** for optimal efficiency and simplicity.
+
+#### Battery Types Compared
+
+- **CR123/CR123A**: 3.0V non-rechargeable lithium battery, stable output, direct ESP32 connection
+- **16340 (Li-ion/LiFePO₄)**: Rechargeable, 3.2–3.7V nominal, requires voltage regulator
+- **AA (Alkaline/NiMH)**: 1.5V (alkaline) or 1.2V (NiMH) per cell; 3-4 cells need regulator
+- **Li-Po/Li-ion single cell**: 3.7V nominal, 4.2V fully charged; needs regulator or boost converter
+
+#### Why CR123A Was Chosen
+
+- **✅ No regulator needed**: 3V output connects directly to ESP32-C3's 3.3V input
+- **✅ Maximum efficiency**: No voltage regulation = no energy loss as heat
+- **✅ Stable voltage**: Consistent 3V throughout discharge cycle supports WiFi current demands
+- **✅ Sufficient capacity**: Adequate mAh for weeks of operation with deep sleep
+- **⚠️ Drawback**: Less common than AA batteries, higher cost per unit
+
+#### Why Not Other Batteries?
+
+- **AA batteries**: Require voltage regulator; voltage drops cause instability below 70% charge
+- **Li-ion/Li-Po/16340**: Voltage too high when full (4.2V), too low when empty (3.0V); need regulation, reducing efficiency
+
+**Result**: CR123A provides the simplest, most efficient power solution with direct ESP32 connection and stable operation throughout battery life.
+
+## 🌍 Coverage(https://img.shields.io/badge/ESP32--C3-Supported-green.svg)](https://www.espressif.com/en/products/socs/esp32-c3)
 
 ## ✨ Features
 
@@ -58,6 +91,7 @@ pio run --target uploadfs
 | **[🔧 Hardware Setup](./docs/hardware-setup.md)** | Wiring and pin definitions |
 | **[💻 Software Setup](./docs/software-setup.md)** | Development environment |
 | **[🔑 API Keys](./docs/api-keys.md)** | Required API configuration |
+| **[📱 Display Modes](./docs/display-modes.md)** | Screen layouts and orientations |
 | **[⚙️ Configuration](./docs/configuration.md)** | Detailed options |
 | **[🛠️ Troubleshooting](./docs/troubleshooting.md)** | Common issues |
 
@@ -80,6 +114,159 @@ flowchart TD
 - **APIs**: Google (location), RMV (transport), DWD (weather)
 - **Deep Sleep**: Battery-optimized operation
 - **Web Interface**: Configuration and status
+
+## 📱 Display Modes & Orientations
+
+The e-board features a flexible display manager that supports multiple viewing modes and orientations optimized for different use cases.
+
+### 🔄 Display Orientations
+
+#### Portrait Mode (Default)
+- **Resolution**: 800×480 pixels
+- **Layout**: Side-by-side split
+- **Weather**: Left half (400×480px)
+- **Departures**: Right half (400×480px)
+- **Best for**: Wall mounting, narrow spaces
+
+#### Landscape Mode
+- **Resolution**: 480×800 pixels (rotated)
+- **Layout**: Top-bottom split
+- **Weather**: Top half (480×400px)
+- **Departures**: Bottom half (480×400px)
+- **Best for**: Desk placement, wide viewing
+
+### 🎛️ Display Modes
+
+#### 1. Half-and-Half Mode (Default)
+Split screen showing both weather and transport information:
+
+**Portrait Layout:**
+```
+┌─────────────┬─────────────┐
+│   Weather   │ Departures  │
+│             │             │
+│ 🌤️ 22°C     │ 🚌 S1 → FFM │
+│ Frankfurt   │ Bus 61 5min │
+│ Sunny       │ RE 14:25    │
+│ H:25° L:15° │ S8 delayed  │
+│             │             │
+└─────────────┴─────────────┘
+```
+
+**Landscape Layout:**
+```
+┌─────────────────────────────┐
+│        Weather Info         │
+│ 🌤️ 22°C Frankfurt Sunny    │
+└─────────────────────────────┘
+┌─────────────────────────────┐
+│      Departure Board        │
+│ 🚌 Line  Destination  Time  │
+│   S1    Frankfurt    14:23  │
+└─────────────────────────────┘
+```
+
+#### 2. Weather-Only Mode
+Full screen weather with detailed forecast:
+```
+┌─────────────────────────────┐
+│  🌤️ Weather Information     │
+│                            │
+│  22°C  Frankfurt           │
+│  Partly Cloudy             │
+│  High: 25°C  Low: 15°C     │
+│                            │
+│  Next Hours:               │
+│  14:00  23°C  10% rain     │
+│  15:00  24°C  5% rain      │
+│  16:00  25°C  0% rain      │
+│                            │
+│  ☀️↑ 06:30  ☀️↓ 20:45      │
+└─────────────────────────────┘
+```
+
+#### 3. Departures-Only Mode
+Full screen departure board with more details:
+```
+┌─────────────────────────────┐
+│    🚌 Departure Board       │
+│                            │
+│  Frankfurt Hauptbahnhof    │
+│                            │
+│  Line  Destination    Time │
+│  ────────────────────────── │
+│  S1    Wiesbaden     14:23 │
+│  RE1   Fulda         14:25 │
+│  Bus61 Sachsenhausen 14:27 │
+│  S8    Hanau         14:30 │
+│  U4    Bockenheim    14:32 │
+│                            │
+│  Updated: 23s ago          │
+└─────────────────────────────┘
+```
+
+### ⚡ Partial Updates
+
+The display manager supports efficient partial updates:
+
+- **Weather Half Only**: Updates weather without clearing departures
+- **Departure Half Only**: Updates departures without clearing weather  
+- **Smart Scheduling**: Weather updates every 10 minutes, departures every 2 minutes
+- **Power Efficient**: Partial updates are faster and use less power
+
+### 🎨 Adaptive Content
+
+Content automatically adapts based on available space:
+
+#### Half-Screen Mode
+- **Condensed layout** for essential information
+- **Shortened text** for station names and directions
+- **Prioritized data** (current temp, next departures)
+- **Compact fonts** for maximum readability
+
+#### Full-Screen Mode
+- **Detailed information** with full descriptions
+- **Extended forecast** (6-hour weather preview)
+- **More departures** (up to 15 entries)
+- **Larger fonts** for better visibility
+
+### 🔧 Technical Features
+
+- **Automatic Mode Selection**: Chooses best mode based on available data
+- **Graceful Degradation**: Shows single mode if only one data source available
+- **Error Handling**: Clear error messages for connection issues
+- **Memory Efficient**: Optimized for ESP32-C3's limited resources
+
+### 📐 Font Scaling
+
+The display uses three font sizes that scale based on mode:
+
+- **Large (18pt)**: Titles, current temperature
+- **Medium (12pt)**: Important data, station names
+- **Small (9pt)**: Details, timestamps, secondary info
+
+### 🎯 Usage Examples
+
+```cpp
+// Initialize display manager
+DisplayManager::init(DisplayOrientation::PORTRAIT);
+
+// Half-and-half mode (default)
+DisplayManager::displayHalfAndHalf(&weather, &departures);
+
+// Update only weather (partial update)
+DisplayManager::updateWeatherHalf(weather);
+
+// Full screen modes
+DisplayManager::displayWeatherOnly(weather);
+DisplayManager::displayDeparturesOnly(departures);
+
+// Change orientation
+DisplayManager::setMode(DisplayMode::HALF_AND_HALF, 
+                       DisplayOrientation::LANDSCAPE);
+```
+
+**[📖 Display Manager Documentation](./docs/display-modes.md)**
 
 ## � Boot Process & Device States
 
@@ -177,13 +364,28 @@ flowchart TD
 
 ### Project Structure
 ```
-├── docs/              # Documentation
-├── src/               # Source code
-│   ├── api/          # External API integrations
-│   ├── config/       # Configuration management  
-│   ├── util/         # Utilities and helpers
-│   └── main.cpp      # Main application
-├── data/             # Web interface files
+├── docs/                    # Documentation
+├── include/                 # Header files (best practice)
+│   ├── api/                # API interface definitions
+│   ├── config/             # Configuration structures
+│   ├── util/               # Utility class definitions
+│   └── secrets/            # API keys (gitignored)
+├── src/                    # Source code implementation
+│   ├── api/               # External API integrations
+│   │   ├── dwd_weather_api.cpp
+│   │   ├── google_api.cpp
+│   │   └── rmv_api.cpp
+│   ├── config/            # Configuration management
+│   │   ├── config_manager.cpp
+│   │   └── config_page.cpp
+│   ├── util/              # Utilities and helpers
+│   │   ├── display_manager.cpp    # 📱 New display system
+│   │   ├── device_mode_manager.cpp
+│   │   ├── weather_print.cpp
+│   │   ├── departure_print.cpp
+│   │   └── wifi_manager.cpp
+│   └── main.cpp           # Main application
+├── data/                  # Web interface files
 └── platformio.ini    # Build configuration
 ```
 

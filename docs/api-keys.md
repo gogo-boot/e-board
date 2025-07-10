@@ -1,8 +1,14 @@
 # API Keys Setup
 
-This project requires API keys from several external services. All keys are stored locally and never transmitted to third parties.
+This project requires API keys from external services and uses several free APIs. All keys are stored locally and never transmitted to third parties.
 
 ## Required API Keys
+
+### Overview
+- **Google Geolocation API**: Location detection (requires key)
+- **RMV Transport API**: German public transport data (requires key)  
+- **Open-Meteo Weather API**: Weather data via DWD (free, no key)
+- **OpenStreetMap Nominatim**: Location names (free, no key)
 
 ### 1. Google Geolocation API
 
@@ -55,24 +61,64 @@ This project requires API keys from several external services. All keys are stor
 
 ---
 
-### 3. DWD Weather API
+### 3. Open-Meteo Weather API
 
-**Purpose**: Weather information from German Weather Service.
+**Purpose**: Weather information using DWD (German Weather Service) data.
 
 #### Setup:
-**No API key required** - DWD provides open weather data.
+**No API key required** - Open-Meteo provides free access to DWD weather data.
 
 #### Configuration:
 Already configured in `src/api/dwd_weather_api.cpp`:
 ```cpp
 // No secrets file needed
-#define DWD_BASE_URL "https://api.brightsky.dev/weather"
+#define OPEN_METEO_BASE_URL "https://api.open-meteo.com/v1/dwd-icon"
 ```
 
 #### Coverage:
-- **Region**: Germany and surrounding areas
-- **Data**: Temperature, humidity, precipitation, weather conditions
+- **Region**: Germany and surrounding European areas
+- **Data**: Temperature, humidity, precipitation, weather conditions, forecasts
+- **Cost**: Free (up to 10,000 requests/day)
+- **Rate Limits**: 10,000 API calls per day, 5,000 per hour
+
+#### Features:
+- Real-time weather data from DWD
+- Hourly forecasts up to 7 days
+- Historical weather data
+- No registration required
+
+---
+
+### 4. OpenStreetMap Nominatim API
+
+**Purpose**: Reverse geocoding to convert coordinates to human-readable location names.
+
+#### Setup:
+**No API key required** - Nominatim is free and open source.
+
+#### Configuration:
+Already configured in the location detection code:
+```cpp
+// No secrets file needed
+#define NOMINATIM_BASE_URL "https://nominatim.openstreetmap.org/reverse"
+```
+
+#### Usage:
+- Converts latitude/longitude to city/location names
+- Used during initial setup to display location to user
+- Provides context for weather and transport data
+
+#### Coverage:
+- **Global**: Worldwide coverage from OpenStreetMap data
 - **Cost**: Free
+- **Rate Limits**: 1 request per second (respected by the device)
+- **Usage Policy**: Must include proper attribution, reasonable use
+
+#### Important Notes:
+- **Fair Use Policy**: Nominatim is provided as a free service
+- **Rate Limiting**: Device automatically respects 1 request/second limit
+- **Attribution**: OpenStreetMap data contributors are credited
+- **Backup Options**: For high-volume applications, consider self-hosting
 
 ---
 
@@ -149,7 +195,8 @@ Use the serial monitor to verify API responses:
    ```
    [GOOGLE] Location detected: 50.1109, 8.6821
    [RMV] Found 15 nearby stops
-   [DWD] Weather data retrieved successfully
+   [WEATHER] Open-Meteo data retrieved successfully
+   [NOMINATIM] Location: Frankfurt am Main, Germany
    ```
 
 ### Error Messages
@@ -171,6 +218,24 @@ Common error patterns:
 
 [ERROR] RMV API: No stops found
 → Location might be outside RMV coverage area
+```
+
+#### Open-Meteo Weather API Errors
+```
+[ERROR] Weather API: 429 Too Many Requests
+→ Exceeded 10,000 daily requests, wait until next day
+
+[ERROR] Weather API: Invalid coordinates
+→ Check latitude/longitude values are valid
+```
+
+#### Nominatim API Errors
+```
+[ERROR] Nominatim: 429 Too Many Requests
+→ Sending requests too fast, respecting 1 req/sec limit
+
+[ERROR] Nominatim: No results found
+→ Coordinates might be in remote area with limited data
 ```
 
 ## Alternative Transport APIs
@@ -214,12 +279,23 @@ If you're outside the RMV coverage area, you can adapt the code for other transp
 - Check RMV API key validity
 - Try with known stop IDs for testing
 
+#### Weather data unavailable
+- Check internet connectivity
+- Verify coordinates are valid (latitude/longitude)
+- Open-Meteo might be experiencing downtime (rare)
+
+#### Location name not found
+- Coordinates might be in remote area
+- Nominatim rate limiting (waits 1 second between requests)
+- Check internet connection to OpenStreetMap servers
+
 ### Debug Mode
 Enable verbose logging to troubleshoot API issues:
 ```cpp
 esp_log_level_set("GOOGLE", ESP_LOG_DEBUG);
 esp_log_level_set("RMV", ESP_LOG_DEBUG);
-esp_log_level_set("DWD", ESP_LOG_DEBUG);
+esp_log_level_set("WEATHER", ESP_LOG_DEBUG);
+esp_log_level_set("NOMINATIM", ESP_LOG_DEBUG);
 ```
 
 ## Next Steps
