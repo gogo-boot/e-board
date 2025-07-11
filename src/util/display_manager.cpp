@@ -21,20 +21,30 @@ static const char* TAG = "DISPLAY_MGR";
 
 // Static member variables
 DisplayMode DisplayManager::currentMode = DisplayMode::HALF_AND_HALF;
-DisplayOrientation DisplayManager::currentOrientation = DisplayOrientation::PORTRAIT;
-int16_t DisplayManager::screenWidth = 800;
-int16_t DisplayManager::screenHeight = 480;
-int16_t DisplayManager::halfWidth = 400;
-int16_t DisplayManager::halfHeight = 240;
+DisplayOrientation DisplayManager::currentOrientation = DisplayOrientation::LANDSCAPE;
+int16_t DisplayManager::screenWidth = 0;   // Will be read from display
+int16_t DisplayManager::screenHeight = 0;  // Will be read from display
+int16_t DisplayManager::halfWidth = 0;     // Will be calculated
+int16_t DisplayManager::halfHeight = 0;    // Will be calculated
 
 void DisplayManager::init(DisplayOrientation orientation) {
     ESP_LOGI(TAG, "Initializing display manager");
     
     display.init(115200);
+    
+    // Set rotation first to get correct dimensions
+    display.setRotation(static_cast<int>(orientation));
+    
+    // Now get dimensions from display after rotation is set
+    screenWidth = display.width();
+    screenHeight = display.height();
+    
+    ESP_LOGI(TAG, "Display detected - Physical dimensions: %dx%d", screenWidth, screenHeight);
+    
     setMode(DisplayMode::HALF_AND_HALF, orientation);
     
-    ESP_LOGI(TAG, "Display initialized - Orientation: %s, Dimensions: %dx%d", 
-             orientation == DisplayOrientation::PORTRAIT ? "Portrait" : "Landscape",
+    ESP_LOGI(TAG, "Display initialized - Orientation: %s, Active dimensions: %dx%d", 
+             orientation == DisplayOrientation::LANDSCAPE ? "Landscape" : "Portrait",
              screenWidth, screenHeight);
 }
 
@@ -45,24 +55,35 @@ void DisplayManager::setMode(DisplayMode mode, DisplayOrientation orientation) {
     // Set display rotation
     display.setRotation(static_cast<int>(orientation));
     
+    // Get dimensions after rotation
+    screenWidth = display.width();
+    screenHeight = display.height();
+    
     calculateDimensions();
     
-    ESP_LOGI(TAG, "Display mode set - Mode: %d, Orientation: %s", 
+    ESP_LOGI(TAG, "Display mode set - Mode: %d, Orientation: %s, Dimensions: %dx%d", 
              static_cast<int>(mode),
-             orientation == DisplayOrientation::PORTRAIT ? "Portrait" : "Landscape");
+             orientation == DisplayOrientation::LANDSCAPE ? "Landscape" : "Portrait",
+             screenWidth, screenHeight);
 }
 
 void DisplayManager::calculateDimensions() {
-    // Dynamically get width and height from display object
-    screenWidth = display.width();
-    screenHeight = display.height();
-
-    if (currentOrientation == DisplayOrientation::PORTRAIT) {
-        halfWidth = screenWidth / 2;   // Split vertically
-        halfHeight = screenHeight;
-    } else { // LANDSCAPE
-        halfWidth = screenWidth;
-        halfHeight = screenHeight / 2; // Split horizontally
+    // Dimensions are already set from display.width() and display.height() after rotation
+    
+    if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+        // Landscape mode: 800x480 - split WIDTH in half
+        // Weather: left half (0-399), Departures: right half (400-799)
+        halfWidth = screenWidth / 2;   // Split width: 400 pixels each
+        halfHeight = screenHeight;     // Full height: 480 pixels
+        ESP_LOGI(TAG, "Landscape split: Weather[0,0,%d,%d] Departures[%d,0,%d,%d]", 
+                 halfWidth, screenHeight, halfWidth, halfWidth, screenHeight);
+    } else {
+        // Portrait mode: 480x800 - split HEIGHT in half  
+        // Weather: top half (0-399), Departures: bottom half (400-799)
+        halfWidth = screenWidth;       // Full width: 480 pixels
+        halfHeight = screenHeight / 2; // Split height: 400 pixels each
+        ESP_LOGI(TAG, "Portrait split: Weather[0,0,%d,%d] Departures[0,%d,%d,%d]", 
+                 screenWidth, halfHeight, halfHeight, screenWidth, halfHeight);
     }
 }
 
@@ -83,14 +104,14 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather, const Depart
         do {
             display.fillScreen(GxEPD_WHITE);
             
-            if (currentOrientation == DisplayOrientation::PORTRAIT) {
-                // Portrait: left/right split
+            if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+                // Landscape: left/right split (weather left, departures right)
                 drawWeatherSection(*weather, 0, 0, halfWidth, screenHeight);
                 drawDepartureSection(*departures, halfWidth, 0, halfWidth, screenHeight);
                 // Draw vertical divider
                 display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
             } else {
-                // Landscape: top/bottom split
+                // Portrait: top/bottom split (weather top, departures bottom)
                 drawWeatherSection(*weather, 0, 0, screenWidth, halfHeight);
                 drawDepartureSection(*departures, 0, halfHeight, screenWidth, halfHeight);
                 // Draw horizontal divider
@@ -112,9 +133,11 @@ void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Updating weather half");
     
     int16_t x, y, w, h;
-    if (currentOrientation == DisplayOrientation::PORTRAIT) {
+    if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+        // Landscape: weather is LEFT half
         x = 0; y = 0; w = halfWidth; h = screenHeight;
     } else {
+        // Portrait: weather is TOP half
         x = 0; y = 0; w = screenWidth; h = halfHeight;
     }
     
@@ -127,7 +150,7 @@ void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
         drawWeatherSection(weather, x, y, w, h);
         
         // Redraw divider
-        if (currentOrientation == DisplayOrientation::PORTRAIT) {
+        if (currentOrientation == DisplayOrientation::LANDSCAPE) {
             display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
         } else {
             display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
@@ -140,9 +163,11 @@ void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
     ESP_LOGI(TAG, "Updating departure half");
     
     int16_t x, y, w, h;
-    if (currentOrientation == DisplayOrientation::PORTRAIT) {
+    if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+        // Landscape: departures is RIGHT half
         x = halfWidth; y = 0; w = halfWidth; h = screenHeight;
     } else {
+        // Portrait: departures is BOTTOM half
         x = 0; y = halfHeight; w = screenWidth; h = halfHeight;
     }
     
@@ -155,7 +180,7 @@ void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
         drawDepartureSection(departures, x, y, w, h);
         
         // Redraw divider
-        if (currentOrientation == DisplayOrientation::PORTRAIT) {
+        if (currentOrientation == DisplayOrientation::LANDSCAPE) {
             display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
         } else {
             display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
@@ -414,24 +439,41 @@ void DisplayManager::getRegionBounds(DisplayRegion region, int16_t& x, int16_t& 
         case DisplayRegion::FULL_SCREEN:
             x = 0; y = 0; w = screenWidth; h = screenHeight;
             break;
+            
+        // Landscape-specific regions
         case DisplayRegion::LEFT_HALF:
-            if (currentOrientation == DisplayOrientation::PORTRAIT) {
-                x = 0; y = 0; w = halfWidth; h = screenHeight;
-            } else {
-                x = 0; y = 0; w = screenWidth; h = halfHeight; // TOP in landscape
-            }
+            x = 0; y = 0; w = halfWidth; h = screenHeight;
             break;
         case DisplayRegion::RIGHT_HALF:
-            if (currentOrientation == DisplayOrientation::PORTRAIT) {
-                x = halfWidth; y = 0; w = halfWidth; h = screenHeight;
+            x = halfWidth; y = 0; w = halfWidth; h = screenHeight;
+            break;
+            
+        // Portrait-specific regions
+        case DisplayRegion::UPPER_HALF:
+            x = 0; y = 0; w = screenWidth; h = halfHeight;
+            break;
+        case DisplayRegion::LOWER_HALF:
+            x = 0; y = halfHeight; w = screenWidth; h = halfHeight;
+            break;
+            
+        // Semantic regions that adapt to orientation
+        case DisplayRegion::WEATHER_AREA:
+            if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+                // Weather is in LEFT half in landscape
+                getRegionBounds(DisplayRegion::LEFT_HALF, x, y, w, h);
             } else {
-                x = 0; y = halfHeight; w = screenWidth; h = halfHeight; // BOTTOM in landscape
+                // Weather is in UPPER half in portrait
+                getRegionBounds(DisplayRegion::UPPER_HALF, x, y, w, h);
             }
             break;
-        case DisplayRegion::WEATHER_AREA:
         case DisplayRegion::DEPARTURE_AREA:
-            // Same as LEFT/RIGHT for now
-            getRegionBounds(region == DisplayRegion::WEATHER_AREA ? DisplayRegion::LEFT_HALF : DisplayRegion::RIGHT_HALF, x, y, w, h);
+            if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+                // Departures is in RIGHT half in landscape
+                getRegionBounds(DisplayRegion::RIGHT_HALF, x, y, w, h);
+            } else {
+                // Departures is in LOWER half in portrait
+                getRegionBounds(DisplayRegion::LOWER_HALF, x, y, w, h);
+            }
             break;
     }
 }

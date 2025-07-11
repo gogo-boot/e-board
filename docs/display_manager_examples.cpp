@@ -16,7 +16,7 @@ void exampleUsage() {
     
     // === PORTRAIT MODE EXAMPLES ===
     
-    // 1. Half and Half Mode - Portrait (Weather left, Departures right)
+    // 1. Half and Half Mode - Portrait (Weather upper, Departures lower)
     DisplayManager::init(DisplayOrientation::PORTRAIT);
     DisplayManager::setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::PORTRAIT);
     
@@ -43,7 +43,7 @@ void exampleUsage() {
     
     // === LANDSCAPE MODE EXAMPLES ===
     
-    // 4. Half and Half Mode - Landscape (Weather top, Departures bottom)
+    // 4. Half and Half Mode - Landscape (Weather left, Departures right)
     DisplayManager::setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
     DisplayManager::displayHalfAndHalf(&weather, &departures);
     
@@ -57,9 +57,15 @@ void exampleUsage() {
     
     // === UTILITY FUNCTIONS ===
     
-    // Clear specific regions
-    DisplayManager::clearRegion(DisplayRegion::LEFT_HALF);
-    DisplayManager::clearRegion(DisplayRegion::RIGHT_HALF);
+    // Clear specific regions - orientation-specific
+    DisplayManager::clearRegion(DisplayRegion::LEFT_HALF);   // Landscape left
+    DisplayManager::clearRegion(DisplayRegion::RIGHT_HALF);  // Landscape right
+    DisplayManager::clearRegion(DisplayRegion::UPPER_HALF);  // Portrait upper
+    DisplayManager::clearRegion(DisplayRegion::LOWER_HALF);  // Portrait lower
+    
+    // Clear semantic regions - adapts to current orientation
+    DisplayManager::clearRegion(DisplayRegion::WEATHER_AREA);   // Weather area (left in landscape, upper in portrait)
+    DisplayManager::clearRegion(DisplayRegion::DEPARTURE_AREA); // Departure area (right in landscape, lower in portrait)
     DisplayManager::clearRegion(DisplayRegion::FULL_SCREEN);
     
     // Hibernate display to save power
@@ -126,6 +132,37 @@ void periodicUpdate() {
             lastDepartureUpdate = now;
         }
     }
+}
+
+// Example demonstrating different region types
+void regionExamples() {
+    // === LANDSCAPE MODE REGIONS ===
+    DisplayManager::init(DisplayOrientation::LANDSCAPE);
+    
+    // Orientation-specific regions in landscape
+    DisplayManager::clearRegion(DisplayRegion::LEFT_HALF);   // Weather area (left 400px)
+    DisplayManager::clearRegion(DisplayRegion::RIGHT_HALF);  // Departure area (right 400px)
+    
+    // === PORTRAIT MODE REGIONS ===
+    DisplayManager::setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::PORTRAIT);
+    
+    // Orientation-specific regions in portrait
+    DisplayManager::clearRegion(DisplayRegion::UPPER_HALF);  // Weather area (top 400px)
+    DisplayManager::clearRegion(DisplayRegion::LOWER_HALF);  // Departure area (bottom 400px)
+    
+    // === SEMANTIC REGIONS (RECOMMENDED) ===
+    // These automatically adapt to the current orientation:
+    
+    DisplayManager::clearRegion(DisplayRegion::WEATHER_AREA);   
+    // In landscape: clears LEFT_HALF
+    // In portrait: clears UPPER_HALF
+    
+    DisplayManager::clearRegion(DisplayRegion::DEPARTURE_AREA); 
+    // In landscape: clears RIGHT_HALF  
+    // In portrait: clears LOWER_HALF
+    
+    // Full screen always works the same
+    DisplayManager::clearRegion(DisplayRegion::FULL_SCREEN);
 }
 
 // Configuration-driven display mode

@@ -4,8 +4,8 @@
 
 // Display orientations
 enum class DisplayOrientation {
-    PORTRAIT = 0,   // 0° rotation
-    LANDSCAPE = 1   // 90° rotation
+    LANDSCAPE = 0,  // Default: 0° rotation (800x480)
+    PORTRAIT = 1    // 90° rotation (480x800)
 };
 
 // Display modes
@@ -18,19 +18,24 @@ enum class DisplayMode {
 // Display regions for partial updates
 enum class DisplayRegion {
     FULL_SCREEN,
-    LEFT_HALF,     // or TOP_HALF in landscape
-    RIGHT_HALF,    // or BOTTOM_HALF in landscape
-    WEATHER_AREA,
-    DEPARTURE_AREA
+    // Landscape mode regions
+    LEFT_HALF,         // Left half in landscape (weather area)
+    RIGHT_HALF,        // Right half in landscape (departure area)
+    // Portrait mode regions  
+    UPPER_HALF,        // Upper half in portrait (weather area)
+    LOWER_HALF,        // Lower half in portrait (departure area)
+    // Generic semantic regions
+    WEATHER_AREA,      // Maps to LEFT_HALF (landscape) or UPPER_HALF (portrait)
+    DEPARTURE_AREA     // Maps to RIGHT_HALF (landscape) or LOWER_HALF (portrait)
 };
 
 class DisplayManager {
 public:
-    // Initialize display with orientation
-    static void init(DisplayOrientation orientation = DisplayOrientation::PORTRAIT);
+    // Initialize display with orientation (default: landscape)
+    static void init(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
     
-    // Set current display mode and orientation
-    static void setMode(DisplayMode mode, DisplayOrientation orientation = DisplayOrientation::PORTRAIT);
+    // Set current display mode and orientation (default: landscape)
+    static void setMode(DisplayMode mode, DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
     
     // Half and half mode - can update one or both halves
     static void displayHalfAndHalf(const WeatherInfo* weather = nullptr, 

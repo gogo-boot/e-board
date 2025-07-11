@@ -121,26 +121,26 @@ The e-board features a flexible display manager that supports multiple viewing m
 
 ### 🔄 Display Orientations
 
-#### Portrait Mode (Default)
-- **Resolution**: 800×480 pixels
-- **Layout**: Side-by-side split
+#### Landscape Mode (Default)
+- **Resolution**: 800×480 pixels (native)
+- **Layout**: Left-right split
 - **Weather**: Left half (400×480px)
 - **Departures**: Right half (400×480px)
-- **Best for**: Wall mounting, narrow spaces
+- **Best for**: Desk placement, wide viewing, natural reading
 
-#### Landscape Mode
-- **Resolution**: 480×800 pixels (rotated)
+#### Portrait Mode
+- **Resolution**: 480×800 pixels (rotated 90°)
 - **Layout**: Top-bottom split
 - **Weather**: Top half (480×400px)
 - **Departures**: Bottom half (480×400px)
-- **Best for**: Desk placement, wide viewing
+- **Best for**: Wall mounting, narrow spaces
 
 ### 🎛️ Display Modes
 
 #### 1. Half-and-Half Mode (Default)
 Split screen showing both weather and transport information:
 
-**Portrait Layout:**
+**Landscape Layout (Default):**
 ```
 ┌─────────────┬─────────────┐
 │   Weather   │ Departures  │
@@ -153,7 +153,7 @@ Split screen showing both weather and transport information:
 └─────────────┴─────────────┘
 ```
 
-**Landscape Layout:**
+**Portrait Layout:**
 ```
 ┌─────────────────────────────┐
 │        Weather Info         │
@@ -248,8 +248,8 @@ The display uses three font sizes that scale based on mode:
 ### 🎯 Usage Examples
 
 ```cpp
-// Initialize display manager
-DisplayManager::init(DisplayOrientation::PORTRAIT);
+// Initialize display manager (landscape is default)
+DisplayManager::init(DisplayOrientation::LANDSCAPE);
 
 // Half-and-half mode (default)
 DisplayManager::displayHalfAndHalf(&weather, &departures);
@@ -261,9 +261,9 @@ DisplayManager::updateWeatherHalf(weather);
 DisplayManager::displayWeatherOnly(weather);
 DisplayManager::displayDeparturesOnly(departures);
 
-// Change orientation
+// Change orientation to portrait
 DisplayManager::setMode(DisplayMode::HALF_AND_HALF, 
-                       DisplayOrientation::LANDSCAPE);
+                       DisplayOrientation::PORTRAIT);
 ```
 
 **[📖 Display Manager Documentation](./docs/display-modes.md)**
