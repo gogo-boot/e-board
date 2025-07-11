@@ -48,21 +48,21 @@ GND             GND            Ground
 
 ## Orientations
 
-### Portrait Mode (Default)
-- **Physical**: Display is taller than wide
+### Landscape Mode (Default)
+- **Physical**: Display is wider than tall (native orientation)
 - **Resolution**: 800×480 pixels
 - **Split**: Vertical (left/right halves)
 - **Weather Area**: Left half (400×480 px)
 - **Departure Area**: Right half (400×480 px)
-- **Best for**: Wall mounting, narrow spaces, portrait viewing
+- **Best for**: Desk placement, natural reading, wide viewing
 
-### Landscape Mode
-- **Physical**: Display is wider than tall (rotated 90°)
+### Portrait Mode
+- **Physical**: Display is taller than wide (rotated 90°)
 - **Resolution**: 480×800 pixels
 - **Split**: Horizontal (top/bottom halves)
 - **Weather Area**: Top half (480×400 px)
 - **Departure Area**: Bottom half (480×400 px)
-- **Best for**: Desk placement, wide viewing angle
+- **Best for**: Wall mounting, narrow spaces, vertical mounting
 
 ## Display Modes
 
@@ -75,7 +75,7 @@ GND             GND            Ground
 - If only weather available: Shows weather in designated half
 - If only departures available: Shows departures in designated half
 
-**Portrait Layout Example**:
+**Landscape Layout Example (Default)**:
 ```
 ┌──────────────────┬──────────────────┐
 │  🌤️ Weather      │  🚌 Departures   │
@@ -93,6 +93,33 @@ GND             GND            Ground
 │  16:00  25°C     │                  │
 │                  │  Updated: 23s    │
 └──────────────────┴──────────────────┘
+```
+
+**Portrait Layout Example**:
+```
+┌─────────────────────────────────────┐
+│           🌤️ Weather               │
+│                                     │
+│     22°C Frankfurt Partly Cloudy   │
+│     High: 25°C  Low: 15°C          │
+│                                     │
+│     Next Hours:                     │
+│     14:00  23°C    15:00  24°C     │
+│     16:00  25°C    17:00  26°C     │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│           🚌 Departures             │
+│                                     │
+│         Frankfurt Hauptbahnhof     │
+│                                     │
+│  Line  Destination      Time  Plat │
+│  ──────────────────────────────────│
+│  S1    Wiesbaden       14:23   3   │
+│  RE1   Fulda           14:25   7   │
+│  Bus61 Sachsenhausen   14:27   A   │
+│                                     │
+│              Updated: 23s ago       │
+└─────────────────────────────────────┘
 ```
 
 ### 2. Weather-Only Mode
@@ -260,11 +287,11 @@ DisplayManager::displayHalfAndHalf(&weather, &departures);
 
 #### Initialization
 ```cpp
-// Initialize with default portrait orientation
+// Initialize with default landscape orientation
 DisplayManager::init();
 
 // Initialize with specific orientation
-DisplayManager::init(DisplayOrientation::LANDSCAPE);
+DisplayManager::init(DisplayOrientation::PORTRAIT);
 ```
 
 #### Mode Setting
