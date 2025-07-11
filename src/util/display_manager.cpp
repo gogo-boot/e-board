@@ -439,28 +439,41 @@ void DisplayManager::getRegionBounds(DisplayRegion region, int16_t& x, int16_t& 
         case DisplayRegion::FULL_SCREEN:
             x = 0; y = 0; w = screenWidth; h = screenHeight;
             break;
+            
+        // Landscape-specific regions
         case DisplayRegion::LEFT_HALF:
-            if (currentOrientation == DisplayOrientation::LANDSCAPE) {
-                // Landscape: LEFT half (weather area)
-                x = 0; y = 0; w = halfWidth; h = screenHeight;
-            } else {
-                // Portrait: TOP half (weather area) 
-                x = 0; y = 0; w = screenWidth; h = halfHeight;
-            }
+            x = 0; y = 0; w = halfWidth; h = screenHeight;
             break;
         case DisplayRegion::RIGHT_HALF:
+            x = halfWidth; y = 0; w = halfWidth; h = screenHeight;
+            break;
+            
+        // Portrait-specific regions
+        case DisplayRegion::UPPER_HALF:
+            x = 0; y = 0; w = screenWidth; h = halfHeight;
+            break;
+        case DisplayRegion::LOWER_HALF:
+            x = 0; y = halfHeight; w = screenWidth; h = halfHeight;
+            break;
+            
+        // Semantic regions that adapt to orientation
+        case DisplayRegion::WEATHER_AREA:
             if (currentOrientation == DisplayOrientation::LANDSCAPE) {
-                // Landscape: RIGHT half (departure area)
-                x = halfWidth; y = 0; w = halfWidth; h = screenHeight;
+                // Weather is in LEFT half in landscape
+                getRegionBounds(DisplayRegion::LEFT_HALF, x, y, w, h);
             } else {
-                // Portrait: BOTTOM half (departure area)
-                x = 0; y = halfHeight; w = screenWidth; h = halfHeight;
+                // Weather is in UPPER half in portrait
+                getRegionBounds(DisplayRegion::UPPER_HALF, x, y, w, h);
             }
             break;
-        case DisplayRegion::WEATHER_AREA:
         case DisplayRegion::DEPARTURE_AREA:
-            // Same as LEFT/RIGHT for now
-            getRegionBounds(region == DisplayRegion::WEATHER_AREA ? DisplayRegion::LEFT_HALF : DisplayRegion::RIGHT_HALF, x, y, w, h);
+            if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+                // Departures is in RIGHT half in landscape
+                getRegionBounds(DisplayRegion::RIGHT_HALF, x, y, w, h);
+            } else {
+                // Departures is in LOWER half in portrait
+                getRegionBounds(DisplayRegion::LOWER_HALF, x, y, w, h);
+            }
             break;
     }
 }

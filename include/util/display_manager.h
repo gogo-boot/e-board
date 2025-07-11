@@ -18,10 +18,15 @@ enum class DisplayMode {
 // Display regions for partial updates
 enum class DisplayRegion {
     FULL_SCREEN,
-    LEFT_HALF,     // Left half in landscape, or top half in portrait
-    RIGHT_HALF,    // Right half in landscape, or bottom half in portrait
-    WEATHER_AREA,
-    DEPARTURE_AREA
+    // Landscape mode regions
+    LEFT_HALF,         // Left half in landscape (weather area)
+    RIGHT_HALF,        // Right half in landscape (departure area)
+    // Portrait mode regions  
+    UPPER_HALF,        // Upper half in portrait (weather area)
+    LOWER_HALF,        // Lower half in portrait (departure area)
+    // Generic semantic regions
+    WEATHER_AREA,      // Maps to LEFT_HALF (landscape) or UPPER_HALF (portrait)
+    DEPARTURE_AREA     // Maps to RIGHT_HALF (landscape) or LOWER_HALF (portrait)
 };
 
 class DisplayManager {
