@@ -6,10 +6,41 @@
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-blue.svg)](https://platformio.org/)
 [![E## 🔋 Power Management
 
-- **Active Mode**: ~100mA (during data fetch)
+- **Active Mode**: ~100mA (during data fetch + display refresh)
+-## 🔋 Power Management
+
+- **Active Mode**: ~100mA (during data fetch + display refresh)
 - **Deep Sleep**: <50μA (between updates)  
-- **Battery Life**: 2-4 weeks on 2000mAh (5-min intervals)
+- **Battery Life**: 65-125 days on 2500mAh (realistic estimates)
+- **Smart Scheduling**: Reduced updates during night hoursp Sleep**: <50μA (between updates)  
+- **Refresh Time**: 7-8 seconds (WiFi + API + e-paper update)
+- **Update Energy**: ~0.22mAh per refresh cycle (including display)
+- **Self-Discharge**: ~2-5% per month (lithium batteries)
 - **Smart Scheduling**: Reduced updates during night hours
+
+### Battery Life Examples
+
+| Battery Capacity | Update Interval | Battery Life | Total Refreshes | Notes |
+|------------------|-----------------|--------------|-----------------|-------|
+| **2500mAh** | 5 minutes | 65-70 days | 18,700-20,160 | Including self-discharge |
+| **2500mAh** | 10 minutes | 115-125 days | 16,560-18,000 | Including self-discharge |
+| **1000mAh** | 5 minutes | 25-28 days | 7,200-8,060 | Including self-discharge |
+| **1000mAh** | 10 minutes | 45-50 days | 6,480-7,200 | Including self-discharge |
+
+**Real-World Factors:**
+- **Refresh time**: 7-8 seconds (WiFi connection + API calls + e-paper update)
+- **Self-discharge**: 2-5% monthly capacity loss (lithium batteries)
+- **Temperature effects**: Cold weather reduces capacity by 10-20%
+- **WiFi signal strength**: Weak signals increase power consumption
+
+**Optimization Tips:**
+- Use partial updates (saves ~40% power)
+- Smart scheduling (fewer updates at night)
+- Weather-only mode for longer battery life
+- Strong WiFi signal placement reduces power consumption
+- Room temperature operation maximizes battery capacity
+
+**[📊 Detailed Battery Calculations](./docs/display-modes.md#battery-life-calculations)**
 
 ### Battery Selection Rationale
 
@@ -27,8 +58,22 @@ The project uses **CR123A lithium batteries** for optimal efficiency and simplic
 - **✅ No regulator needed**: 3V output connects directly to ESP32-C3's 3.3V input
 - **✅ Maximum efficiency**: No voltage regulation = no energy loss as heat
 - **✅ Stable voltage**: Consistent 3V throughout discharge cycle supports WiFi current demands
-- **✅ Sufficient capacity**: Adequate mAh for weeks of operation with deep sleep
+- **✅ Sufficient capacity**: Typical 1500mAh provides 3-6 weeks of operation (depending on update frequency)
 - **⚠️ Drawback**: Less common than AA batteries, higher cost per unit
+
+#### CR123A Capacity Performance Examples
+
+**Single CR123A (1500mAh):**
+- **5-minute updates**: 38-42 days, ~11,000-12,100 refreshes
+- **10-minute updates**: 68-75 days, ~9,800-10,800 refreshes  
+- **Weather-only mode**: 85-95 days (longer intervals possible)
+
+**Dual CR123A (3000mAh total):**
+- **2-minute updates**: 32-36 days, ~23,000-26,000 refreshes
+- **5-minute updates**: 76-84 days, ~22,000-24,200 refreshes
+- **10-minute updates**: 136-150 days, ~19,600-21,600 refreshes
+
+> **Note**: Ranges account for self-discharge (2-5% monthly), temperature effects, and WiFi signal variations. Lower values represent challenging conditions, higher values represent optimal conditions.
 
 #### Why Not Other Batteries?
 
@@ -48,6 +93,22 @@ The project uses **CR123A lithium batteries** for optimal efficiency and simplic
 - 📡 **WiFi auto-discovery** and mDNS support
 - 🔒 **Privacy-conscious** - all processing happens locally
 - 🎨 **E-paper display** optimized for outdoor visibility
+
+### 🔄 Hardware Options
+
+**ESP32-C3 Super Mini (Current)**
+- ✅ Compact form factor, good performance
+- ✅ 65-125 days battery life (2500mAh battery)
+- ✅ Cost-effective solution
+
+**XIAO ESP32-C6 (Recommended Upgrade)**
+- ⭐ **13-14% better battery life** with improved power efficiency
+- ⭐ **WiFi 6 support** for better connectivity and faster updates
+- ⭐ **Enhanced performance** with more memory and processing power
+- ⭐ **74-143 days battery life** (2500mAh battery)
+
+> 💡 **Both boards use identical pinout and code** - upgrade is plug-and-play!  
+> **[📊 Detailed Comparison & Setup Guide](./docs/display-modes.md#hardware-requirements)**
 
 ## 🚀 Quick Start
 

@@ -1,6 +1,21 @@
 # Hardware Setup
 
-## ESP32-C3 Super Mini
+## Microcontroller Options
+
+### ESP32-C3 Super Mini (Current)
+The ESP32-C3 Super Mini is a compact development board with excellent performance for this project.
+
+### XIAO ESP32-C6 (Recommended Upgrade)
+The XIAO ESP32-C6 offers significant improvements:
+- **13-14% better battery life** due to improved power efficiency
+- **WiFi 6 support** for enhanced connectivity
+- **Identical pinout** - plug-and-play upgrade from ESP32-C3
+- **Enhanced performance** with more memory and faster processing
+
+> 💡 **Both boards use the same wiring and code** - choose based on availability and requirements.  
+> **[📊 Detailed Comparison & Battery Life Analysis](./display-modes.md#hardware-requirements)**
+
+## ESP32-C3 Super Mini Pin Layout
 
 ### Pin Layout
 The ESP32-C3 Super Mini is a compact development board with the following pin assignments:
