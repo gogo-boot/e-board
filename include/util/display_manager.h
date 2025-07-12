@@ -74,4 +74,8 @@ private:
     static void setLargeFont();
     static void setMediumFont();
     static void setSmallFont();
+    
+    // Text wrapping helper
+    static void printWrappedText(const String& text, int16_t x, int16_t& y, 
+                                int16_t maxWidth, int16_t maxChars, int16_t lineHeight);
 };

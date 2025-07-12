@@ -138,7 +138,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     String encodedId = Util::urlEncode(String(stopId));
     String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
                  "&id=" + encodedId +
-                 "&format=json&maxJourneys=10";
+                 "&format=json&maxJourneys=20";
     
     String urlForLog = url;
     int keyPos = urlForLog.indexOf("accessId=");

@@ -226,12 +226,12 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
     if (isFullScreen) {
         setLargeFont();
         display.setCursor(leftMargin, currentY);
-        display.print("🌤️ Weather Information");
+        display.print("Weather Information");
         currentY += 45;
     } else {
         setMediumFont();
         display.setCursor(leftMargin, currentY);
-        display.print("🌤️ Weather");
+        display.print("Weather");
         currentY += 30;
     }
     
@@ -311,9 +311,9 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         currentY = y + h - 25;
         setSmallFont();
         display.setCursor(leftMargin, currentY);
-        display.print("☀️↑ ");
+        display.print("Sunrise: ");
         display.print(weather.sunrise);
-        display.print("  ☀️↓ ");
+        display.print("  Sunset: ");
         display.print(weather.sunset);
     }
 }
@@ -325,24 +325,12 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     
     bool isFullScreen = (w >= screenWidth * 0.8);
     
-    // Title
-    if (isFullScreen) {
-        setLargeFont();
-        display.setCursor(leftMargin, currentY);
-        display.print("🚌 Departure Board");
-        currentY += 40;
-    } else {
-        setMediumFont();
-        display.setCursor(leftMargin, currentY);
-        display.print("🚌 Departures");
-        currentY += 30;
-    }
-    
     // Station name
     setMediumFont();
     display.setCursor(leftMargin, currentY);
-    String stopName = departures.stopName;
-    int maxNameLength = isFullScreen ? 30 : 20;
+    RTCConfigData& config = ConfigManager::getConfig();
+    String stopName = config.selectedStopName; 
+    int maxNameLength = isFullScreen ? 50 : 30;
     if (stopName.length() > maxNameLength) {
         stopName = stopName.substring(0, maxNameLength - 3) + "...";
     }
@@ -355,7 +343,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     if (isFullScreen) {
         display.print("Line    Destination           Time   Track");
     } else {
-        display.print("Line  Dest      Time");
+        display.print("Zeit  Linie  Richtung");
     }
     currentY += 18;
     
@@ -364,7 +352,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     currentY += 8;
     
     // Departures
-    int maxDepartures = isFullScreen ? 15 : 10;
+    int maxDepartures = isFullScreen ? 20 : 15;
     maxDepartures = min(maxDepartures, departures.departureCount);
     
     for (int i = 0; i < maxDepartures; i++) {
@@ -393,22 +381,66 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             display.print(track);
             
         } else {
-            // Half screen format: "Line  Dest      Time"
-            String line = dep.line.substring(0, 4);
-            while (line.length() < 5) line += " ";
-            
-            String dest = dep.direction.substring(0, 8);
-            while (dest.length() < 9) dest += " ";
-            
+            // Half screen format: "Time Line Dest" with text wrapping
             String time = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
             time = time.substring(0, 5);
+            while (time.length() < 6) time += " ";
+
+            // Remove "Bus" prefix (case-insensitive)
+            String line = dep.line;
+            String lineLower = line;
+            lineLower.toLowerCase();
+            if (lineLower.startsWith("bus ")) {
+                line = line.substring(4); // Remove "Bus " prefix
+            }
+
+            line = line.substring(0, 4);
+            while (line.length() < 5) line += " ";
+        
+            String dest = dep.direction;
+            String destLower = dest;
+            destLower.toLowerCase(); 
+            // remove destination prefix "Frankfurt (Main) " case insensitive
+            if (destLower.startsWith("frankfurt (main) ")) {
+                dest = dep.direction.substring(17); // Remove "Frankfurt (Main) "
+            } else {
+                dest = dep.direction;
+            }
             
-            display.print(line);
-            display.print(dest);
+            // Print time and line on first line
             display.print(time);
+            display.print(line);
+            
+            // Handle destination with text wrapping
+            int maxDestWidth = 20; // Maximum characters per line for destination
+            if (dest.length() <= maxDestWidth) {
+                // Short destination - print on same line
+                display.print(dest);
+            } else {
+                // Long destination - wrap to next line
+                String firstPart = dest.substring(0, maxDestWidth - 3) + "...";
+                display.print(firstPart);
+                
+                // Move to next line for continuation (optional)
+                currentY += 16;
+                if (currentY <= y + h - 40) { // Check if we have space for another line
+                    display.setCursor(leftMargin + 60, currentY); // Indent continuation
+                    String secondPart = dest.substring(maxDestWidth - 3);
+                    if (secondPart.length() > maxDestWidth) {
+                        secondPart = secondPart.substring(0, maxDestWidth - 3) + "...";
+                    }
+                    display.print(secondPart);
+                }
+            }
         }
         
-        currentY += 16;
+        // Adjust line spacing - more space if text might be wrapped
+        if (isFullScreen || dep.direction.length() <= 20) {
+            currentY += 16; // Normal spacing
+        } else {
+            currentY += 20; // Extra spacing for wrapped text
+        }
+        
         if (currentY > y + h - 25) break;
     }
     
@@ -417,9 +449,19 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         currentY = y + h - 15;
         setSmallFont();
         display.setCursor(leftMargin, currentY);
-        display.print("Updated: ");
-        display.print(String(millis() / 1000));
-        display.print("s ago");
+
+        // Get current time
+        time_t now;
+        struct tm timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+
+        char timeStr[16];
+        // German time format: "HH:MM Uhr"
+        strftime(timeStr, sizeof(timeStr), "%H:%M Uhr", &timeinfo);
+
+        display.print("Aktualisiert: ");
+        display.print(timeStr);
     }
 }
 
@@ -496,4 +538,29 @@ void DisplayManager::setMediumFont() {
 void DisplayManager::setSmallFont() {
     display.setFont(&FreeMonoBold9pt7b);
     display.setTextColor(GxEPD_BLACK);
+}
+
+// Helper function for wrapping long text
+void DisplayManager::printWrappedText(const String& text, int16_t x, int16_t& y, int16_t maxWidth, int16_t maxChars, int16_t lineHeight) {
+    if (text.length() <= maxChars) {
+        // Text fits on one line
+        display.setCursor(x, y);
+        display.print(text);
+    } else {
+        // Text needs wrapping
+        String firstLine = text.substring(0, maxChars - 3) + "...";
+        display.setCursor(x, y);
+        display.print(firstLine);
+        
+        // Check if we have space for a second line
+        if (y + lineHeight < screenHeight - 25) {
+            y += lineHeight;
+            display.setCursor(x + 20, y); // Slight indent for continuation
+            String secondLine = text.substring(maxChars - 3);
+            if (secondLine.length() > maxChars) {
+                secondLine = secondLine.substring(0, maxChars - 3) + "...";
+            }
+            display.print(secondLine);
+        }
+    }
 }
