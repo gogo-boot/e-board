@@ -107,32 +107,6 @@ void getNearbyStops(float lat, float lon) {
   Util::printFreeHeap("After RMV request:");
 }
 
-void getDepartureBoard(const char* stopId) {
-  HTTPClient http;
-  String encodedId = Util::urlEncode(String(stopId));
-  String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
-               "&id=" + encodedId +
-               "&format=json&maxJourneys=11";
-  String urlForLog = url;
-  int keyPos = urlForLog.indexOf("accessId=");
-  if (keyPos != -1) {
-    int keyEnd = urlForLog.indexOf('&', keyPos);
-    if (keyEnd == -1) keyEnd = urlForLog.length();
-    urlForLog.replace(urlForLog.substring(keyPos, keyEnd), "accessId=***");
-  }
-  ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
-  http.begin(url);
-  int httpCode = http.GET();
-  if (httpCode > 0) {
-    String payload = http.getString();
-    ESP_LOGD(TAG, "Departure board response: %s", payload.c_str());
-    printDepartures(payload);
-  } else {
-    ESP_LOGE(TAG, "HTTP GET failed, error: %s", http.errorToString(httpCode).c_str());
-  }
-  http.end();
-}
-
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     ESP_LOGI(TAG, "Fetching departure data for stop: %s", stopId);
     
@@ -140,7 +114,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     String encodedId = Util::urlEncode(String(stopId));
     String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
                  "&id=" + encodedId +
-                 "&format=json&maxJourneys=20";
+                 "&format=json&maxJourneys=10";
     
     String urlForLog = url;
     int keyPos = urlForLog.indexOf("accessId=");

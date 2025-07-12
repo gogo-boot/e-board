@@ -373,7 +373,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     } else {
         setSmallFont();
         // 5 char for soll, one space, 5 char for ist, one space, 4 char for line, 20 char for destination
-        display.print("Soll   Ist     Linie     Ziel");
+        display.print("Soll   Ist      Linie   Ziel");
     }
     currentY += 18; // Column headers spacing
     
