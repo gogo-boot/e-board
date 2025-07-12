@@ -147,6 +147,15 @@ void DeviceModeManager::runOperationalMode() {
     MyWiFiManager::reconnectWiFi();
     
     if (MyWiFiManager::isConnected()) {
+        // Setup time synchronization after WiFi connection
+        if (!TimeManager::isTimeSet()) {
+            ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
+            TimeManager::setupNTPTime();
+        } else {
+            ESP_LOGI(TAG, "Time already synchronized");
+            TimeManager::printCurrentTime();
+        }
+        
         DepartureData depart;
         WeatherInfo weather;
         bool hasTransport = false;

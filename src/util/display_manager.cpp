@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <esp_log.h>
 #include "config/config_manager.h"
+#include "util/time_manager.h"
 
 // Include e-paper display libraries
 #include <GxEPD2_BW.h>
@@ -466,18 +467,24 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         setSmallFont();
         display.setCursor(leftMargin, currentY);
 
-        // Get current time
-        time_t now;
-        struct tm timeinfo;
-        time(&now);
-        localtime_r(&now, &timeinfo);
-
-        char timeStr[20];
-        // German time format: "HH:MM DD.MM.YYYY"
-        strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
-
         display.print("Aktualisiert: ");
-        display.print(timeStr);
+        
+        // Check if time is properly set
+        if (TimeManager::isTimeSet()) {
+            // Get current time
+            time_t now;
+            struct tm timeinfo;
+            time(&now);
+            localtime_r(&now, &timeinfo);
+
+            char timeStr[20];
+            // German time format: "HH:MM DD.MM.YYYY"
+            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
+            display.print(timeStr);
+        } else {
+            // Time not synchronized
+            display.print("Zeit nicht synchronisiert");
+        }
     }
 }
 
