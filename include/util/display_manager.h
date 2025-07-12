@@ -80,6 +80,11 @@ private:
     static void setDepartureMediumFont();
     static void setDepartureSmallFont();
     
+    // Text width measurement helpers
+    static int16_t getTextWidth(const String& text);
+    static int16_t getTextExcess(const String& text, int16_t maxWidth);
+    static String shortenTextToFit(const String& text, int16_t maxWidth);
+    
     // Text wrapping helper
     static void printWrappedText(const String& text, int16_t x, int16_t& y, 
                                 int16_t maxWidth, int16_t maxChars, int16_t lineHeight);

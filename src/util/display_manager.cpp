@@ -329,12 +329,13 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     setMediumFont();
     display.setCursor(leftMargin, currentY);
     RTCConfigData& config = ConfigManager::getConfig();
-    String stopName = config.selectedStopName; 
-    int maxNameLength = isFullScreen ? 50 : 40;
-    if (stopName.length() > maxNameLength) {
-        stopName = stopName.substring(0, maxNameLength - 3) + "...";
-    }
-    display.print(stopName);
+    String stopName = config.selectedStopName;
+    
+    // Calculate available width and fit station name
+    int stationMaxWidth = rightMargin - leftMargin;
+    String fittedStopName = shortenTextToFit(stopName, stationMaxWidth);
+    
+    display.print(fittedStopName);
     currentY += 30;
     
     // Column headers
@@ -362,65 +363,91 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         
         // Format for available width
         if (isFullScreen) {
-            // Full screen format: "Line    Destination           Time   Track"
-            String line = dep.line.substring(0, 7);
-            while (line.length() < 8) line += " ";
+            // Full screen format: "Soll Ist  Linie  Ziel                Gleis"
+            setSmallFont(); // Set font for measurements
             
-            String dest = dep.direction.substring(0, 18);
-            while (dest.length() < 19) dest += " ";
+            // Calculate available space for each column
+            int totalWidth = rightMargin - leftMargin;
             
-            String time = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
-            time = time.substring(0, 5);
-            while (time.length() < 6) time += " ";
+            // Fixed widths for times and track
+            String sollTime = dep.time.substring(0, 5);
+            String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+            String track = dep.track.substring(0, 4);
             
-            String track = dep.track.substring(0, 3);
+            // Measure fixed elements
+            int sollWidth = getTextWidth(sollTime + " ");
+            int istWidth = getTextWidth(istTime + "  ");
+            int trackWidth = getTextWidth("  " + track);
             
+            // Available space for line and destination
+            int remainingWidth = totalWidth - sollWidth - istWidth - trackWidth;
+            
+            // Allocate space: Line gets 1/4, Destination gets 3/4
+            int lineMaxWidth = remainingWidth / 4;
+            int destMaxWidth = (remainingWidth * 3) / 4;
+            
+            // Fit line and destination to available space
+            String line = shortenTextToFit(dep.line, lineMaxWidth);
+            String dest = shortenTextToFit(dep.direction, destMaxWidth);
+            
+            // Print the formatted line
+            display.print(sollTime);
+            display.print(" ");
+            display.print(istTime);
+            display.print("  ");
             display.print(line);
+            display.print("  ");
             display.print(dest);
-            display.print(time);
+            display.print("  ");
             display.print(track);
             
         } else {
-            // Half screen format: "Time Line Dest" with text wrapping
-            String time = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
-            time = time.substring(0, 5);
-            while (time.length() < 6) time += " ";
-
-            // Remove "Bus" prefix (case-insensitive)
+            // Half screen format: "Soll Ist  Linie  Ziel"
+            setSmallFont(); // Set font for measurements
+            
+            // Calculate available space
+            int totalWidth = rightMargin - leftMargin;
+            
+            // Prepare times
+            String sollTime = dep.time.substring(0, 5);
+            String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+            
+            // Clean up line (remove "Bus" prefix)
             String line = dep.line;
             String lineLower = line;
             lineLower.toLowerCase();
             if (lineLower.startsWith("bus ")) {
-                line = line.substring(4); // Remove "Bus " prefix
+                line = line.substring(4);
             }
-
-            line = line.substring(0, 4);
-            while (line.length() < 5) line += " ";
-        
+            
+            // Clean up destination (remove "Frankfurt (Main)" prefix)
             String dest = dep.direction;
             String destLower = dest;
             destLower.toLowerCase(); 
-            // remove destination prefix "Frankfurt (Main) " case insensitive
             if (destLower.startsWith("frankfurt (main) ")) {
-                dest = dep.direction.substring(17); // Remove "Frankfurt (Main) "
-            } else {
-                dest = dep.direction;
+                dest = dep.direction.substring(17);
             }
             
-            // Print time and line on first line
-            display.print(time);
-            display.print(line);
+            // Measure fixed elements: times and spaces
+            int timesWidth = getTextWidth(sollTime + " " + istTime + "  ");
+            int remainingWidth = totalWidth - timesWidth;
             
-            // Handle destination with text wrapping
-            int maxDestWidth = 25; // Maximum characters per line for destination
-            if (dest.length() <= maxDestWidth) {
-                // Short destination - print on same line
-                display.print(dest);
-            } else {
-                // Long destination - wrap to next line
-                String firstPart = dest.substring(0, maxDestWidth - 3) + "...";
-                display.print(firstPart);
-            }
+            // Allocate remaining space: Line gets 1/3, Destination gets 2/3
+            int lineMaxWidth = remainingWidth / 3;
+            int destMaxWidth = (remainingWidth * 2) / 3;
+            
+            // Fit line and destination to available space
+            String fittedLine = shortenTextToFit(line, lineMaxWidth);
+            String fittedDest = shortenTextToFit(dest, destMaxWidth);
+            
+            // Print the formatted line
+            display.print(sollTime);
+            display.print(" ");
+            display.print(istTime);
+            display.print("  ");
+            display.print(fittedLine);
+            display.print("  ");
+            display.print(fittedDest);
         }
         
         // Adjust line spacing - more space if text might be wrapped
@@ -445,9 +472,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         time(&now);
         localtime_r(&now, &timeinfo);
 
-        char timeStr[16];
-        // German time format: "HH:MM Uhr"
-        strftime(timeStr, sizeof(timeStr), "%H:%M Uhr", &timeinfo);
+        char timeStr[20];
+        // German time format: "HH:MM DD.MM.YYYY"
+        strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
 
         display.print("Aktualisiert: ");
         display.print(timeStr);
@@ -527,6 +554,49 @@ void DisplayManager::setMediumFont() {
 void DisplayManager::setSmallFont() {
     display.setFont(&FreeSansBold9pt7b);
     display.setTextColor(GxEPD_BLACK);
+}
+
+// Text width measurement helpers
+int16_t DisplayManager::getTextWidth(const String& text) {
+    int16_t x1, y1;
+    uint16_t w, h;
+    display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+    return w;
+}
+
+int16_t DisplayManager::getTextExcess(const String& text, int16_t maxWidth) {
+    int16_t textWidth = getTextWidth(text);
+    return max(0, textWidth - maxWidth); // Return excess pixels, or 0 if fits
+}
+
+String DisplayManager::shortenTextToFit(const String& text, int16_t maxWidth) {
+    if (getTextWidth(text) <= maxWidth) {
+        return text; // Already fits
+    }
+    
+    // Binary search to find the longest text that fits
+    int left = 0;
+    int right = text.length();
+    String result = "";
+    
+    while (left <= right) {
+        int mid = (left + right) / 2;
+        String candidate = text.substring(0, mid);
+        
+        // Add "..." if we're shortening
+        if (mid < text.length()) {
+            candidate += "...";
+        }
+        
+        if (getTextWidth(candidate) <= maxWidth) {
+            result = candidate;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return result.length() > 0 ? result : "..."; // Fallback to "..." if nothing fits
 }
 
 // Helper function for wrapping long text
