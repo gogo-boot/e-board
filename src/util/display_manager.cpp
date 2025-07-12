@@ -8,15 +8,14 @@
 #include <GxEPD2_3C.h>
 #include <GxEPD2_4C.h>
 #include <GxEPD2_7C.h>
-#include <U8g2_for_Adafruit_GFX.h>
+#include <Fonts/FreeSansBold9pt7b.h>
+#include <Fonts/FreeSansBold12pt7b.h>
+#include <Fonts/FreeSansBold18pt7b.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>
 #include "config/pins.h"
 
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-
-// U8g2 fonts for German character support
-U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;
 
 static const char* TAG = "DISPLAY_MGR";
 
@@ -32,13 +31,6 @@ void DisplayManager::init(DisplayOrientation orientation) {
     ESP_LOGI(TAG, "Initializing display manager");
     
     display.init(115200);
-    
-    // Initialize U8g2 fonts for German character support
-    u8g2Fonts.begin(display); // connect u8g2 procedures to Adafruit GFX
-    u8g2Fonts.setFontMode(1);                 // use u8g2 transparent mode (this is default)
-    u8g2Fonts.setFontDirection(0);            // left to right (this is default)
-    u8g2Fonts.setForegroundColor(GxEPD_BLACK); // apply Adafruit GFX color
-    u8g2Fonts.setBackgroundColor(GxEPD_WHITE); // apply Adafruit GFX color
     
     // Set rotation first to get correct dimensions
     display.setRotation(static_cast<int>(orientation));
@@ -233,81 +225,81 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
     // Weather title
     if (isFullScreen) {
         setLargeFont();
-        u8g2Fonts.setCursor(leftMargin, currentY);
-        u8g2Fonts.print("Weather Information");
+        display.setCursor(leftMargin, currentY);
+        display.print("Weather Information");
         currentY += 45;
     } else {
         setMediumFont();
-        u8g2Fonts.setCursor(leftMargin, currentY);
-        u8g2Fonts.print("Weather");
+        display.setCursor(leftMargin, currentY);
+        display.print("Weather");
         currentY += 30;
     }
     
     // Current temperature - make it prominent
     setLargeFont();
-    u8g2Fonts.setCursor(leftMargin, currentY);
-    u8g2Fonts.print(weather.temperature);
+    display.setCursor(leftMargin, currentY);
+    display.print(weather.temperature);
     
     // Location on same line if space allows
     if (isFullScreen) {
         setMediumFont();
         int16_t tempX = leftMargin + 100; // Offset for location
-        u8g2Fonts.setCursor(tempX, currentY);
+        display.setCursor(tempX, currentY);
         RTCConfigData& config = ConfigManager::getConfig();
-        u8g2Fonts.print(config.cityName); // Now supports German characters!
+        display.print(config.cityName);
     }
     currentY += isFullScreen ? 40 : 35;
     
     // Location (if not already shown)
     if (!isFullScreen) {
         setMediumFont();
-        u8g2Fonts.setCursor(leftMargin, currentY);
+        display.setCursor(leftMargin, currentY);
         RTCConfigData& config = ConfigManager::getConfig();
         String city = String(config.cityName);
         if (city.length() > 12 && !isFullScreen) {
             city = city.substring(0, 9) + "...";
         }
-        u8g2Fonts.print(city); // Now supports German characters!
+        display.print(city);
         currentY += 25;
     }
     
     // Condition
     setSmallFont();
-    u8g2Fonts.setCursor(leftMargin, currentY);
+    display.setCursor(leftMargin, currentY);
     String condition = weather.condition;
     if (condition.length() > 15 && !isFullScreen) {
         condition = condition.substring(0, 12) + "...";
     }
-    u8g2Fonts.print(condition); // Now supports German weather conditions!
+    display.print(condition);
     currentY += 20;
     
     // High/Low
-    u8g2Fonts.setCursor(leftMargin, currentY);
-    u8g2Fonts.print("High: ");
-    u8g2Fonts.print(weather.tempMax);
-    u8g2Fonts.print("  Low: ");
-    u8g2Fonts.print(weather.tempMin);
+    display.setCursor(leftMargin, currentY);
+    display.print("High: ");
+    display.print(weather.tempMax);
+    display.print("  Low: ");
+    display.print(weather.tempMin);
     currentY += 20;
     
     // Forecast section
     if (isFullScreen) {
         setSmallFont();
-        u8g2Fonts.setCursor(leftMargin, currentY);
-        u8g2Fonts.print("Next Hours:");
+        display.setCursor(leftMargin, currentY);
+        display.print("Next Hours:");
         currentY += 18;
         
         int maxForecast = isFullScreen ? 6 : 3;
         for (int i = 0; i < min(maxForecast, weather.forecastCount); i++) {
             const auto& forecast = weather.forecast[i];
-            u8g2Fonts.setCursor(leftMargin, currentY);
+            display.setCursor(leftMargin, currentY);
             
             String timeStr = forecast.time.substring(11, 16); // HH:MM
-            u8g2Fonts.print(timeStr);
-            u8g2Fonts.print(" ");
-            u8g2Fonts.print(forecast.temperature);
-            u8g2Fonts.print(" ");
-            u8g2Fonts.print(forecast.rainChance);
-            u8g2Fonts.print("%");
+            display.print(timeStr);
+            display.print(" ");
+            display.print(forecast.temperature);
+            display.print(" ");
+            display.print(forecast.rainChance);
+            display.print("%");
             
             currentY += 16;
             if (currentY > y + h - 20) break;
@@ -318,11 +310,11 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
     if (currentY < y + h - 40 && isFullScreen) {
         currentY = y + h - 25;
         setSmallFont();
-        u8g2Fonts.setCursor(leftMargin, currentY);
-        u8g2Fonts.print("Sunrise: ");
-        u8g2Fonts.print(weather.sunrise);
-        u8g2Fonts.print("  Sunset: ");
-        u8g2Fonts.print(weather.sunset);
+        display.setCursor(leftMargin, currentY);
+        display.print("Sunrise: ");
+        display.print(weather.sunrise);
+        display.print("  Sunset: ");
+        display.print(weather.sunset);
     }
 }
 
@@ -334,50 +326,48 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     bool isFullScreen = (w >= screenWidth * 0.8);
     
     // Station name
-    setDepartureLargeFont(); // Use larger font for station name
-    u8g2Fonts.setCursor(leftMargin, currentY);
+    setMediumFont();
+    display.setCursor(leftMargin, currentY);
     RTCConfigData& config = ConfigManager::getConfig();
     String stopName = config.selectedStopName; 
-    int maxNameLength = isFullScreen ? 50 : 25; // Slightly reduce length for bigger font
+    int maxNameLength = isFullScreen ? 50 : 40;
     if (stopName.length() > maxNameLength) {
         stopName = stopName.substring(0, maxNameLength - 3) + "...";
     }
-    u8g2Fonts.print(stopName); // Now supports German station names!
-    currentY += 35; // More space for larger font
+    display.print(stopName);
+    currentY += 30;
     
     // Column headers
-    setDepartureSmallFont(); // Use larger small font for headers
-    u8g2Fonts.setCursor(leftMargin, currentY);
+    display.setCursor(leftMargin, currentY);
     if (isFullScreen) {
-        u8g2Fonts.print("Line    Destination           Time   Track");
+        display.print("Soll Ist  Linie  Ziel                Gleis");
     } else {
-        u8g2Fonts.print("Zeit  Linie  Richtung");
+        // 5 char for soll, one space, 5 char for ist, one space, 4 char for line, 20 char for destination
+        display.print("Soll  Ist   Linie  Ziel");
     }
-    currentY += 22; // More space for larger font
+    currentY += 18;
     
     // Underline
     display.drawLine(leftMargin, currentY - 5, rightMargin, currentY - 5, GxEPD_BLACK);
     currentY += 8;
     
     // Departures
-    int maxDepartures = isFullScreen ? 20 : 12; // Reduce count slightly for bigger fonts
+    int maxDepartures = isFullScreen ? 20 : 15;
     maxDepartures = min(maxDepartures, departures.departureCount);
     
     for (int i = 0; i < maxDepartures; i++) {
         const auto& dep = departures.departures[i];
         
-        // Use larger font for departure entries
-        setDepartureMediumFont();
-        u8g2Fonts.setCursor(leftMargin, currentY);
+        display.setCursor(leftMargin, currentY);
         
         // Format for available width
         if (isFullScreen) {
             // Full screen format: "Line    Destination           Time   Track"
-            String line = dep.line.substring(0, 6); // Slightly shorter for bigger font
-            while (line.length() < 7) line += " ";
+            String line = dep.line.substring(0, 7);
+            while (line.length() < 8) line += " ";
             
-            String dest = dep.direction.substring(0, 16); // Slightly shorter for bigger font
-            while (dest.length() < 17) dest += " ";
+            String dest = dep.direction.substring(0, 18);
+            while (dest.length() < 19) dest += " ";
             
             String time = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
             time = time.substring(0, 5);
@@ -385,10 +375,10 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             
             String track = dep.track.substring(0, 3);
             
-            u8g2Fonts.print(line);
-            u8g2Fonts.print(dest); // Now supports German destinations like "Düsseldorf"!
-            u8g2Fonts.print(time);
-            u8g2Fonts.print(track);
+            display.print(line);
+            display.print(dest);
+            display.print(time);
+            display.print(track);
             
         } else {
             // Half screen format: "Time Line Dest" with text wrapping
@@ -418,37 +408,26 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             }
             
             // Print time and line on first line
-            u8g2Fonts.print(time);
-            u8g2Fonts.print(line);
+            display.print(time);
+            display.print(line);
             
             // Handle destination with text wrapping
-            int maxDestWidth = 18; // Slightly shorter for bigger font
+            int maxDestWidth = 25; // Maximum characters per line for destination
             if (dest.length() <= maxDestWidth) {
                 // Short destination - print on same line
-                u8g2Fonts.print(dest); // Now supports German destinations like "München"!
+                display.print(dest);
             } else {
                 // Long destination - wrap to next line
                 String firstPart = dest.substring(0, maxDestWidth - 3) + "...";
-                u8g2Fonts.print(firstPart); // Now supports German destinations!
-                
-                // Move to next line for continuation (optional)
-                currentY += 20; // More space for larger font
-                if (currentY <= y + h - 40) { // Check if we have space for another line
-                    u8g2Fonts.setCursor(leftMargin + 60, currentY); // Indent continuation
-                    String secondPart = dest.substring(maxDestWidth - 3);
-                    if (secondPart.length() > maxDestWidth) {
-                        secondPart = secondPart.substring(0, maxDestWidth - 3) + "...";
-                    }
-                    u8g2Fonts.print(secondPart); // Now supports German destinations!
-                }
+                display.print(firstPart);
             }
         }
         
-        // Adjust line spacing - more space for larger fonts
-        if (isFullScreen || dep.direction.length() <= 18) {
-            currentY += 20; // Increased spacing for larger font
+        // Adjust line spacing - more space if text might be wrapped
+        if (isFullScreen || dep.direction.length() <= 20) {
+            currentY += 16; // Normal spacing
         } else {
-            currentY += 24; // Extra spacing for wrapped text with larger font
+            currentY += 20; // Extra spacing for wrapped text
         }
         
         if (currentY > y + h - 25) break;
@@ -456,9 +435,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     
     // Footer
     if (currentY < y + h - 25) {
-        currentY = y + h - 17; // Adjust for larger font
-        setDepartureSmallFont(); // Use larger departure small font
-        u8g2Fonts.setCursor(leftMargin, currentY);
+        currentY = y + h - 15;
+        setSmallFont();
+        display.setCursor(leftMargin, currentY);
 
         // Get current time
         time_t now;
@@ -470,8 +449,8 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         // German time format: "HH:MM Uhr"
         strftime(timeStr, sizeof(timeStr), "%H:%M Uhr", &timeinfo);
 
-        u8g2Fonts.print("Aktualisiert: ");
-        u8g2Fonts.print(timeStr);
+        display.print("Aktualisiert: ");
+        display.print(timeStr);
     }
 }
 
@@ -536,51 +515,41 @@ void DisplayManager::hibernate() {
 }
 
 void DisplayManager::setLargeFont() {
-    u8g2Fonts.setFont(u8g2_font_helvB18_tf); // 18pt Helvetica Bold with German characters
+    display.setFont(&FreeSansBold18pt7b);
+    display.setTextColor(GxEPD_BLACK);
 }
 
 void DisplayManager::setMediumFont() {
-    u8g2Fonts.setFont(u8g2_font_helvB12_tf); // 12pt Helvetica Bold with German characters
+    display.setFont(&FreeSansBold12pt7b);
+    display.setTextColor(GxEPD_BLACK);
 }
 
 void DisplayManager::setSmallFont() {
-    u8g2Fonts.setFont(u8g2_font_helvB08_tf); // 8pt Helvetica Bold with German characters
-}
-
-// Departure-specific larger fonts
-void DisplayManager::setDepartureLargeFont() {
-    u8g2Fonts.setFont(u8g2_font_helvB18_tf); // 18pt for station names
-}
-
-void DisplayManager::setDepartureMediumFont() {
-    u8g2Fonts.setFont(u8g2_font_helvB14_tf); // 14pt for departure entries - bigger than regular medium
-}
-
-void DisplayManager::setDepartureSmallFont() {
-    u8g2Fonts.setFont(u8g2_font_helvB10_tf); // 10pt for headers - bigger than regular small
+    display.setFont(&FreeSansBold9pt7b);
+    display.setTextColor(GxEPD_BLACK);
 }
 
 // Helper function for wrapping long text
 void DisplayManager::printWrappedText(const String& text, int16_t x, int16_t& y, int16_t maxWidth, int16_t maxChars, int16_t lineHeight) {
     if (text.length() <= maxChars) {
         // Text fits on one line
-        u8g2Fonts.setCursor(x, y);
-        u8g2Fonts.print(text); // Now supports German characters!
+        display.setCursor(x, y);
+        display.print(text);
     } else {
         // Text needs wrapping
         String firstLine = text.substring(0, maxChars - 3) + "...";
-        u8g2Fonts.setCursor(x, y);
-        u8g2Fonts.print(firstLine); // Now supports German characters!
+        display.setCursor(x, y);
+        display.print(firstLine);
         
         // Check if we have space for a second line
         if (y + lineHeight < screenHeight - 25) {
             y += lineHeight;
-            u8g2Fonts.setCursor(x + 20, y); // Slight indent for continuation
+            display.setCursor(x + 20, y); // Slight indent for continuation
             String secondLine = text.substring(maxChars - 3);
             if (secondLine.length() > maxChars) {
                 secondLine = secondLine.substring(0, maxChars - 3) + "...";
             }
-            u8g2Fonts.print(secondLine); // Now supports German characters!
+            display.print(secondLine);
         }
     }
 }
