@@ -112,7 +112,7 @@ void getDepartureBoard(const char* stopId) {
   String encodedId = Util::urlEncode(String(stopId));
   String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
                "&id=" + encodedId +
-               "&format=json&maxJourneys=15";
+               "&format=json&maxJourneys=11";
   String urlForLog = url;
   int keyPos = urlForLog.indexOf("accessId=");
   if (keyPos != -1) {
