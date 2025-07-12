@@ -20,6 +20,8 @@ void initDepartureFilter() {
   departureFilter["Departure"][0]["rtTime"] = true;
   departureFilter["Departure"][0]["time"] = true;
   departureFilter["Departure"][0]["Product"][0]["catOut"] = true;
+  departureFilter["Departure"][0]["Messages"]["Message"][0]["lead"] = true;
+  departureFilter["Departure"][0]["Messages"]["Message"][0]["text"] = true;
 }
 
 void printDepartures(const String& payload) {
@@ -199,6 +201,18 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
             info.category = dep["Product"][0]["catOut"] | "";
         } else {
             info.category = "";
+        }
+        
+        // Parse service disruption messages
+        info.lead = "";
+        info.text = "";
+        if (dep.containsKey("Messages") && dep["Messages"].containsKey("Message")) {
+            JsonArray messages = dep["Messages"]["Message"];
+            if (messages.size() > 0) {
+                JsonObject message = messages[0]; // Take first message
+                info.lead = message["lead"] | "";
+                info.text = message["text"] | "";
+            }
         }
         
         departData.departures.push_back(info);

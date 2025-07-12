@@ -15,6 +15,8 @@ struct DepartureInfo {
     String rtTime;
     String track;
     String category;
+    String lead;      // Service disruption lead text
+    String text;      // Service disruption full text
 };
 
 struct DepartureData {

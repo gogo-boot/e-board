@@ -402,6 +402,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
             String track = dep.track.substring(0, 4);
             
+            // Check if times are different for highlighting
+            bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
+            
             // Measure fixed elements
             int sollWidth = getTextWidth(sollTime + " ");
             int istWidth = getTextWidth(istTime + "  ");
@@ -418,10 +421,34 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             String line = shortenTextToFit(dep.line, lineMaxWidth);
             String dest = shortenTextToFit(dep.direction, destMaxWidth);
             
-            // Print the formatted line
+            // Print soll time
             display.print(sollTime);
             display.print(" ");
-            display.print(istTime);
+            
+            // Get current cursor position for ist time highlighting
+            int16_t istX = display.getCursorX();
+            int16_t istY = display.getCursorY();
+            
+            if (timesAreDifferent) {
+                // Highlight ist time with black background and white text
+                int16_t istTextWidth = getTextWidth(istTime);
+                int16_t textHeight = 12; // Approximate text height for small font
+                
+                // Draw black background rectangle
+                display.fillRect(istX, istY - textHeight + 2, istTextWidth, textHeight, GxEPD_BLACK);
+                
+                // Set white text color
+                display.setTextColor(GxEPD_WHITE);
+                display.setCursor(istX, istY);
+                display.print(istTime);
+                
+                // Reset to black text color
+                display.setTextColor(GxEPD_BLACK);
+            } else {
+                // Normal ist time display
+                display.print(istTime);
+            }
+            
             display.print("  ");
             display.print(line);
             display.print("  ");
@@ -439,6 +466,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             // Prepare times
             String sollTime = dep.time.substring(0, 5);
             String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+            
+            // Check if times are different for highlighting
+            bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
             
             // Clean up line (remove "Bus" prefix)
             String line = dep.line;
@@ -468,10 +498,34 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             String fittedLine = shortenTextToFit(line, lineMaxWidth);
             String fittedDest = shortenTextToFit(dest, destMaxWidth);
             
-            // Print the formatted line
+            // Print soll time
             display.print(sollTime);
             display.print(" ");
-            display.print(istTime);
+            
+            // Get current cursor position for ist time highlighting
+            int16_t istX = display.getCursorX();
+            int16_t istY = display.getCursorY();
+            
+            if (timesAreDifferent) {
+                // Highlight ist time with black background and white text
+                int16_t istTextWidth = getTextWidth(istTime);
+                int16_t textHeight = 12; // Approximate text height for small font
+                
+                // Draw black background rectangle
+                display.fillRect(istX, istY - textHeight + 2, istTextWidth, textHeight, GxEPD_BLACK);
+                
+                // Set white text color
+                display.setTextColor(GxEPD_WHITE);
+                display.setCursor(istX, istY);
+                display.print(istTime);
+                
+                // Reset to black text color
+                display.setTextColor(GxEPD_BLACK);
+            } else {
+                // Normal ist time display
+                display.print(istTime);
+            }
+            
             display.print("  ");
             display.print(fittedLine);
             display.print("  ");
@@ -483,6 +537,26 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             currentY += 16; // Normal spacing
         } else {
             currentY += 20; // Extra spacing for wrapped text
+        }
+        
+        // Add service disruption information if available
+        if (dep.lead.length() > 0 || dep.text.length() > 0) {
+            currentY += 4; // Small gap before disruption info
+            
+            // Use the lead text if available, otherwise use text
+            String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
+            
+            // Fit disruption text to available width with some indent
+            int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
+            String fittedDisruption = shortenTextToFit(disruptionInfo, disruptionMaxWidth);
+            
+            // Set smaller font and gray appearance by using a pattern
+            setSmallFont();
+            display.setCursor(leftMargin + 20, currentY); // Indent disruption text
+            display.print("⚠ "); // Warning symbol
+            display.print(fittedDisruption);
+            
+            currentY += 12; // Additional space after disruption info
         }
         
         if (currentY > y + h - 25) break;
@@ -498,16 +572,16 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         
         // Check if time is properly set
         if (TimeManager::isTimeSet()) {
-            // Get current time
-            time_t now;
+            // Get current German time using TimeManager
             struct tm timeinfo;
-            time(&now);
-            localtime_r(&now, &timeinfo);
-
-            char timeStr[20];
-            // German time format: "HH:MM DD.MM.YYYY"
-            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
-            display.print(timeStr);
+            if (TimeManager::getCurrentLocalTime(timeinfo)) {
+                char timeStr[20];
+                // German time format: "HH:MM DD.MM.YYYY"
+                strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
+                display.print(timeStr);
+            } else {
+                display.print("Zeit nicht verfügbar");
+            }
         } else {
             // Time not synchronized
             display.print("Zeit nicht synchronisiert");
