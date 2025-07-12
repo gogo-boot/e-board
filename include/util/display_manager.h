@@ -65,6 +65,7 @@ private:
     // Internal drawing functions
     static void drawWeatherSection(const WeatherInfo& weather, int16_t x, int16_t y, int16_t w, int16_t h);
     static void drawDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawHeaderSection(int16_t x, int16_t y, int16_t w, int16_t h);
     
     // Coordinate calculation helpers
     static void calculateDimensions();

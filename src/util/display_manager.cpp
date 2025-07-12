@@ -96,27 +96,36 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather, const Depart
         return;
     }
     
+    // Define header height
+    const int16_t headerHeight = 25;
+    const int16_t contentY = headerHeight;
+    const int16_t contentHeight = screenHeight - headerHeight;
+    
     if (weather && departures) {
-        // Full update - both halves
-        ESP_LOGI(TAG, "Updating both halves");
+        // Full update - both halves with header
+        ESP_LOGI(TAG, "Updating both halves with header");
         display.setFullWindow();
         display.firstPage();
         
         do {
             display.fillScreen(GxEPD_WHITE);
             
+            // Draw header across full width
+            drawHeaderSection(0, 0, screenWidth, headerHeight);
+            
             if (currentOrientation == DisplayOrientation::LANDSCAPE) {
                 // Landscape: left/right split (weather left, departures right)
-                drawWeatherSection(*weather, 0, 0, halfWidth, screenHeight);
-                drawDepartureSection(*departures, halfWidth, 0, halfWidth, screenHeight);
+                drawWeatherSection(*weather, 0, contentY, halfWidth, contentHeight);
+                drawDepartureSection(*departures, halfWidth, contentY, halfWidth, contentHeight);
                 // Draw vertical divider
-                display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
+                display.drawLine(halfWidth, contentY, halfWidth, screenHeight, GxEPD_BLACK);
             } else {
                 // Portrait: top/bottom split (weather top, departures bottom)
-                drawWeatherSection(*weather, 0, 0, screenWidth, halfHeight);
-                drawDepartureSection(*departures, 0, halfHeight, screenWidth, halfHeight);
+                int16_t halfContentHeight = contentHeight / 2;
+                drawWeatherSection(*weather, 0, contentY, screenWidth, halfContentHeight);
+                drawDepartureSection(*departures, 0, contentY + halfContentHeight, screenWidth, halfContentHeight);
                 // Draw horizontal divider
-                display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
+                display.drawLine(0, contentY + halfContentHeight, screenWidth, contentY + halfContentHeight, GxEPD_BLACK);
             }
             
         } while (display.nextPage());
@@ -133,13 +142,17 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather, const Depart
 void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Updating weather half");
     
+    const int16_t headerHeight = 25;
+    const int16_t contentY = headerHeight;
+    const int16_t contentHeight = screenHeight - headerHeight;
+    
     int16_t x, y, w, h;
     if (currentOrientation == DisplayOrientation::LANDSCAPE) {
-        // Landscape: weather is LEFT half
+        // Landscape: weather is LEFT half (including header portion)
         x = 0; y = 0; w = halfWidth; h = screenHeight;
     } else {
-        // Portrait: weather is TOP half
-        x = 0; y = 0; w = screenWidth; h = halfHeight;
+        // Portrait: weather is TOP half (including header)
+        x = 0; y = 0; w = screenWidth; h = headerHeight + (contentHeight / 2);
     }
     
     // Use partial window for faster update
@@ -148,13 +161,23 @@ void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     
     do {
         display.fillRect(x, y, w, h, GxEPD_WHITE);
-        drawWeatherSection(weather, x, y, w, h);
+        
+        // Draw header if updating full width or landscape left side
+        if (currentOrientation == DisplayOrientation::PORTRAIT || x == 0) {
+            drawHeaderSection(0, 0, currentOrientation == DisplayOrientation::LANDSCAPE ? halfWidth : screenWidth, headerHeight);
+        }
+        
+        if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+            drawWeatherSection(weather, x, contentY, w, contentHeight);
+        } else {
+            drawWeatherSection(weather, x, contentY, w, contentHeight / 2);
+        }
         
         // Redraw divider
         if (currentOrientation == DisplayOrientation::LANDSCAPE) {
             display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
         } else {
-            display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
+            display.drawLine(0, contentY + (contentHeight / 2), screenWidth, contentY + (contentHeight / 2), GxEPD_BLACK);
         }
         
     } while (display.nextPage());
@@ -163,13 +186,17 @@ void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
 void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
     ESP_LOGI(TAG, "Updating departure half");
     
+    const int16_t headerHeight = 25;
+    const int16_t contentY = headerHeight;
+    const int16_t contentHeight = screenHeight - headerHeight;
+    
     int16_t x, y, w, h;
     if (currentOrientation == DisplayOrientation::LANDSCAPE) {
-        // Landscape: departures is RIGHT half
-        x = halfWidth; y = 0; w = halfWidth; h = screenHeight;
+        // Landscape: departures are RIGHT half (no header in this section)
+        x = halfWidth; y = contentY; w = halfWidth; h = contentHeight;
     } else {
-        // Portrait: departures is BOTTOM half
-        x = 0; y = halfHeight; w = screenWidth; h = halfHeight;
+        // Portrait: departures are BOTTOM half (no header in this section)
+        x = 0; y = contentY + (contentHeight / 2); w = screenWidth; h = contentHeight / 2;
     }
     
     // Use partial window for faster update
@@ -184,7 +211,7 @@ void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
         if (currentOrientation == DisplayOrientation::LANDSCAPE) {
             display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
         } else {
-            display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
+            display.drawLine(0, contentY + (contentHeight / 2), screenWidth, contentY + (contentHeight / 2), GxEPD_BLACK);
         }
         
     } while (display.nextPage());
@@ -629,4 +656,25 @@ void DisplayManager::printWrappedText(const String& text, int16_t x, int16_t& y,
             display.print(secondLine);
         }
     }
+}
+
+void DisplayManager::drawHeaderSection(int16_t x, int16_t y, int16_t w, int16_t h) {
+    int16_t leftMargin = x + 10;
+    int16_t rightMargin = x + w - 10;
+    int16_t centerY = y + h / 2 + 5; // Center vertically in header area
+    
+    setSmallFont();
+    
+    // WiFi status placeholder (left side)
+    display.setCursor(leftMargin, centerY);
+    display.print("WiFi: [●●●]"); // Placeholder for WiFi strength
+    
+    // Battery status placeholder (right side)
+    String batteryText = "Batt: [85%]"; // Placeholder for battery level
+    int16_t batteryWidth = getTextWidth(batteryText);
+    display.setCursor(rightMargin - batteryWidth, centerY);
+    display.print(batteryText);
+    
+    // Optional: Add separator line at bottom of header
+    display.drawLine(x, y + h - 1, x + w, y + h - 1, GxEPD_BLACK);
 }
