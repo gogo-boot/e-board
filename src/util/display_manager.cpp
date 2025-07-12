@@ -364,7 +364,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     String fittedStopName = shortenTextToFit(stopName, stationMaxWidth);
     
     display.print(fittedStopName);
-    currentY += 30;
+    currentY += 40; // Updated: Station Name section gets 40px
     
     // Column headers
     display.setCursor(leftMargin, currentY);
@@ -374,11 +374,11 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         // 5 char for soll, one space, 5 char for ist, one space, 4 char for line, 20 char for destination
         display.print("Soll  Ist   Linie  Ziel");
     }
-    currentY += 18;
+    currentY += 18; // Column headers spacing
     
     // Underline
     display.drawLine(leftMargin, currentY - 5, rightMargin, currentY - 5, GxEPD_BLACK);
-    currentY += 8;
+    currentY += 12; // Updated: Header underline spacing (18 + 12 = 30px total for headers)
     
     // Departures
     int maxDepartures = isFullScreen ? 20 : 15;
@@ -533,7 +533,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         }
         
         // Always add consistent spacing for disruption area
-        currentY += 16; // Normal line spacing after departure info
+        currentY += 20; // Updated: Main departure line gets 20px
         
         // Check if we have disruption information to display
         if (dep.lead.length() > 0 || dep.text.length() > 0) {
@@ -553,7 +553,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         // If no disruption info, the space is left empty but still allocated
         
         // Add consistent spacing after disruption area (whether used or not)
-        currentY += 12; // Space reserved for disruption info
+        currentY += 17; // Updated: Disruption space gets 17px (total 37px per entry)
         
         if (currentY > y + h - 25) break;
     }

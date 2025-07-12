@@ -153,6 +153,7 @@ pio run --target uploadfs
 | **[💻 Software Setup](./docs/software-setup.md)** | Development environment |
 | **[🔑 API Keys](./docs/api-keys.md)** | Required API configuration |
 | **[📱 Display Modes](./docs/display-modes.md)** | Screen layouts and orientations |
+| **[📐 Display Layout](./docs/display-layout-overview.md)** | Pixel-level layout specifications |
 | **[⚙️ Configuration](./docs/configuration.md)** | Detailed options |
 | **[🛠️ Troubleshooting](./docs/troubleshooting.md)** | Common issues |
 

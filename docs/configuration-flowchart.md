@@ -11,12 +11,12 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         hasConfigInNVS()                                │
 │                                                                         │
-│  1. ConfigManager::loadConfig(g_stationConfig)                         │
-│  2. Validate critical fields:                                          │
-│     • selectedStopId.length() > 0                                      │
-│     • ssid.length() > 0                                                │
-│     • latitude != 0.0                                                  │
-│     • longitude != 0.0                                                 │
+│  1. ConfigManager::loadConfig(g_stationConfig)                          │
+│  2. Validate critical fields:                                           │
+│     • selectedStopId.length() > 0                                       │
+│     • ssid.length() > 0                                                 │
+│     • latitude != 0.0                                                   │
+│     • longitude != 0.0                                                  │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -71,44 +71,44 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                      config_page.cpp Processing                         │
 │                                                                         │
-│  1. Parse JSON from request body                                       │
-│  2. Update g_stationConfig struct with new values                      │
-│  3. Call ConfigManager::saveConfig(g_stationConfig)                    │
+│  1. Parse JSON from request body                                        │
+│  2. Update g_stationConfig struct with new values                       │
+│  3. Call ConfigManager::saveConfig(g_stationConfig)                     │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                       ConfigManager::saveConfig()                       │
 │                                                                         │
-│  Step 1: Save to NVS (Complete Data)                                  │
-│  ─────────────────────────────────────────                             │
-│  • preferences.begin("mystation", false)                               │
-│  • preferences.putFloat("lat", config.latitude)                        │
-│  • preferences.putFloat("lon", config.longitude)                       │
-│  • preferences.putString("city", config.cityName)                      │
-│  • preferences.putString("stopId", config.selectedStopId)              │
-│  • preferences.putString("ssid", config.ssid)                          │
-│  • ... (all other configuration fields)                               │
-│  • preferences.end()                                                   │
+│  Step 1: Save to NVS (Complete Data)                                    │
+│  ─────────────────────────────────────────                              │
+│  • preferences.begin("mystation", false)                                │
+│  • preferences.putFloat("lat", config.latitude)                         │
+│  • preferences.putFloat("lon", config.longitude)                        │
+│  • preferences.putString("city", config.cityName)                       │
+│  • preferences.putString("stopId", config.selectedStopId)               │
+│  • preferences.putString("ssid", config.ssid)                           │
+│  • ... (all other configuration fields)                                 │
+│  • preferences.end()                                                    │
 │                                                                         │
-│  Step 2: Save to RTC Memory (Critical Data Only)                      │
-│  ─────────────────────────────────────────────────                     │
-│  • saveCriticalToRTC(config)                                           │
-│    - rtcConfig.isValid = true                                          │
-│    - rtcConfig.latitude = config.latitude                              │
-│    - rtcConfig.longitude = config.longitude                            │
-│    - rtcConfig.selectedStopId = config.selectedStopId                  │
-│    - rtcConfig.selectedStopName = config.selectedStopName              │
+│  Step 2: Save to RTC Memory (Critical Data Only)                        │
+│  ─────────────────────────────────────────────────                      │
+│  • saveCriticalToRTC(config)                                            │
+│    - rtcConfig.isValid = true                                           │
+│    - rtcConfig.latitude = config.latitude                               │
+│    - rtcConfig.longitude = config.longitude                             │
+│    - rtcConfig.selectedStopId = config.selectedStopId                   │
+│    - rtcConfig.selectedStopName = config.selectedStopName               │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           Configuration Saved                           │
 │                                                                         │
-│  • NVS: Complete config (survives power loss)                         │
-│  • RTC: Critical data (survives deep sleep)                           │
-│  • Switch to operational mode                                          │
-│  • Enter deep sleep                                                    │
+│  • NVS: Complete config (survives power loss)                           │
+│  • RTC: Critical data (survives deep sleep)                             │
+│  • Switch to operational mode                                           │
+│  • Enter deep sleep                                                     │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -123,13 +123,13 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        Load Configuration                               │
 │                                                                         │
-│  1. ConfigManager::loadConfig(g_stationConfig)                         │
-│     • Load complete configuration from NVS                             │
-│     • ~50-100ms operation (slow but complete)                          │
+│  1. ConfigManager::loadConfig(g_stationConfig)                          │
+│     • Load complete configuration from NVS                              │
+│     • ~50-100ms operation (slow but complete)                           │
 │                                                                         │
-│  2. Check if deep sleep wake-up:                                       │
-│     • !configMgr.isFirstBoot()                                         │
-│     • configMgr.loadCriticalFromRTC(g_stationConfig)                   │
+│  2. Check if deep sleep wake-up:                                        │
+│     • !configMgr.isFirstBoot()                                          │
+│     • configMgr.loadCriticalFromRTC(g_stationConfig)                    │
 └─────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -161,11 +161,11 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           Continue Operation                            │
 │                                                                         │
-│  • Connect to WiFi using config.ssid                                   │
-│  • Fetch departure data using config.selectedStopId                    │
-│  • Get weather using config.latitude, config.longitude                 │
-│  • Update display                                                      │
-│  • Enter deep sleep for config.transportInterval minutes               │
+│  • Connect to WiFi using config.ssid                                    │
+│  • Fetch departure data using config.selectedStopId                     │
+│  • Get weather using config.latitude, config.longitude                  │
+│  • Update display                                                       │
+│  • Enter deep sleep for config.transportInterval minutes                │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
