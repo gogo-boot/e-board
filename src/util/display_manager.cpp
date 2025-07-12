@@ -532,17 +532,11 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             display.print(fittedDest);
         }
         
-        // Adjust line spacing - more space if text might be wrapped
-        if (isFullScreen || dep.direction.length() <= 20) {
-            currentY += 16; // Normal spacing
-        } else {
-            currentY += 20; // Extra spacing for wrapped text
-        }
+        // Always add consistent spacing for disruption area
+        currentY += 16; // Normal line spacing after departure info
         
-        // Add service disruption information if available
+        // Check if we have disruption information to display
         if (dep.lead.length() > 0 || dep.text.length() > 0) {
-            currentY += 4; // Small gap before disruption info
-            
             // Use the lead text if available, otherwise use text
             String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
             
@@ -550,14 +544,16 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
             String fittedDisruption = shortenTextToFit(disruptionInfo, disruptionMaxWidth);
             
-            // Set smaller font and gray appearance by using a pattern
+            // Display disruption information
             setSmallFont();
             display.setCursor(leftMargin + 20, currentY); // Indent disruption text
             display.print("⚠ "); // Warning symbol
             display.print(fittedDisruption);
-            
-            currentY += 12; // Additional space after disruption info
         }
+        // If no disruption info, the space is left empty but still allocated
+        
+        // Add consistent spacing after disruption area (whether used or not)
+        currentY += 12; // Space reserved for disruption info
         
         if (currentY > y + h - 25) break;
     }
