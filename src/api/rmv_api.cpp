@@ -20,6 +20,8 @@ void initDepartureFilter() {
   departureFilter["Departure"][0]["rtTime"] = true;
   departureFilter["Departure"][0]["time"] = true;
   departureFilter["Departure"][0]["Product"][0]["catOut"] = true;
+  departureFilter["Departure"][0]["Messages"]["Message"][0]["lead"] = true;
+  departureFilter["Departure"][0]["Messages"]["Message"][0]["text"] = true;
 }
 
 void printDepartures(const String& payload) {
@@ -105,32 +107,6 @@ void getNearbyStops(float lat, float lon) {
   Util::printFreeHeap("After RMV request:");
 }
 
-void getDepartureBoard(const char* stopId) {
-  HTTPClient http;
-  String encodedId = Util::urlEncode(String(stopId));
-  String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
-               "&id=" + encodedId +
-               "&format=json&maxJourneys=10";
-  String urlForLog = url;
-  int keyPos = urlForLog.indexOf("accessId=");
-  if (keyPos != -1) {
-    int keyEnd = urlForLog.indexOf('&', keyPos);
-    if (keyEnd == -1) keyEnd = urlForLog.length();
-    urlForLog.replace(urlForLog.substring(keyPos, keyEnd), "accessId=***");
-  }
-  ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
-  http.begin(url);
-  int httpCode = http.GET();
-  if (httpCode > 0) {
-    String payload = http.getString();
-    ESP_LOGD(TAG, "Departure board response: %s", payload.c_str());
-    printDepartures(payload);
-  } else {
-    ESP_LOGE(TAG, "HTTP GET failed, error: %s", http.errorToString(httpCode).c_str());
-  }
-  http.end();
-}
-
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     ESP_LOGI(TAG, "Fetching departure data for stop: %s", stopId);
     
@@ -199,6 +175,18 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
             info.category = dep["Product"][0]["catOut"] | "";
         } else {
             info.category = "";
+        }
+        
+        // Parse service disruption messages
+        info.lead = "";
+        info.text = "";
+        if (dep.containsKey("Messages") && dep["Messages"].containsKey("Message")) {
+            JsonArray messages = dep["Messages"]["Message"];
+            if (messages.size() > 0) {
+                JsonObject message = messages[0]; // Take first message
+                info.lead = message["lead"] | "";
+                info.text = message["text"] | "";
+            }
         }
         
         departData.departures.push_back(info);

@@ -15,6 +15,8 @@ struct DepartureInfo {
     String rtTime;
     String track;
     String category;
+    String lead;      // Service disruption lead text
+    String text;      // Service disruption full text
 };
 
 struct DepartureData {
@@ -27,5 +29,4 @@ struct DepartureData {
 extern std::vector<Station> stations;
 
 void getNearbyStops(float lat, float lon);
-void getDepartureBoard(const char* stopId);
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData);

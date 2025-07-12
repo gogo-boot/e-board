@@ -20,6 +20,7 @@ Comprehensive documentation for the ESP32-C3 powered public transport departure 
 
 ### Display & Interface
 - [Display Modes](./display-modes.md) - Comprehensive display system documentation
+- [Display Layout Overview](./display-layout-overview.md) - Detailed pixel allocations and layout specifications
 - [Screen Orientations](./display-modes.md#orientations) - Portrait and landscape modes
 - [Partial Updates](./display-modes.md#partial-updates) - Efficient screen refresh strategies
 

@@ -67,29 +67,6 @@ RTC_DATA_ATTR bool hasValidConfig = false; // Flag to track if valid config exis
 // This will not be used to store configuration data in NVS
 ConfigOption g_webConfigPageData;
 
-// const char HelloWorld[] = "Hello World!";
-
-// void helloWorld()
-// {
-//   // display.setRotation(1);
-//   display.setFont(&FreeMonoBold9pt7b);
-//   display.setTextColor(GxEPD_BLACK);
-//   int16_t tbx, tby; uint16_t tbw, tbh;
-//   display.getTextBounds(HelloWorld, 0, 0, &tbx, &tby, &tbw, &tbh);
-//   // center the bounding box by transposition of the origin:
-//   uint16_t x = ((display.width() - tbw) / 2) - tbx;
-//   uint16_t y = ((display.height() - tbh) / 2) - tby;
-//   display.setFullWindow();
-//   display.firstPage();
-//   do
-//   {
-//     display.fillScreen(GxEPD_WHITE);
-//     display.setCursor(x, y);
-//     display.print(HelloWorld);
-//   }
-//   while (display.nextPage());
-// }
-
 void setup() {
   Serial.begin(115200);
   delay(1000); // Allow time for serial monitor to connect, only for local debugging, todo remove in production or activate by flag
@@ -102,11 +79,6 @@ void setup() {
   pinMode(Pins::EPD_RES, OUTPUT); //RES 
   pinMode(Pins::EPD_DC, OUTPUT); //DC   
   pinMode(Pins::EPD_CS, OUTPUT); //CS   
-
-  // Initialize the display
-  // display.init(115200); // Use default serial for display
-  // helloWorld();
-  // display.hibernate();
 
   // TODO: Add any additional display initialization code here
 

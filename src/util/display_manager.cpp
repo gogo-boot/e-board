@@ -2,15 +2,16 @@
 #include <Arduino.h>
 #include <esp_log.h>
 #include "config/config_manager.h"
+#include "util/time_manager.h"
 
 // Include e-paper display libraries
 #include <GxEPD2_BW.h>
 #include <GxEPD2_3C.h>
 #include <GxEPD2_4C.h>
 #include <GxEPD2_7C.h>
-#include <Fonts/FreeMonoBold9pt7b.h>
-#include <Fonts/FreeMonoBold12pt7b.h>
-#include <Fonts/FreeMonoBold18pt7b.h>
+#include <Fonts/FreeSansBold9pt7b.h>
+#include <Fonts/FreeSansBold12pt7b.h>
+#include <Fonts/FreeSansBold18pt7b.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>
 #include "config/pins.h"
 
@@ -95,27 +96,36 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather, const Depart
         return;
     }
     
+    // Define header height
+    const int16_t headerHeight = 25;
+    const int16_t contentY = headerHeight;
+    const int16_t contentHeight = screenHeight - headerHeight;
+    
     if (weather && departures) {
-        // Full update - both halves
-        ESP_LOGI(TAG, "Updating both halves");
+        // Full update - both halves with header
+        ESP_LOGI(TAG, "Updating both halves with header");
         display.setFullWindow();
         display.firstPage();
         
         do {
             display.fillScreen(GxEPD_WHITE);
             
+            // Draw header across full width
+            drawHeaderSection(0, 0, screenWidth, headerHeight);
+            
             if (currentOrientation == DisplayOrientation::LANDSCAPE) {
                 // Landscape: left/right split (weather left, departures right)
-                drawWeatherSection(*weather, 0, 0, halfWidth, screenHeight);
-                drawDepartureSection(*departures, halfWidth, 0, halfWidth, screenHeight);
+                drawWeatherSection(*weather, 0, contentY, halfWidth, contentHeight);
+                drawDepartureSection(*departures, halfWidth, contentY, halfWidth, contentHeight);
                 // Draw vertical divider
-                display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
+                display.drawLine(halfWidth, contentY, halfWidth, screenHeight, GxEPD_BLACK);
             } else {
                 // Portrait: top/bottom split (weather top, departures bottom)
-                drawWeatherSection(*weather, 0, 0, screenWidth, halfHeight);
-                drawDepartureSection(*departures, 0, halfHeight, screenWidth, halfHeight);
+                int16_t halfContentHeight = contentHeight / 2;
+                drawWeatherSection(*weather, 0, contentY, screenWidth, halfContentHeight);
+                drawDepartureSection(*departures, 0, contentY + halfContentHeight, screenWidth, halfContentHeight);
                 // Draw horizontal divider
-                display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
+                display.drawLine(0, contentY + halfContentHeight, screenWidth, contentY + halfContentHeight, GxEPD_BLACK);
             }
             
         } while (display.nextPage());
@@ -132,13 +142,17 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather, const Depart
 void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Updating weather half");
     
+    const int16_t headerHeight = 25;
+    const int16_t contentY = headerHeight;
+    const int16_t contentHeight = screenHeight - headerHeight;
+    
     int16_t x, y, w, h;
     if (currentOrientation == DisplayOrientation::LANDSCAPE) {
-        // Landscape: weather is LEFT half
+        // Landscape: weather is LEFT half (including header portion)
         x = 0; y = 0; w = halfWidth; h = screenHeight;
     } else {
-        // Portrait: weather is TOP half
-        x = 0; y = 0; w = screenWidth; h = halfHeight;
+        // Portrait: weather is TOP half (including header)
+        x = 0; y = 0; w = screenWidth; h = headerHeight + (contentHeight / 2);
     }
     
     // Use partial window for faster update
@@ -147,13 +161,23 @@ void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     
     do {
         display.fillRect(x, y, w, h, GxEPD_WHITE);
-        drawWeatherSection(weather, x, y, w, h);
+        
+        // Draw header if updating full width or landscape left side
+        if (currentOrientation == DisplayOrientation::PORTRAIT || x == 0) {
+            drawHeaderSection(0, 0, currentOrientation == DisplayOrientation::LANDSCAPE ? halfWidth : screenWidth, headerHeight);
+        }
+        
+        if (currentOrientation == DisplayOrientation::LANDSCAPE) {
+            drawWeatherSection(weather, x, contentY, w, contentHeight);
+        } else {
+            drawWeatherSection(weather, x, contentY, w, contentHeight / 2);
+        }
         
         // Redraw divider
         if (currentOrientation == DisplayOrientation::LANDSCAPE) {
             display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
         } else {
-            display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
+            display.drawLine(0, contentY + (contentHeight / 2), screenWidth, contentY + (contentHeight / 2), GxEPD_BLACK);
         }
         
     } while (display.nextPage());
@@ -162,13 +186,17 @@ void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
 void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
     ESP_LOGI(TAG, "Updating departure half");
     
+    const int16_t headerHeight = 25;
+    const int16_t contentY = headerHeight;
+    const int16_t contentHeight = screenHeight - headerHeight;
+    
     int16_t x, y, w, h;
     if (currentOrientation == DisplayOrientation::LANDSCAPE) {
-        // Landscape: departures is RIGHT half
-        x = halfWidth; y = 0; w = halfWidth; h = screenHeight;
+        // Landscape: departures are RIGHT half (no header in this section)
+        x = halfWidth; y = contentY; w = halfWidth; h = contentHeight;
     } else {
-        // Portrait: departures is BOTTOM half
-        x = 0; y = halfHeight; w = screenWidth; h = halfHeight;
+        // Portrait: departures are BOTTOM half (no header in this section)
+        x = 0; y = contentY + (contentHeight / 2); w = screenWidth; h = contentHeight / 2;
     }
     
     // Use partial window for faster update
@@ -183,7 +211,7 @@ void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
         if (currentOrientation == DisplayOrientation::LANDSCAPE) {
             display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
         } else {
-            display.drawLine(0, halfHeight, screenWidth, halfHeight, GxEPD_BLACK);
+            display.drawLine(0, contentY + (contentHeight / 2), screenWidth, contentY + (contentHeight / 2), GxEPD_BLACK);
         }
         
     } while (display.nextPage());
@@ -226,12 +254,12 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
     if (isFullScreen) {
         setLargeFont();
         display.setCursor(leftMargin, currentY);
-        display.print("🌤️ Weather Information");
+        display.print("Weather Information");
         currentY += 45;
     } else {
         setMediumFont();
         display.setCursor(leftMargin, currentY);
-        display.print("🌤️ Weather");
+        display.print("Weather");
         currentY += 30;
     }
     
@@ -311,9 +339,9 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         currentY = y + h - 25;
         setSmallFont();
         display.setCursor(leftMargin, currentY);
-        display.print("☀️↑ ");
+        display.print("Sunrise: ");
         display.print(weather.sunrise);
-        display.print("  ☀️↓ ");
+        display.print("  Sunset: ");
         display.print(weather.sunset);
     }
 }
@@ -325,46 +353,36 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     
     bool isFullScreen = (w >= screenWidth * 0.8);
     
-    // Title
-    if (isFullScreen) {
-        setLargeFont();
-        display.setCursor(leftMargin, currentY);
-        display.print("🚌 Departure Board");
-        currentY += 40;
-    } else {
-        setMediumFont();
-        display.setCursor(leftMargin, currentY);
-        display.print("🚌 Departures");
-        currentY += 30;
-    }
-    
     // Station name
     setMediumFont();
     display.setCursor(leftMargin, currentY);
-    String stopName = departures.stopName;
-    int maxNameLength = isFullScreen ? 30 : 20;
-    if (stopName.length() > maxNameLength) {
-        stopName = stopName.substring(0, maxNameLength - 3) + "...";
-    }
-    display.print(stopName);
-    currentY += 30;
+    RTCConfigData& config = ConfigManager::getConfig();
+    String stopName = config.selectedStopName;
+    
+    // Calculate available width and fit station name
+    int stationMaxWidth = rightMargin - leftMargin;
+    String fittedStopName = shortenTextToFit(stopName, stationMaxWidth);
+    
+    display.print(fittedStopName);
+    currentY += 40; // Updated: Station Name section gets 40px
     
     // Column headers
-    setSmallFont();
     display.setCursor(leftMargin, currentY);
     if (isFullScreen) {
-        display.print("Line    Destination           Time   Track");
+        display.print("Soll Ist  Linie  Ziel                Gleis");
     } else {
-        display.print("Line  Dest      Time");
+        setSmallFont();
+        // 5 char for soll, one space, 5 char for ist, one space, 4 char for line, 20 char for destination
+        display.print("Soll   Ist      Linie   Ziel");
     }
-    currentY += 18;
+    currentY += 18; // Column headers spacing
     
     // Underline
     display.drawLine(leftMargin, currentY - 5, rightMargin, currentY - 5, GxEPD_BLACK);
-    currentY += 8;
+    currentY += 12; // Updated: Header underline spacing (18 + 12 = 30px total for headers)
     
     // Departures
-    int maxDepartures = isFullScreen ? 15 : 10;
+    int maxDepartures = isFullScreen ? 20 : 15;
     maxDepartures = min(maxDepartures, departures.departureCount);
     
     for (int i = 0; i < maxDepartures; i++) {
@@ -374,41 +392,170 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         
         // Format for available width
         if (isFullScreen) {
-            // Full screen format: "Line    Destination           Time   Track"
-            String line = dep.line.substring(0, 7);
-            while (line.length() < 8) line += " ";
+            // Full screen format: "Soll Ist  Linie  Ziel                Gleis"
+            setSmallFont(); // Set font for measurements
             
-            String dest = dep.direction.substring(0, 18);
-            while (dest.length() < 19) dest += " ";
+            // Calculate available space for each column
+            int totalWidth = rightMargin - leftMargin;
             
-            String time = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
-            time = time.substring(0, 5);
-            while (time.length() < 6) time += " ";
+            // Fixed widths for times and track
+            String sollTime = dep.time.substring(0, 5);
+            String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+            String track = dep.track.substring(0, 4);
             
-            String track = dep.track.substring(0, 3);
+            // Check if times are different for highlighting
+            bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
             
+            // Measure fixed elements
+            int sollWidth = getTextWidth(sollTime + " ");
+            int istWidth = getTextWidth(istTime + "  ");
+            int trackWidth = getTextWidth("  " + track);
+            
+            // Available space for line and destination
+            int remainingWidth = totalWidth - sollWidth - istWidth - trackWidth;
+            
+            // Allocate space: Line gets 1/4, Destination gets 3/4
+            int lineMaxWidth = remainingWidth / 4;
+            int destMaxWidth = (remainingWidth * 3) / 4;
+            
+            // Fit line and destination to available space
+            String line = shortenTextToFit(dep.line, lineMaxWidth);
+            String dest = shortenTextToFit(dep.direction, destMaxWidth);
+            
+            // Print soll time
+            display.print(sollTime);
+            display.print(" ");
+            
+            // Get current cursor position for ist time highlighting
+            int16_t istX = display.getCursorX();
+            int16_t istY = display.getCursorY();
+            
+            if (timesAreDifferent) {
+                // Highlight ist time with black background and white text
+                int16_t istTextWidth = getTextWidth(istTime);
+                int16_t textHeight = 12; // Approximate text height for small font
+                
+                // Draw black background rectangle
+                display.fillRect(istX, istY - textHeight + 2, istTextWidth, textHeight, GxEPD_BLACK);
+                
+                // Set white text color
+                display.setTextColor(GxEPD_WHITE);
+                display.setCursor(istX, istY);
+                display.print(istTime);
+                
+                // Reset to black text color
+                display.setTextColor(GxEPD_BLACK);
+            } else {
+                // Normal ist time display
+                display.print(istTime);
+            }
+            
+            display.print("  ");
             display.print(line);
+            display.print("  ");
             display.print(dest);
-            display.print(time);
+            display.print("  ");
             display.print(track);
             
         } else {
-            // Half screen format: "Line  Dest      Time"
-            String line = dep.line.substring(0, 4);
-            while (line.length() < 5) line += " ";
+            // Half screen format: "Soll Ist  Linie  Ziel"
+            setSmallFont(); // Set font for measurements
             
-            String dest = dep.direction.substring(0, 8);
-            while (dest.length() < 9) dest += " ";
+            // Calculate available space
+            int totalWidth = rightMargin - leftMargin;
             
-            String time = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
-            time = time.substring(0, 5);
+            // Prepare times
+            String sollTime = dep.time.substring(0, 5);
+            String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
             
-            display.print(line);
-            display.print(dest);
-            display.print(time);
+            // Check if times are different for highlighting
+            bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
+            
+            // Clean up line (remove "Bus" prefix)
+            String line = dep.line;
+            String lineLower = line;
+            lineLower.toLowerCase();
+            if (lineLower.startsWith("bus ")) {
+                line = line.substring(4);
+            }
+            
+            // Clean up destination (remove "Frankfurt (Main)" prefix)
+            String dest = dep.direction;
+            String destLower = dest;
+            destLower.toLowerCase(); 
+            if (destLower.startsWith("frankfurt (main) ")) {
+                dest = dep.direction.substring(17);
+            }
+            
+            // Measure fixed elements: times and spaces
+            int timesWidth = getTextWidth(sollTime + " " + istTime + "  ");
+            int remainingWidth = totalWidth - timesWidth;
+            
+            // Allocate remaining space: Line gets 1/3, Destination gets 2/3
+            int lineMaxWidth = remainingWidth / 3;
+            int destMaxWidth = (remainingWidth * 2) / 3;
+            
+            // Fit line and destination to available space
+            String fittedLine = shortenTextToFit(line, lineMaxWidth);
+            String fittedDest = shortenTextToFit(dest, destMaxWidth);
+            
+            // Print soll time
+            display.print(sollTime);
+            display.print(" ");
+            
+            // Get current cursor position for ist time highlighting
+            int16_t istX = display.getCursorX();
+            int16_t istY = display.getCursorY();
+            
+            if (timesAreDifferent) {
+                // Highlight ist time with black background and white text
+                int16_t istTextWidth = getTextWidth(istTime);
+                int16_t textHeight = 12; // Approximate text height for small font
+                
+                // Draw black background rectangle
+                display.fillRect(istX, istY - textHeight + 2, istTextWidth, textHeight, GxEPD_BLACK);
+                
+                // Set white text color
+                display.setTextColor(GxEPD_WHITE);
+                display.setCursor(istX, istY);
+                display.print(istTime);
+                
+                // Reset to black text color
+                display.setTextColor(GxEPD_BLACK);
+            } else {
+                // Normal ist time display
+                display.print(istTime);
+            }
+            
+            display.print("  ");
+            display.print(fittedLine);
+            display.print("  ");
+            display.print(fittedDest);
         }
         
-        currentY += 16;
+        // Always add consistent spacing for disruption area
+        currentY += 20; // Updated: Main departure line gets 20px
+        
+        // Check if we have disruption information to display
+        if (dep.lead.length() > 0 || dep.text.length() > 0) {
+            // Use the lead text if available, otherwise use text
+            String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
+            
+            // Fit disruption text to available width with some indent
+            int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
+            String fittedDisruption = shortenTextToFit(disruptionInfo, disruptionMaxWidth);
+            
+            // Display disruption information
+            setSmallFont();
+            display.setCursor(leftMargin + 20, currentY); // Indent disruption text
+            display.print("⚠ "); // Warning symbol
+            display.print(fittedDisruption);
+        }
+        // If no disruption info, the space is left empty but still allocated
+        
+        // Add consistent spacing after disruption area (whether used or not)
+        currentY += 17; // Updated: Disruption space gets 17px (total 37px per entry)
+        
         if (currentY > y + h - 25) break;
     }
     
@@ -417,9 +564,25 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
         currentY = y + h - 15;
         setSmallFont();
         display.setCursor(leftMargin, currentY);
-        display.print("Updated: ");
-        display.print(String(millis() / 1000));
-        display.print("s ago");
+
+        display.print("Aktualisiert: ");
+        
+        // Check if time is properly set
+        if (TimeManager::isTimeSet()) {
+            // Get current German time using TimeManager
+            struct tm timeinfo;
+            if (TimeManager::getCurrentLocalTime(timeinfo)) {
+                char timeStr[20];
+                // German time format: "HH:MM DD.MM.YYYY"
+                strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
+                display.print(timeStr);
+            } else {
+                display.print("Zeit nicht verfügbar");
+            }
+        } else {
+            // Time not synchronized
+            display.print("Zeit nicht synchronisiert");
+        }
     }
 }
 
@@ -484,16 +647,105 @@ void DisplayManager::hibernate() {
 }
 
 void DisplayManager::setLargeFont() {
-    display.setFont(&FreeMonoBold18pt7b);
+    display.setFont(&FreeSansBold18pt7b);
     display.setTextColor(GxEPD_BLACK);
 }
 
 void DisplayManager::setMediumFont() {
-    display.setFont(&FreeMonoBold12pt7b);
+    display.setFont(&FreeSansBold12pt7b);
     display.setTextColor(GxEPD_BLACK);
 }
 
 void DisplayManager::setSmallFont() {
-    display.setFont(&FreeMonoBold9pt7b);
+    display.setFont(&FreeSansBold9pt7b);
     display.setTextColor(GxEPD_BLACK);
+}
+
+// Text width measurement helpers
+int16_t DisplayManager::getTextWidth(const String& text) {
+    int16_t x1, y1;
+    uint16_t w, h;
+    display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+    return w;
+}
+
+int16_t DisplayManager::getTextExcess(const String& text, int16_t maxWidth) {
+    int16_t textWidth = getTextWidth(text);
+    return max(0, textWidth - maxWidth); // Return excess pixels, or 0 if fits
+}
+
+String DisplayManager::shortenTextToFit(const String& text, int16_t maxWidth) {
+    if (getTextWidth(text) <= maxWidth) {
+        return text; // Already fits
+    }
+    
+    // Binary search to find the longest text that fits
+    int left = 0;
+    int right = text.length();
+    String result = "";
+    
+    while (left <= right) {
+        int mid = (left + right) / 2;
+        String candidate = text.substring(0, mid);
+        
+        // Add "..." if we're shortening
+        if (mid < text.length()) {
+            candidate += "...";
+        }
+        
+        if (getTextWidth(candidate) <= maxWidth) {
+            result = candidate;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return result.length() > 0 ? result : "..."; // Fallback to "..." if nothing fits
+}
+
+// Helper function for wrapping long text
+void DisplayManager::printWrappedText(const String& text, int16_t x, int16_t& y, int16_t maxWidth, int16_t maxChars, int16_t lineHeight) {
+    if (text.length() <= maxChars) {
+        // Text fits on one line
+        display.setCursor(x, y);
+        display.print(text);
+    } else {
+        // Text needs wrapping
+        String firstLine = text.substring(0, maxChars - 3) + "...";
+        display.setCursor(x, y);
+        display.print(firstLine);
+        
+        // Check if we have space for a second line
+        if (y + lineHeight < screenHeight - 25) {
+            y += lineHeight;
+            display.setCursor(x + 20, y); // Slight indent for continuation
+            String secondLine = text.substring(maxChars - 3);
+            if (secondLine.length() > maxChars) {
+                secondLine = secondLine.substring(0, maxChars - 3) + "...";
+            }
+            display.print(secondLine);
+        }
+    }
+}
+
+void DisplayManager::drawHeaderSection(int16_t x, int16_t y, int16_t w, int16_t h) {
+    int16_t leftMargin = x + 10;
+    int16_t rightMargin = x + w - 10;
+    int16_t centerY = y + h / 2 + 5; // Center vertically in header area
+    
+    setSmallFont();
+    
+    // WiFi status placeholder (left side)
+    display.setCursor(leftMargin, centerY);
+    display.print("WiFi: [●●●]"); // Placeholder for WiFi strength
+    
+    // Battery status placeholder (right side)
+    String batteryText = "Batt: [85%]"; // Placeholder for battery level
+    int16_t batteryWidth = getTextWidth(batteryText);
+    display.setCursor(rightMargin - batteryWidth, centerY);
+    display.print(batteryText);
+    
+    // Optional: Add separator line at bottom of header
+    display.drawLine(x, y + h - 1, x + w, y + h - 1, GxEPD_BLACK);
 }
