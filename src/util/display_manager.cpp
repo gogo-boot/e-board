@@ -334,48 +334,50 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     bool isFullScreen = (w >= screenWidth * 0.8);
     
     // Station name
-    setMediumFont();
+    setDepartureLargeFont(); // Use larger font for station name
     u8g2Fonts.setCursor(leftMargin, currentY);
     RTCConfigData& config = ConfigManager::getConfig();
     String stopName = config.selectedStopName; 
-    int maxNameLength = isFullScreen ? 50 : 30;
+    int maxNameLength = isFullScreen ? 50 : 25; // Slightly reduce length for bigger font
     if (stopName.length() > maxNameLength) {
         stopName = stopName.substring(0, maxNameLength - 3) + "...";
     }
     u8g2Fonts.print(stopName); // Now supports German station names!
-    currentY += 30;
+    currentY += 35; // More space for larger font
     
     // Column headers
-    setSmallFont();
+    setDepartureSmallFont(); // Use larger small font for headers
     u8g2Fonts.setCursor(leftMargin, currentY);
     if (isFullScreen) {
         u8g2Fonts.print("Line    Destination           Time   Track");
     } else {
         u8g2Fonts.print("Zeit  Linie  Richtung");
     }
-    currentY += 18;
+    currentY += 22; // More space for larger font
     
     // Underline
     display.drawLine(leftMargin, currentY - 5, rightMargin, currentY - 5, GxEPD_BLACK);
     currentY += 8;
     
     // Departures
-    int maxDepartures = isFullScreen ? 20 : 15;
+    int maxDepartures = isFullScreen ? 20 : 12; // Reduce count slightly for bigger fonts
     maxDepartures = min(maxDepartures, departures.departureCount);
     
     for (int i = 0; i < maxDepartures; i++) {
         const auto& dep = departures.departures[i];
         
+        // Use larger font for departure entries
+        setDepartureMediumFont();
         u8g2Fonts.setCursor(leftMargin, currentY);
         
         // Format for available width
         if (isFullScreen) {
             // Full screen format: "Line    Destination           Time   Track"
-            String line = dep.line.substring(0, 7);
-            while (line.length() < 8) line += " ";
+            String line = dep.line.substring(0, 6); // Slightly shorter for bigger font
+            while (line.length() < 7) line += " ";
             
-            String dest = dep.direction.substring(0, 18);
-            while (dest.length() < 19) dest += " ";
+            String dest = dep.direction.substring(0, 16); // Slightly shorter for bigger font
+            while (dest.length() < 17) dest += " ";
             
             String time = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
             time = time.substring(0, 5);
@@ -420,7 +422,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             u8g2Fonts.print(line);
             
             // Handle destination with text wrapping
-            int maxDestWidth = 20; // Maximum characters per line for destination
+            int maxDestWidth = 18; // Slightly shorter for bigger font
             if (dest.length() <= maxDestWidth) {
                 // Short destination - print on same line
                 u8g2Fonts.print(dest); // Now supports German destinations like "München"!
@@ -430,7 +432,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
                 u8g2Fonts.print(firstPart); // Now supports German destinations!
                 
                 // Move to next line for continuation (optional)
-                currentY += 16;
+                currentY += 20; // More space for larger font
                 if (currentY <= y + h - 40) { // Check if we have space for another line
                     u8g2Fonts.setCursor(leftMargin + 60, currentY); // Indent continuation
                     String secondPart = dest.substring(maxDestWidth - 3);
@@ -442,11 +444,11 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             }
         }
         
-        // Adjust line spacing - more space if text might be wrapped
-        if (isFullScreen || dep.direction.length() <= 20) {
-            currentY += 16; // Normal spacing
+        // Adjust line spacing - more space for larger fonts
+        if (isFullScreen || dep.direction.length() <= 18) {
+            currentY += 20; // Increased spacing for larger font
         } else {
-            currentY += 20; // Extra spacing for wrapped text
+            currentY += 24; // Extra spacing for wrapped text with larger font
         }
         
         if (currentY > y + h - 25) break;
@@ -454,8 +456,8 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     
     // Footer
     if (currentY < y + h - 25) {
-        currentY = y + h - 15;
-        setSmallFont();
+        currentY = y + h - 17; // Adjust for larger font
+        setDepartureSmallFont(); // Use larger departure small font
         u8g2Fonts.setCursor(leftMargin, currentY);
 
         // Get current time
@@ -543,6 +545,19 @@ void DisplayManager::setMediumFont() {
 
 void DisplayManager::setSmallFont() {
     u8g2Fonts.setFont(u8g2_font_helvB08_tf); // 8pt Helvetica Bold with German characters
+}
+
+// Departure-specific larger fonts
+void DisplayManager::setDepartureLargeFont() {
+    u8g2Fonts.setFont(u8g2_font_helvB18_tf); // 18pt for station names
+}
+
+void DisplayManager::setDepartureMediumFont() {
+    u8g2Fonts.setFont(u8g2_font_helvB14_tf); // 14pt for departure entries - bigger than regular medium
+}
+
+void DisplayManager::setDepartureSmallFont() {
+    u8g2Fonts.setFont(u8g2_font_helvB10_tf); // 10pt for headers - bigger than regular small
 }
 
 // Helper function for wrapping long text
