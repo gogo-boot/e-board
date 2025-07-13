@@ -158,6 +158,7 @@ void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     }
     
     // Use partial window for faster update
+    // display.setFullWindow();
     display.setPartialWindow(x, y, w, h);
     display.firstPage();
     
@@ -290,14 +291,11 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         // Today low/high temp: 27px
         setMediumFont();
         display.setCursor(secondColX, colY);
-        display.print("High: ");
+        display.print(weather.tempMin);
+        display.print(" | ");
         display.print(weather.tempMax);
         display.print("°C");
         colY += 13;
-        display.setCursor(secondColX, colY);
-        display.print("Low: ");
-        display.print(weather.tempMin);
-        display.print("°C");
         colY += 14; // Total 27px for high/low
         
         // UV Index info: 20px
@@ -363,8 +361,9 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
 
         // Draw fist Column - Current Temperature and Condition
         int16_t dayWeatherInfoY= currentY;
-        setMediumFont();
+        setSmallFont();
         
+        // Draw first Column - Current Temperature and Condition
         display.setCursor(leftMargin, currentY);
         // weather_code is missing
         // display.print(weather.coded);
@@ -382,25 +381,24 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         // Draw second Column - Today's temps, UV, Pollen
         // Today's low/high temp: 27px
         // Today's UV Indexinfo: 20px  
-        setMediumFont();
+        setSmallFont();
         display.setCursor(currentX, dayWeatherInfoY);
-        display.print("High: ");
-        display.print(weather.tempMax);
-        display.print("  Low: ");
         display.print(weather.tempMin);
+        display.print(" | ");
+        display.print(weather.tempMax);
 
         display.setCursor(currentX, dayWeatherInfoY + 27);
         display.print("UV Index : ");
         display.print(weather.uvIndex);
         
-        display.setCursor(currentX, dayWeatherInfoY + 20);
+        display.setCursor(currentX, dayWeatherInfoY + 47);
         display.print("Pollen : ");
-        display.print(weather.uvIndex);
+        display.print("N/A");
         currentX += 150; // Move to next column
 
         // Draw third Column - Date, Sunrise, Sunset
         // Date Info: 27px
-        setMediumFont();
+        setSmallFont();
         display.setCursor(currentX, dayWeatherInfoY);
         display.print("Date :");
         display.print("Juli 13"); // Placeholder - should use actual date
@@ -409,7 +407,7 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         display.print("Sunrise : ");
         display.print(weather.sunrise);
 
-        display.setCursor(currentX, dayWeatherInfoY + 20);
+        display.setCursor(currentX, dayWeatherInfoY + 47);
         display.print("Sunset : ");
         display.print(weather.sunset);
 
