@@ -9,11 +9,13 @@
 #include <GxEPD2_3C.h>
 #include <GxEPD2_4C.h>
 #include <GxEPD2_7C.h>
+#include <gdey/GxEPD2_750_GDEY075T7.h>
+#include "config/pins.h"
+
+// Font includes for German character support
 #include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
-#include "config/pins.h"
 
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
@@ -358,24 +360,59 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         currentY += graphicHeight; // Move past the graphic section
         
     } else {
-        // Half screen layout - simplified
-        // Current temperature: 40px
-        setLargeFont();
+
+        // Draw fist Column - Current Temperature and Condition
+        int16_t dayWeatherInfoY= currentY;
+        setMediumFont();
+        
+        display.setCursor(leftMargin, currentY);
+        // weather_code is missing
+        // display.print(weather.coded);
+        // Day weather Info section: 37px total
+        // Todo Add weather icon support
+        currentY += 37;
+        
+        // Current temperature: 30px
         display.setCursor(leftMargin, currentY);
         display.print(weather.temperature);
         display.print("°C  ");
-        display.print(weather.condition);
-        currentY += 40;
-        
-        // High/Low: 20px
+        currentY += 30;
+
+        int16_t currentX = leftMargin + 100;  
+        // Draw second Column - Today's temps, UV, Pollen
+        // Today's low/high temp: 27px
+        // Today's UV Indexinfo: 20px  
         setMediumFont();
-        display.setCursor(leftMargin, currentY);
+        display.setCursor(currentX, dayWeatherInfoY);
         display.print("High: ");
         display.print(weather.tempMax);
         display.print("  Low: ");
         display.print(weather.tempMin);
-        currentY += 20;
+
+        display.setCursor(currentX, dayWeatherInfoY + 27);
+        display.print("UV Index : ");
+        display.print(weather.uvIndex);
         
+        display.setCursor(currentX, dayWeatherInfoY + 20);
+        display.print("Pollen : ");
+        display.print(weather.uvIndex);
+        currentX += 150; // Move to next column
+
+        // Draw third Column - Date, Sunrise, Sunset
+        // Date Info: 27px
+        setMediumFont();
+        display.setCursor(currentX, dayWeatherInfoY);
+        display.print("Date :");
+        display.print("Juli 13"); // Placeholder - should use actual date
+
+        display.setCursor(currentX, dayWeatherInfoY + 27);
+        display.print("Sunrise : ");
+        display.print(weather.sunrise);
+
+        display.setCursor(currentX, dayWeatherInfoY + 20);
+        display.print("Sunset : ");
+        display.print(weather.sunset);
+
         // Forecast section
         setSmallFont();
         display.setCursor(leftMargin, currentY);
@@ -506,9 +543,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             display.print(sollTime);
             display.print(" ");
             
-            // Get current cursor position for ist time highlighting
-            int16_t istX = display.getCursorX();
-            int16_t istY = display.getCursorY();
+            // Calculate current cursor position for ist time highlighting
+            int16_t istX = leftMargin + getTextWidth(sollTime + " ");
+            int16_t istY = currentY;
             
             if (timesAreDifferent) {
                 // Highlight ist time with black background and white text
@@ -583,9 +620,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             display.print(sollTime);
             display.print(" ");
             
-            // Get current cursor position for ist time highlighting
-            int16_t istX = display.getCursorX();
-            int16_t istY = display.getCursorY();
+            // Calculate current cursor position for ist time highlighting
+            int16_t istX = leftMargin + getTextWidth(sollTime + " ");
+            int16_t istY = currentY;
             
             if (timesAreDifferent) {
                 // Highlight ist time with black background and white text
