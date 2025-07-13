@@ -60,11 +60,14 @@ static String weatherCodeToString(int code) {
 }
 
 bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
-//  https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&hourly=temperature_2m,precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code,rain,snowfall&timezone=auto&forecast_days=1&past_hours=1&forecast_hours=12
 
+//https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration&hourly=temperature_2m,weather_code,precipitation_probability,precipitation&current=temperature_2m,precipitation,weather_code&timezone=auto&past_hours=1&forecast_hours=12
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
                  "&longitude=" + String(lon, 6) +
-                 "&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&hourly=temperature_2m,precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code,rain,snowfall&timezone=auto&forecast_days=1&past_hours=1&forecast_hours=12";
+                 "&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration" +
+                 "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation" + 
+                 "&current=temperature_2m,precipitation,weather_code" + 
+                 "&timezone=auto&past_hours=1&forecast_hours=12";
     Serial.printf("Fetching weather from: %s\n", url.c_str());
     HTTPClient http;
     http.begin(url);
@@ -75,52 +78,83 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
         DynamicJsonDocument doc(8192);
         DeserializationError error = deserializeJson(doc, payload);
         if (!error) {
-            if (doc.containsKey("current_weather")) {
-                weather.temperature = String(doc["current_weather"]["temperature"].as<float>(), 1) + " °C";
-                int wcode = doc["current_weather"]["weathercode"].as<int>();
-                weather.condition = weatherCodeToString(wcode);
-                if (weather.city.isEmpty()) {
-                    getCityFromLatLon(lat, lon);
-                }
+            // Parse current weather
+            if (doc.containsKey("current")) {
+                JsonObject current = doc["current"];
+                weather.temperature = String(current["temperature_2m"].as<float>(), 1);
+                weather.precipitation = String(current["precipitation"].as<float>(), 1);
+                weather.weatherCode = current["weather_code"].as<int>();
             }
+            
+            // Parse hourly forecast
             if (doc.containsKey("hourly")) {
                 JsonObject hourly = doc["hourly"];
+
                 JsonArray times = hourly["time"];
                 JsonArray temps = hourly["temperature_2m"];
-                JsonArray rain_prob = hourly["precipitation_probability"];
-                JsonArray humidity = hourly["relative_humidity_2m"];
-                JsonArray wind = hourly["wind_speed_10m"];
-                JsonArray rainfall = hourly["rain"];
-                JsonArray snowfall = hourly["snowfall"];
                 JsonArray wcode = hourly["weather_code"];
+                JsonArray rainProb = hourly["precipitation_probability"];
+                JsonArray precipitation = hourly["precipitation"];
+                
                 int count = 0;
+                // Max 12-hour forecast
                 for (size_t i = 0; i < times.size() && count < 12; ++i) {
-                    weather.forecast[count].time = times[i].as<String>();
-                    weather.forecast[count].temperature = String(temps[i].as<float>(), 1) + " °C";
-                    weather.forecast[count].rainChance = String(rain_prob[i].as<float>(), 0) + "%";
-                    weather.forecast[count].humidity = String(humidity[i].as<float>(), 0) + "%";
-                    weather.forecast[count].windSpeed = String(wind[i].as<float>(), 1) + " km/h";
-                    weather.forecast[count].rainfall = String(rainfall[i].as<float>(), 1) + " mm";
-                    weather.forecast[count].snowfall = String(snowfall[i].as<float>(), 1) + " mm";
-                    int code = wcode[i].as<int>();
-                    weather.forecast[count].weatherCode = String(code);
-                    weather.forecast[count].weatherDesc = weatherCodeToString(code);
+                    weather.hourlyForecast[count].time = times[i].as<String>();
+                    weather.hourlyForecast[count].temperature = String(temps[i].as<float>(), 1);
+                    weather.hourlyForecast[count].weatherCode = String(wcode[i].as<int>());
+                    weather.hourlyForecast[count].rainChance = String(rainProb[i].as<int>());
+                    weather.hourlyForecast[count].rainfall = String(precipitation[i].as<float>(), 2);
+                    
                     count++;
                 }
-                weather.forecastCount = count;
+                weather.hourlyForecastCount = count;
             }
+            
+            // Parse daily data
             if (doc.containsKey("daily")) {
                 JsonObject daily = doc["daily"];
-                JsonArray tem_max = daily["temperature_2m_max"];
-                JsonArray tem_min = daily["temperature_2m_min"];
+
+                JsonArray times = daily["time"];
+                JsonArray wcode = daily["weather_code"];
                 JsonArray sunrise = daily["sunrise"];
                 JsonArray sunset = daily["sunset"];
-                // Use first value (today)
-                if (tem_max.size() > 0) weather.tempMax = String(tem_max[0].as<float>(), 1) + " °C";
-                if (tem_min.size() > 0) weather.tempMin = String(tem_min[0].as<float>(), 1) + " °C";
-                if (sunrise.size() > 0) weather.sunrise = sunrise[0].as<String>();
-                if (sunset.size() > 0) weather.sunset = sunset[0].as<String>();
+
+                JsonArray temp_max = daily["temperature_2m_max"];
+                JsonArray temp_min = daily["temperature_2m_min"];
+                JsonArray uv_index = daily["uv_index_max"];
+                JsonArray precipitation = daily["precipitation_sum"];
+
+                JsonArray sunshine = daily["sunshine_duration"];
+                
+                // Extract time from ISO format (e.g., "2025-07-13T04:59") to "04:59"
+                auto extractTimeFromISO = [](const String& isoDateTime) -> String {
+                    int tIndex = isoDateTime.indexOf('T');
+                    if (tIndex > 0) {
+                        return isoDateTime.substring(tIndex + 1, tIndex + 6);
+                    }
+                    return isoDateTime;
+                };
+                int count = 0;
+                // Max 14-day forecast
+                for (size_t i = 0; i < times.size() && count < 14; ++i) {
+                    weather.dailyForecast[count].time = times[i].as<String>();
+                    weather.dailyForecast[count].weatherCode = String(wcode[i].as<int>());
+                    weather.dailyForecast[count].sunrise = extractTimeFromISO(String(sunrise[i].as<String>()));
+                    weather.dailyForecast[count].sunset = extractTimeFromISO(String(sunset[i].as<String>()));
+
+                    weather.dailyForecast[count].tempMax = String(temp_max[i].as<float>(), 2);
+                    weather.dailyForecast[count].tempMin = String(temp_min[i].as<float>(), 2);
+                    weather.dailyForecast[count].uvIndex = String(uv_index[i].as<float>(), 2);
+                    weather.dailyForecast[count].precipitation = String(precipitation[i].as<float>(), 2);
+
+                    weather.dailyForecast[count].sunshineDuration = String(sunshine[i].as<float>(), 2);
+                    
+                    count++;
+                }
+                weather.dailyForecastCount = count;
+
             }
+            
             http.end();
             return true;
         }

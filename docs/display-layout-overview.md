@@ -17,14 +17,21 @@
 │         WEATHER SECTION            │          DEPARTURE SECTION              │
 │           (400x455)                │            (400x455)                    │
 │                                    │                                         │
-│  • Title: 45px/30px                │  • Station Name: 40px                   │
-│  • Temperature: 40px               │  • Column Headers: 30px                 │
-│  • Location: 25px                  │  • Departure Entries: 37px each         │
-│  • Condition: 20px                 │    - Main Line: 20px                    │
-│  • High/Low: 20px                  │    - Disruption Space: 17px             │
-│  • Forecast: 16px per entry        │                                         │
-│  • Sunrise/Sunset: 25px            │  • Footer: 15px                         │
-│                                    │                                         │
+│  • City/Town Name: 40px            │  • Station Name: 40px                   │
+│  • Day weather Info: 67px          │  • Column Headers: 30px                 │
+│    - first column                  │  • Departure Entries: 37px each         │
+│       - Day Weather Icon: 37px     │    - Main Line: 20px                    │
+│       - Current Temp : 30 px       │    - Disruption Space: 17px             │
+│    - second column                 │  • Footer: 15px                         │
+│       - today low/high temp: 27px  │                                         │
+│       - UV Index info: 20 px       │                                         │
+│       - Pollen Info : 20px         │                                         │
+│    - third column                  │                                         │
+│       - Date Info : 27px           │                                         │
+│       - Sunrise : 20 px            │                                         │
+│       - Sunset : 20px              │                                         │
+│  • Weather Graphic : 333px         │                                         │
+│  • Footer: 15px                    │                                         │
 └────────────────────────────────────┴─────────────────────────────────────────┘
 ```
 

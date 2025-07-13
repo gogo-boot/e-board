@@ -1,30 +1,42 @@
 #pragma once
 #include <Arduino.h>
 
-struct WeatherForecast {
+struct WeatherHoulyForecast {
     String time;
     String temperature;
-    String rainChance;
-    String humidity;
-    String windSpeed;
-    String rainfall;
-    String snowfall;
     String weatherCode;
-    String weatherDesc;
+    String rainChance;
+    String rainfall;
+};
+
+struct WeatherDailyForecast {
+    String time;
+    String weatherCode;
+    String sunrise;
+    String sunset;
+    String tempMax;
+    String tempMin;
+    String uvIndex;
+    String precipitation;
+    String sunshineDuration;
 };
 
 struct WeatherInfo {
+
+    // Current weather
     String temperature;
-    String condition;
-    String city;
+    String precipitation;
+    String weatherCode;
+
     String rawJson;
-    WeatherForecast forecast[12]; // 12-hour forecast
-    int forecastCount = 0;
-    // Daily
-    String tempMax;
-    String tempMin;
-    String sunrise;
-    String sunset;
+
+    // Hourly forecast
+    WeatherHoulyForecast hourlyForecast[12]; // 12-hour forecast
+    int hourlyForecastCount = 0;
+
+    // Daily forecast
+    WeatherDailyForecast dailyForecast[7]; // 14-day forecast
+    int dailyForecastCount = 0;
 };
 
 bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather);
