@@ -82,78 +82,77 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
             if (doc.containsKey("current")) {
                 JsonObject current = doc["current"];
                 weather.temperature = String(current["temperature_2m"].as<float>(), 1);
-                int wcode = current["weather_code"].as<int>();
-                weather.condition = weatherCodeToString(wcode);
+                weather.precipitation = String(current["precipitation"].as<float>(), 1);
+                weather.weatherCode = current["weather_code"].as<int>();
             }
             
             // Parse hourly forecast
             if (doc.containsKey("hourly")) {
                 JsonObject hourly = doc["hourly"];
+
                 JsonArray times = hourly["time"];
                 JsonArray temps = hourly["temperature_2m"];
-                JsonArray rain_prob = hourly["precipitation_probability"];
                 JsonArray wcode = hourly["weather_code"];
+                JsonArray rainProb = hourly["precipitation_probability"];
                 JsonArray precipitation = hourly["precipitation"];
                 
                 int count = 0;
+                // Max 12-hour forecast
                 for (size_t i = 0; i < times.size() && count < 12; ++i) {
-                    weather.forecast[count].time = times[i].as<String>();
-                    weather.forecast[count].temperature = String(temps[i].as<float>(), 1);
-                    weather.forecast[count].rainChance = String(rain_prob[i].as<int>());
-                    weather.forecast[count].rainfall = String(precipitation[i].as<float>(), 2);
-                    
-                    int code = wcode[i].as<int>();
-                    weather.forecast[count].weatherCode = String(code);
-                    weather.forecast[count].weatherDesc = weatherCodeToString(code);
-                    
-                    // Set default values for fields not in this API
-                    weather.forecast[count].humidity = "0";
-                    weather.forecast[count].windSpeed = "0";
-                    weather.forecast[count].snowfall = "0";
+                    weather.hourlyForecast[count].time = times[i].as<String>();
+                    weather.hourlyForecast[count].temperature = String(temps[i].as<float>(), 1);
+                    weather.hourlyForecast[count].weatherCode = String(wcode[i].as<int>());
+                    weather.hourlyForecast[count].rainChance = String(rainProb[i].as<int>());
+                    weather.hourlyForecast[count].rainfall = String(precipitation[i].as<float>(), 2);
                     
                     count++;
                 }
-                weather.forecastCount = count;
+                weather.hourlyForecastCount = count;
             }
             
             // Parse daily data
             if (doc.containsKey("daily")) {
                 JsonObject daily = doc["daily"];
+
+                JsonArray times = daily["time"];
+                JsonArray wcode = daily["weather_code"];
+                JsonArray sunrise = daily["sunrise"];
+                JsonArray sunset = daily["sunset"];
+
                 JsonArray temp_max = daily["temperature_2m_max"];
                 JsonArray temp_min = daily["temperature_2m_min"];
-                JsonArray sunrise_arr = daily["sunrise"];
-                JsonArray sunset_arr = daily["sunset"];
                 JsonArray uv_index = daily["uv_index_max"];
+                JsonArray precipitation = daily["precipitation_sum"];
+
+                JsonArray sunshine = daily["sunshine_duration"];
                 
-                // Use first value (today)
-                if (temp_max.size() > 0) weather.tempMax = String(temp_max[0].as<float>(), 1);
-                if (temp_min.size() > 0) weather.tempMin = String(temp_min[0].as<float>(), 1);
-                if (sunrise_arr.size() > 0) {
-                    String sunrise_iso = sunrise_arr[0].as<String>();
-                    // Extract time from ISO format (2025-07-13T04:59 -> 04:59)
-                    int tIndex = sunrise_iso.indexOf('T');
+                // Extract time from ISO format (e.g., "2025-07-13T04:59") to "04:59"
+                auto extractTimeFromISO = [](const String& isoDateTime) -> String {
+                    int tIndex = isoDateTime.indexOf('T');
                     if (tIndex > 0) {
-                        weather.sunrise = sunrise_iso.substring(tIndex + 1, tIndex + 6);
-                    } else {
-                        weather.sunrise = sunrise_iso;
+                        return isoDateTime.substring(tIndex + 1, tIndex + 6);
                     }
+                    return isoDateTime;
+                };
+                int count = 0;
+                // Max 14-day forecast
+                for (size_t i = 0; i < times.size() && count < 14; ++i) {
+                    weather.dailyForecast[count].time = times[i].as<String>();
+                    weather.dailyForecast[count].weatherCode = String(wcode[i].as<int>());
+                    weather.dailyForecast[count].sunrise = extractTimeFromISO(String(sunrise[i].as<String>()));
+                    weather.dailyForecast[count].sunset = extractTimeFromISO(String(sunset[i].as<String>()));
+
+                    weather.dailyForecast[count].tempMax = String(temp_max[i].as<float>(), 2);
+                    weather.dailyForecast[count].tempMin = String(temp_min[i].as<float>(), 2);
+                    weather.dailyForecast[count].uvIndex = String(uv_index[i].as<float>(), 2);
+                    weather.dailyForecast[count].precipitation = String(precipitation[i].as<float>(), 2);
+
+                    weather.dailyForecast[count].sunshineDuration = String(sunshine[i].as<float>(), 2);
+                    
+                    count++;
                 }
-                if (sunset_arr.size() > 0) {
-                    String sunset_iso = sunset_arr[0].as<String>();
-                    // Extract time from ISO format (2025-07-13T21:24 -> 21:24)
-                    int tIndex = sunset_iso.indexOf('T');
-                    if (tIndex > 0) {
-                        weather.sunset = sunset_iso.substring(tIndex + 1, tIndex + 6);
-                    } else {
-                        weather.sunset = sunset_iso;
-                    }
-                }
-                if (uv_index.size() > 0) weather.uvIndex = String(uv_index[0].as<float>(), 1);
-            }
-            
-            // Set city if not already set
-            if (weather.city.isEmpty()) {
-                weather.city = getCityFromLatLon(lat, lon);
+                weather.dailyForecastCount = count;
+
             }
             
             http.end();

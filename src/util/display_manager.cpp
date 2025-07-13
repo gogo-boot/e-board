@@ -276,7 +276,7 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         // Day Weather Icon: 37px
         setLargeFont();
         display.setCursor(firstColX, colY);
-        display.print(weather.condition); // Weather condition as text
+        display.print(weather.weatherCode); // Weather condition as text
         colY += 37;
         
         // Current Temperature: 30px
@@ -291,9 +291,9 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         // Today low/high temp: 27px
         setMediumFont();
         display.setCursor(secondColX, colY);
-        display.print(weather.tempMin);
+        display.print(weather.dailyForecast[0].tempMin);
         display.print(" | ");
-        display.print(weather.tempMax);
+        display.print(weather.dailyForecast[0].tempMax);
         display.print("°C");
         colY += 13;
         colY += 14; // Total 27px for high/low
@@ -302,7 +302,7 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         setSmallFont();
         display.setCursor(secondColX, colY);
         display.print("UV Index: ");
-        display.print(weather.uvIndex);
+        display.print(weather.dailyForecast[0].uvIndex);
         colY += 20;
         
         // Third Column - Date, Sunrise, Sunset
@@ -322,13 +322,13 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         setSmallFont();
         display.setCursor(thirdColX, colY);
         display.print("Sunrise: ");
-        display.print(weather.sunrise);
+        display.print(weather.dailyForecast[0].sunrise);
         colY += 20;
         
         // Sunset: 20px
         display.setCursor(thirdColX, colY);
         display.print("Sunset: ");
-        display.print(weather.sunset);
+        display.print(weather.dailyForecast[0].sunset);
         
         currentY += 67; // Move past the day weather info section
         
@@ -369,13 +369,13 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         // display.print(weather.coded);
         // Day weather Info section: 37px total
         // Todo Add weather icon support
-        currentY += 37;
+        currentY += 47;
         
         // Current temperature: 30px
         display.setCursor(leftMargin, currentY);
         display.print(weather.temperature);
         display.print("°C  ");
-        currentY += 30;
+        currentY += 20;
 
         int16_t currentX = leftMargin + 100;  
         // Draw second Column - Today's temps, UV, Pollen
@@ -383,13 +383,13 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         // Today's UV Indexinfo: 20px  
         setSmallFont();
         display.setCursor(currentX, dayWeatherInfoY);
-        display.print(weather.tempMin);
+        display.print(weather.dailyForecast[0].tempMin);
         display.print(" | ");
-        display.print(weather.tempMax);
+        display.print(weather.dailyForecast[0].tempMax);
 
         display.setCursor(currentX, dayWeatherInfoY + 27);
         display.print("UV Index : ");
-        display.print(weather.uvIndex);
+        display.print(weather.dailyForecast[0].uvIndex);
         
         display.setCursor(currentX, dayWeatherInfoY + 47);
         display.print("Pollen : ");
@@ -405,11 +405,11 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
 
         display.setCursor(currentX, dayWeatherInfoY + 27);
         display.print("Sunrise : ");
-        display.print(weather.sunrise);
+        display.print(weather.dailyForecast[0].sunrise);
 
         display.setCursor(currentX, dayWeatherInfoY + 47);
         display.print("Sunset : ");
-        display.print(weather.sunset);
+        display.print(weather.dailyForecast[0].sunset);
 
         // Forecast section
         setSmallFont();
@@ -418,8 +418,8 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         currentY += 18;
         
         int maxForecast = 12; // Limited for half screen
-        for (int i = 0; i < min(maxForecast, weather.forecastCount); i++) {
-            const auto& forecast = weather.forecast[i];
+        for (int i = 0; i < min(maxForecast, weather.hourlyForecastCount); i++) {
+            const auto& forecast = weather.hourlyForecast[i];
             display.setCursor(leftMargin, currentY);
             
             String timeStr = forecast.time.substring(11, 16); // HH:MM
