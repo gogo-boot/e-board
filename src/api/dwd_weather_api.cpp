@@ -60,11 +60,14 @@ static String weatherCodeToString(int code) {
 }
 
 bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
-//  https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&hourly=temperature_2m,precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code,rain,snowfall&timezone=auto&forecast_days=1&past_hours=1&forecast_hours=12
 
+//https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration&hourly=temperature_2m,weather_code,precipitation_probability,precipitation&current=temperature_2m,precipitation,weather_code&timezone=auto&past_hours=1&forecast_hours=12
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
                  "&longitude=" + String(lon, 6) +
-                 "&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&hourly=temperature_2m,precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code,rain,snowfall&timezone=auto&forecast_days=1&past_hours=1&forecast_hours=12";
+                 "&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration" +
+                 "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation" + 
+                 "&current=temperature_2m,precipitation,weather_code" + 
+                 "&timezone=auto&past_hours=1&forecast_hours=12";
     Serial.printf("Fetching weather from: %s\n", url.c_str());
     HTTPClient http;
     http.begin(url);
@@ -75,52 +78,84 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
         DynamicJsonDocument doc(8192);
         DeserializationError error = deserializeJson(doc, payload);
         if (!error) {
-            if (doc.containsKey("current_weather")) {
-                weather.temperature = String(doc["current_weather"]["temperature"].as<float>(), 1) + " °C";
-                int wcode = doc["current_weather"]["weathercode"].as<int>();
+            // Parse current weather
+            if (doc.containsKey("current")) {
+                JsonObject current = doc["current"];
+                weather.temperature = String(current["temperature_2m"].as<float>(), 1);
+                int wcode = current["weather_code"].as<int>();
                 weather.condition = weatherCodeToString(wcode);
-                if (weather.city.isEmpty()) {
-                    getCityFromLatLon(lat, lon);
-                }
             }
+            
+            // Parse hourly forecast
             if (doc.containsKey("hourly")) {
                 JsonObject hourly = doc["hourly"];
                 JsonArray times = hourly["time"];
                 JsonArray temps = hourly["temperature_2m"];
                 JsonArray rain_prob = hourly["precipitation_probability"];
-                JsonArray humidity = hourly["relative_humidity_2m"];
-                JsonArray wind = hourly["wind_speed_10m"];
-                JsonArray rainfall = hourly["rain"];
-                JsonArray snowfall = hourly["snowfall"];
                 JsonArray wcode = hourly["weather_code"];
+                JsonArray precipitation = hourly["precipitation"];
+                
                 int count = 0;
                 for (size_t i = 0; i < times.size() && count < 12; ++i) {
                     weather.forecast[count].time = times[i].as<String>();
-                    weather.forecast[count].temperature = String(temps[i].as<float>(), 1) + " °C";
-                    weather.forecast[count].rainChance = String(rain_prob[i].as<float>(), 0) + "%";
-                    weather.forecast[count].humidity = String(humidity[i].as<float>(), 0) + "%";
-                    weather.forecast[count].windSpeed = String(wind[i].as<float>(), 1) + " km/h";
-                    weather.forecast[count].rainfall = String(rainfall[i].as<float>(), 1) + " mm";
-                    weather.forecast[count].snowfall = String(snowfall[i].as<float>(), 1) + " mm";
+                    weather.forecast[count].temperature = String(temps[i].as<float>(), 1);
+                    weather.forecast[count].rainChance = String(rain_prob[i].as<int>());
+                    weather.forecast[count].rainfall = String(precipitation[i].as<float>(), 2);
+                    
                     int code = wcode[i].as<int>();
                     weather.forecast[count].weatherCode = String(code);
                     weather.forecast[count].weatherDesc = weatherCodeToString(code);
+                    
+                    // Set default values for fields not in this API
+                    weather.forecast[count].humidity = "0";
+                    weather.forecast[count].windSpeed = "0";
+                    weather.forecast[count].snowfall = "0";
+                    
                     count++;
                 }
                 weather.forecastCount = count;
             }
+            
+            // Parse daily data
             if (doc.containsKey("daily")) {
                 JsonObject daily = doc["daily"];
-                JsonArray tem_max = daily["temperature_2m_max"];
-                JsonArray tem_min = daily["temperature_2m_min"];
-                JsonArray sunrise = daily["sunrise"];
-                JsonArray sunset = daily["sunset"];
+                JsonArray temp_max = daily["temperature_2m_max"];
+                JsonArray temp_min = daily["temperature_2m_min"];
+                JsonArray sunrise_arr = daily["sunrise"];
+                JsonArray sunset_arr = daily["sunset"];
+                JsonArray uv_index = daily["uv_index_max"];
+                
                 // Use first value (today)
-                if (tem_max.size() > 0) weather.tempMax = String(tem_max[0].as<float>(), 1) + " °C";
-                if (tem_min.size() > 0) weather.tempMin = String(tem_min[0].as<float>(), 1) + " °C";
-                if (sunrise.size() > 0) weather.sunrise = sunrise[0].as<String>();
-                if (sunset.size() > 0) weather.sunset = sunset[0].as<String>();
+                if (temp_max.size() > 0) weather.tempMax = String(temp_max[0].as<float>(), 1);
+                if (temp_min.size() > 0) weather.tempMin = String(temp_min[0].as<float>(), 1);
+                if (sunrise_arr.size() > 0) {
+                    String sunrise_iso = sunrise_arr[0].as<String>();
+                    // Extract time from ISO format (2025-07-13T04:59 -> 04:59)
+                    int tIndex = sunrise_iso.indexOf('T');
+                    if (tIndex > 0) {
+                        weather.sunrise = sunrise_iso.substring(tIndex + 1, tIndex + 6);
+                    } else {
+                        weather.sunrise = sunrise_iso;
+                    }
+                }
+                if (sunset_arr.size() > 0) {
+                    String sunset_iso = sunset_arr[0].as<String>();
+                    // Extract time from ISO format (2025-07-13T21:24 -> 21:24)
+                    int tIndex = sunset_iso.indexOf('T');
+                    if (tIndex > 0) {
+                        weather.sunset = sunset_iso.substring(tIndex + 1, tIndex + 6);
+                    } else {
+                        weather.sunset = sunset_iso;
+                    }
+                }
+                if (uv_index.size() > 0) weather.uvIndex = String(uv_index[0].as<float>(), 1);
             }
+            
+            // Set city if not already set
+            if (weather.city.isEmpty()) {
+                weather.city = getCityFromLatLon(lat, lon);
+            }
+            
             http.end();
             return true;
         }

@@ -25,6 +25,7 @@ struct WeatherInfo {
     String tempMin;
     String sunrise;
     String sunset;
+    String uvIndex;    // UV index for today
 };
 
 bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather);

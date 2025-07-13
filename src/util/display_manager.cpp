@@ -242,81 +242,147 @@ void DisplayManager::displayDeparturesOnly(const DepartureData& departures) {
 }
 
 void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, int16_t y, int16_t w, int16_t h) {
-    int16_t currentY = y + 25;
+    int16_t currentY = y + 25;  // Start after header space
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
     
-    // Adaptive font sizes based on available width
     bool isFullScreen = (w >= screenWidth * 0.8);
-    bool isHalfScreen = (w >= screenWidth * 0.4);
     
-    // Weather title
+    // City/Town Name: 40px
+    setMediumFont();
+    display.setCursor(leftMargin, currentY);
+    
+    // Calculate available width and fit city name
+    RTCConfigData& config = ConfigManager::getConfig();
+    int cityMaxWidth = rightMargin - leftMargin;
+    String fittedCityName = shortenTextToFit(config.cityName, cityMaxWidth);
+    display.print(fittedCityName);
+    currentY += 40;
+    
     if (isFullScreen) {
+        // Day weather Info section: 67px total
+        // Calculate column widths
+        int columnWidth = (rightMargin - leftMargin) / 3;
+        int firstColX = leftMargin;
+        int secondColX = leftMargin + columnWidth;
+        int thirdColX = leftMargin + (2 * columnWidth);
+        
+        // First Column - Weather Icon and Current Temperature
+        int colY = currentY; // All columns start at same Y position
+        
+        // Day Weather Icon: 37px
+        setLargeFont();
+        display.setCursor(firstColX, colY);
+        display.print(weather.condition); // Weather condition as text
+        colY += 37;
+        
+        // Current Temperature: 30px
+        setLargeFont();
+        display.setCursor(firstColX, colY);
+        display.print(weather.temperature);
+        display.print("°C");
+        
+        // Second Column - Today's temps, UV, Pollen
+        colY = currentY; // Reset to baseline Y for second column
+        
+        // Today low/high temp: 27px
+        setMediumFont();
+        display.setCursor(secondColX, colY);
+        display.print("High: ");
+        display.print(weather.tempMax);
+        display.print("°C");
+        colY += 13;
+        display.setCursor(secondColX, colY);
+        display.print("Low: ");
+        display.print(weather.tempMin);
+        display.print("°C");
+        colY += 14; // Total 27px for high/low
+        
+        // UV Index info: 20px
+        setSmallFont();
+        display.setCursor(secondColX, colY);
+        display.print("UV Index: ");
+        display.print(weather.uvIndex);
+        colY += 20;
+        
+        // Third Column - Date, Sunrise, Sunset
+        colY = currentY; // Reset to baseline Y for third column
+        
+        // Date Info: 27px
+        setMediumFont();
+        display.setCursor(thirdColX, colY);
+        display.print("Today");
+        colY += 13;
+        display.setCursor(thirdColX, colY);
+        // Add current date if available
+        display.print("Juli 13"); // Placeholder - should use actual date
+        colY += 14; // Total 27px
+        
+        // Sunrise: 20px
+        setSmallFont();
+        display.setCursor(thirdColX, colY);
+        display.print("Sunrise: ");
+        display.print(weather.sunrise);
+        colY += 20;
+        
+        // Sunset: 20px
+        display.setCursor(thirdColX, colY);
+        display.print("Sunset: ");
+        display.print(weather.sunset);
+        
+        currentY += 67; // Move past the day weather info section
+        
+        // Weather Graphic section: 333px (placeholder)
+        int graphicY = currentY;
+        int graphicHeight = 333;
+        
+        // Draw placeholder border for graphic section
+        setSmallFont();
+        display.drawRect(leftMargin, graphicY, rightMargin - leftMargin, graphicHeight, GxEPD_BLACK);
+        
+        // Add placeholder text in center of graphic area
+        int centerX = leftMargin + (rightMargin - leftMargin) / 2;
+        int centerY = graphicY + graphicHeight / 2;
+        
+        String placeholderText = "Weather Graphic";
+        int textWidth = getTextWidth(placeholderText);
+        display.setCursor(centerX - textWidth / 2, centerY);
+        display.print(placeholderText);
+        
+        // Add second line
+        String placeholderText2 = "(Coming Soon)";
+        int textWidth2 = getTextWidth(placeholderText2);
+        display.setCursor(centerX - textWidth2 / 2, centerY + 15);
+        display.print(placeholderText2);
+        
+        currentY += graphicHeight; // Move past the graphic section
+        
+    } else {
+        // Half screen layout - simplified
+        // Current temperature: 40px
         setLargeFont();
         display.setCursor(leftMargin, currentY);
-        display.print("Weather Information");
-        currentY += 45;
-    } else {
+        display.print(weather.temperature);
+        display.print("°C  ");
+        display.print(weather.condition);
+        currentY += 40;
+        
+        // High/Low: 20px
         setMediumFont();
         display.setCursor(leftMargin, currentY);
-        display.print("Weather");
-        currentY += 30;
-    }
-    
-    // Current temperature - make it prominent
-    setLargeFont();
-    display.setCursor(leftMargin, currentY);
-    display.print(weather.temperature);
-    
-    // Location on same line if space allows
-    if (isFullScreen) {
-        setMediumFont();
-        int16_t tempX = leftMargin + 100; // Offset for location
-        display.setCursor(tempX, currentY);
-        RTCConfigData& config = ConfigManager::getConfig();
-        display.print(config.cityName);
-    }
-    currentY += isFullScreen ? 40 : 35;
-    
-    // Location (if not already shown)
-    if (!isFullScreen) {
-        setMediumFont();
-        display.setCursor(leftMargin, currentY);
-        RTCConfigData& config = ConfigManager::getConfig();
-        String city = String(config.cityName);
-        if (city.length() > 12 && !isFullScreen) {
-            city = city.substring(0, 9) + "...";
-        }
-        display.print(city);
-        currentY += 25;
-    }
-    
-    // Condition
-    setSmallFont();
-    display.setCursor(leftMargin, currentY);
-    String condition = weather.condition;
-    if (condition.length() > 15 && !isFullScreen) {
-        condition = condition.substring(0, 12) + "...";
-    }
-    display.print(condition);
-    currentY += 20;
-    
-    // High/Low
-    display.setCursor(leftMargin, currentY);
-    display.print("High: ");
-    display.print(weather.tempMax);
-    display.print("  Low: ");
-    display.print(weather.tempMin);
-    currentY += 20;
-    
-    // Forecast section
-    if (isFullScreen) {
+        display.print("High: ");
+        display.print(weather.tempMax);
+        display.print("  Low: ");
+        display.print(weather.tempMin);
+        currentY += 20;
+        
+        // Forecast section
         setSmallFont();
         display.setCursor(leftMargin, currentY);
         display.print("Next Hours:");
         currentY += 18;
         
-        int maxForecast = isFullScreen ? 6 : 3;
+        int maxForecast = 12; // Limited for half screen
         for (int i = 0; i < min(maxForecast, weather.forecastCount); i++) {
             const auto& forecast = weather.forecast[i];
             display.setCursor(leftMargin, currentY);
@@ -325,7 +391,7 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
             display.print(timeStr);
             display.print(" ");
             display.print(forecast.temperature);
-            display.print(" ");
+            display.print("° ");
             display.print(forecast.rainChance);
             display.print("%");
             
@@ -334,15 +400,29 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         }
     }
     
-    // Sunrise/Sunset at bottom if space
-    if (currentY < y + h - 40 && isFullScreen) {
-        currentY = y + h - 25;
+    // Footer: 15px (at bottom if space available)
+    if (currentY < y + h - 25) {
+        currentY = y + h - 15;
         setSmallFont();
         display.setCursor(leftMargin, currentY);
-        display.print("Sunrise: ");
-        display.print(weather.sunrise);
-        display.print("  Sunset: ");
-        display.print(weather.sunset);
+        display.print("Aktualisiert: ");
+        
+        // Check if time is properly set
+        if (TimeManager::isTimeSet()) {
+            // Get current German time using TimeManager
+            struct tm timeinfo;
+            if (TimeManager::getCurrentLocalTime(timeinfo)) {
+                char timeStr[20];
+                // German time format: "HH:MM DD.MM.YYYY"
+                strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
+                display.print(timeStr);
+            } else {
+                display.print("Zeit nicht verfügbar");
+            }
+        } else {
+            // Time not synchronized
+            display.print("Zeit nicht synchronisiert");
+        }
     }
 }
 
