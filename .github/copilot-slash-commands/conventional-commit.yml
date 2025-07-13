@@ -1,0 +1,36 @@
+name: "/conventional-commit"
+description: "Generate a conventional commit message for staged changes."
+parameters:
+  type:
+    type: string
+    description: "Commit type (feat, fix, docs, style, refactor, test, chore, etc.)"
+    required: true
+  scope:
+    type: string
+    description: "Optional scope (e.g. api, config, docs)"
+    required: false
+  description:
+    type: string
+    description: "Short description of the change"
+    required: true
+  body:
+    type: string
+    description: "Optional longer body (motivation, context, etc.)"
+    required: false
+  breaking:
+    type: boolean
+    description: "Is this a breaking change?"
+    required: false
+action: |
+  commit_msg="${{ type }}"
+  if [ -n "${{ scope }}" ]; then
+    commit_msg+="(${scope})"
+  fi
+  commit_msg+=": ${{ description }}"
+  if [ -n "${{ body }}" ]; then
+    commit_msg+=$'\n\n'"${body}"
+  fi
+  if [ "${{ breaking }}" = "true" ]; then
+    commit_msg+=$'\n\nBREAKING CHANGE: This commit introduces breaking changes.'
+  fi
+  git commit -m "$commit_msg"

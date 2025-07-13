@@ -1,0 +1,256 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PLATFORMIO_CORE_VERSION: "6.1.11"
+
+jobs:
+  # Build firmware
+  build-firmware:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [esp32-c3-devkitc-02]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Cache PlatformIO
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/lib
+            ~/.platformio/packages
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+            
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio==${{ env.PLATFORMIO_CORE_VERSION }}
+          
+      - name: Create secrets files
+        run: |
+          mkdir -p e-board/src/secrets
+          cat > e-board/src/secrets/google_secrets.h << EOF
+          #pragma once
+          #define GOOGLE_API_KEY "${{ secrets.GOOGLE_API_KEY || 'your-google-api-key' }}"
+          EOF
+          
+          cat > e-board/src/secrets/rmv_secrets.h << EOF
+          #pragma once
+          #define RMV_API_KEY "${{ secrets.RMV_API_KEY || 'your-rmv-api-key' }}"
+          EOF
+          
+      - name: Build firmware
+        run: |
+          cd e-board
+          pio run -e ${{ matrix.environment }}
+          
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.environment }}
+          path: |
+            e-board/.pio/build/${{ matrix.environment }}/firmware.bin
+            e-board/.pio/build/${{ matrix.environment }}/firmware.elf
+            e-board/.pio/build/${{ matrix.environment }}/partitions.bin
+            e-board/.pio/build/${{ matrix.environment }}/bootloader.bin
+            e-board/.pio/build/${{ matrix.environment }}/littlefs.bin
+          retention-days: 30
+
+  # Deploy documentation
+  deploy-docs:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+          
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Create release (only on tags)
+  release:
+    needs: [build-firmware, deploy-docs]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-esp32-c3-devkitc-02
+          path: firmware/
+          
+      - name: Create release package
+        run: |
+          mkdir -p release
+          cp firmware/* release/
+          
+          # Create flashing script for Windows
+          cat > release/flash.bat << 'EOF'
+          @echo off
+          echo MyStation E-Board Firmware Flasher
+          echo =====================================
+          echo.
+          echo Make sure your ESP32-C3 is connected and drivers are installed.
+          echo.
+          set /p port="Enter COM port (e.g., COM3): "
+          echo.
+          echo Flashing firmware to %port%...
+          echo.
+          esptool.py --chip esp32c3 --port %port% --baud 921600 write_flash 0x0000 bootloader.bin 0x8000 partitions.bin 0x10000 firmware.bin 0x290000 littlefs.bin
+          echo.
+          echo Flashing complete! You can now reset your device.
+          pause
+          EOF
+          
+          # Create flashing script for Linux/macOS
+          cat > release/flash.sh << 'EOF'
+          #!/bin/bash
+          echo "MyStation E-Board Firmware Flasher"
+          echo "==================================="
+          echo
+          echo "Make sure your ESP32-C3 is connected."
+          echo
+          read -p "Enter port (e.g., /dev/ttyUSB0): " port
+          echo
+          echo "Flashing firmware to $port..."
+          echo
+          esptool.py --chip esp32c3 --port "$port" --baud 921600 write_flash \
+            0x0000 bootloader.bin \
+            0x8000 partitions.bin \
+            0x10000 firmware.bin \
+            0x290000 littlefs.bin
+          echo
+          echo "Flashing complete! You can now reset your device."
+          EOF
+          chmod +x release/flash.sh
+          
+          # Create README
+          cat > release/README.md << 'EOF'
+          # MyStation E-Board Firmware
+          
+          ## Quick Start
+          1. Connect your ESP32-C3 to computer via USB
+          2. Run the flashing script:
+             - **Windows**: Double-click `flash.bat`
+             - **Linux/macOS**: Run `./flash.sh`
+          3. Enter your COM port when prompted
+          4. Wait for flashing to complete
+          5. Reset your device
+          
+          ## Manual Flashing
+          ```bash
+          esptool.py --chip esp32c3 --port YOUR_PORT --baud 921600 write_flash \
+            0x0000 bootloader.bin \
+            0x8000 partitions.bin \
+            0x10000 firmware.bin \
+            0x290000 littlefs.bin
+          ```
+          
+          ## After Flashing
+          1. Reset the ESP32-C3
+          2. Connect to "MyStation-XXXX" WiFi network
+          3. Open browser: http://192.168.4.1
+          4. Configure your settings
+          
+          ## Documentation
+          Full documentation: https://yourusername.github.io/gogo-boot/
+          EOF
+          
+          # Create ZIP package
+          cd release
+          zip -r ../mystation-firmware-${{ github.ref_name }}.zip .
+          cd ..
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            mystation-firmware-${{ github.ref_name }}.zip
+            release/firmware.bin
+            release/littlefs.bin
+            release/flash.bat
+            release/flash.sh
+            release/README.md
+          name: MyStation E-Board ${{ github.ref_name }}
+          body: |
+            # 🚀 MyStation E-Board Firmware ${{ github.ref_name }}
+            
+            Ready-to-flash firmware for ESP32-C3 powered public transport departure board.
+            
+            ## 📦 What's Included
+            - `firmware.bin` - Main application firmware
+            - `littlefs.bin` - Web interface and configuration files
+            - `bootloader.bin` - ESP32-C3 bootloader
+            - `partitions.bin` - Partition table
+            - `flash.bat` / `flash.sh` - Automated flashing scripts
+            - `mystation-firmware-${{ github.ref_name }}.zip` - Complete package
+            
+            ## ⚡ Quick Flash
+            1. Download `mystation-firmware-${{ github.ref_name }}.zip`
+            2. Extract and run `flash.bat` (Windows) or `flash.sh` (Linux/macOS)
+            3. Follow on-screen instructions
+            
+            ## 🔧 Manual Flash Command
+            ```bash
+            esptool.py --chip esp32c3 --port YOUR_PORT --baud 921600 write_flash \
+              0x0000 bootloader.bin 0x8000 partitions.bin \
+              0x10000 firmware.bin 0x290000 littlefs.bin
+            ```
+            
+            ## 📚 Documentation
+            Complete setup guide: https://yourusername.github.io/gogo-boot/
+            
+            ## 🌟 Features
+            - Real-time public transport departures
+            - Weather information display
+            - Web-based configuration
+            - Power-efficient deep sleep
+            - Battery operation support
+            
+            Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

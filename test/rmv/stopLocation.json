@@ -1,0 +1,243 @@
+{
+    "stopLocationOrCoordLocation": [
+        {
+            "StopLocation": {
+                "LocationNotes": {
+                    "LocationNote": [
+                        {
+                            "value": "de:06412:18",
+                            "key": "IF",
+                            "type": "I",
+                            "txtN": "de:06412:18"
+                        },
+                        {
+                            "value": "06412000",
+                            "key": "GK",
+                            "type": "I",
+                            "txtN": "06412000"
+                        }
+                    ]
+                },
+                "altId": [
+                    "de:06412:18"
+                ],
+                "timezoneOffset": 120,
+                "id": "A=1@O=Frankfurt (Main) Güterplatz@X=8655740@Y=50107536@U=80@L=3000018@",
+                "extId": "3000018",
+                "name": "Frankfurt (Main) Güterplatz",
+                "lon": 8.65574,
+                "lat": 50.107536,
+                "weight": 3791,
+                "dist": 247,
+                "products": 96
+            }
+        },
+        {
+            "StopLocation": {
+                "LocationNotes": {
+                    "LocationNote": [
+                        {
+                            "value": "de:06412:17",
+                            "key": "IF",
+                            "type": "I",
+                            "txtN": "de:06412:17"
+                        },
+                        {
+                            "value": "06412000",
+                            "key": "GK",
+                            "type": "I",
+                            "txtN": "06412000"
+                        }
+                    ]
+                },
+                "altId": [
+                    "de:06412:17"
+                ],
+                "timezoneOffset": 120,
+                "id": "A=1@O=Frankfurt (Main) Hafenstraße@X=8657277@Y=50103140@U=80@L=3000017@",
+                "extId": "3000017",
+                "name": "Frankfurt (Main) Hafenstraße",
+                "lon": 8.657277,
+                "lat": 50.10314,
+                "weight": 1050,
+                "dist": 292,
+                "products": 96
+            }
+        },
+        {
+            "StopLocation": {
+                "LocationNotes": {
+                    "LocationNote": [
+                        {
+                            "value": "de:06412:19",
+                            "key": "IF",
+                            "type": "I",
+                            "txtN": "de:06412:19"
+                        },
+                        {
+                            "value": "06412000",
+                            "key": "GK",
+                            "type": "I",
+                            "txtN": "06412000"
+                        }
+                    ]
+                },
+                "altId": [
+                    "de:06412:19"
+                ],
+                "timezoneOffset": 120,
+                "id": "A=1@O=Frankfurt (Main) Speyerer Straße@X=8650859@Y=50105567@U=80@L=3000019@",
+                "extId": "3000019",
+                "name": "Frankfurt (Main) Speyerer Straße",
+                "lon": 8.650859,
+                "lat": 50.105567,
+                "weight": 3684,
+                "dist": 299,
+                "products": 96
+            }
+        },
+        {
+            "StopLocation": {
+                "LocationNotes": {
+                    "LocationNote": [
+                        {
+                            "value": "de:06412:15",
+                            "key": "IF",
+                            "type": "I",
+                            "txtN": "de:06412:15"
+                        },
+                        {
+                            "value": "06412000",
+                            "key": "GK",
+                            "type": "I",
+                            "txtN": "06412000"
+                        }
+                    ]
+                },
+                "altId": [
+                    "de:06412:15"
+                ],
+                "timezoneOffset": 120,
+                "id": "A=1@O=Frankfurt (Main) Heilbronner Straße@X=8654032@Y=50101747@U=80@L=3000015@",
+                "extId": "3000015",
+                "name": "Frankfurt (Main) Heilbronner Straße",
+                "lon": 8.654032,
+                "lat": 50.101747,
+                "weight": 1050,
+                "dist": 407,
+                "products": 96
+            }
+        },
+        {
+            "StopLocation": {
+                "LocationNotes": {
+                    "LocationNote": [
+                        {
+                            "value": "de:06412:60764",
+                            "key": "IF",
+                            "type": "I",
+                            "txtN": "de:06412:60764"
+                        },
+                        {
+                            "value": "06412000",
+                            "key": "GK",
+                            "type": "I",
+                            "txtN": "06412000"
+                        }
+                    ]
+                },
+                "altId": [
+                    "de:06412:60764"
+                ],
+                "timezoneOffset": 120,
+                "id": "A=1@O=Frankfurt (Main) Den Haager Straße@X=8650778@Y=50108821@U=80@L=3060764@",
+                "extId": "3060764",
+                "name": "Frankfurt (Main) Den Haager Straße",
+                "lon": 8.650778,
+                "lat": 50.108821,
+                "weight": 134,
+                "dist": 491,
+                "products": 64
+            }
+        },
+        {
+            "StopLocation": {
+                "LocationNotes": {
+                    "LocationNote": [
+                        {
+                            "value": "de:06412:60865",
+                            "key": "IF",
+                            "type": "I",
+                            "txtN": "de:06412:60865"
+                        },
+                        {
+                            "value": "06412000",
+                            "key": "GK",
+                            "type": "I",
+                            "txtN": "06412000"
+                        }
+                    ]
+                },
+                "altId": [
+                    "de:06412:60865"
+                ],
+                "timezoneOffset": 120,
+                "id": "A=1@O=Frankfurt (Main) Hauptbahnhof/Fernbusterminal@X=8662113@Y=50105100@U=80@L=3060865@",
+                "extId": "3060865",
+                "name": "Frankfurt (Main) Hauptbahnhof/Fernbusterminal",
+                "lon": 8.662113,
+                "lat": 50.1051,
+                "weight": 1050,
+                "dist": 504,
+                "products": 96
+            }
+        },
+        {
+            "StopLocation": {
+                "LocationNotes": {
+                    "LocationNote": [
+                        {
+                            "value": "de:06412:7010",
+                            "key": "IF",
+                            "type": "I",
+                            "txtN": "de:06412:7010"
+                        },
+                        {
+                            "value": "06412000",
+                            "key": "GK",
+                            "type": "I",
+                            "txtN": "06412000"
+                        }
+                    ]
+                },
+                "altId": [
+                    "de:06412:7010"
+                ],
+                "timezoneOffset": 120,
+                "id": "A=1@O=Frankfurt (Main) Hauptbahnhof tief@X=8662509@Y=50107167@U=80@L=3007010@",
+                "extId": "3007010",
+                "name": "Frankfurt (Main) Hauptbahnhof tief",
+                "lon": 8.662509,
+                "lat": 50.107167,
+                "weight": 7154,
+                "dist": 569,
+                "products": 8
+            }
+        }
+    ],
+    "TechnicalMessages": {
+        "TechnicalMessage": [
+            {
+                "value": "2025-06-23 17:35:22",
+                "key": "requestTime"
+            },
+            {
+                "value": "ttp=16526#16784 pplanid0=1750441013 plancode0=8ga7r pplanid1=1716290195 pplanid2=1750442684 pplanid3=1749644496 planid=1750441013 planid0=1750441013 planid_adr=1716290195 plancode_adr=n4b9x planid_poi=1750442684 plancode_poi=8gch6 planid_lmk=1749644496 plancode_lmk=7y8ma srvv=5.45.RMV.X.P.JPL.7.2.1.00 (customer/hcurmv/release/25.1.1) [2025-03-21] tlibv=TRFVER: rel/hessen/2.01.8 2025-01-17 17:48:39 +0100 RMV/NVV_TARIF | RMV-TRK: 4.3.0 + NVV_TARIF v2 + Relay_EnrichmentProxy v1 tdatv=43|44 tdatsv=4302-20240725_1439|4402-20250611_1310 tarttp0=16050#16420 tarttp1=16421#16784 jno=1",
+                "key": "backendInfo"
+            }
+        ]
+    },
+    "serverVersion": "2.39.1",
+    "dialectVersion": "2.39",
+    "requestId": "3skwcugmixk9x2wg"
+}

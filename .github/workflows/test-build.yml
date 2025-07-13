@@ -1,0 +1,62 @@
+name: Test Build
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths: 
+      - 'e-board/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths: 
+      - 'e-board/**'
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Cache PlatformIO
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.platformio/.cache
+            ~/.platformio/lib
+            ~/.platformio/packages
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+            
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+          
+      - name: Create dummy secrets files
+        run: |
+          mkdir -p e-board/src/secrets
+          cp e-board/src/secrets/google_secrets.h.example e-board/src/secrets/google_secrets.h
+          cp e-board/src/secrets/rmv_secrets.h.example e-board/src/secrets/rmv_secrets.h
+          
+      - name: Test compile
+        run: |
+          cd e-board
+          pio run --environment esp32-c3-devkitc-02
+          
+      - name: Check binary size
+        run: |
+          cd e-board
+          echo "Firmware size information:"
+          pio run --environment esp32-c3-devkitc-02 --target size
+          
+          echo ""
+          echo "Build artifacts:"
+          ls -la .pio/build/esp32-c3-devkitc-02/
