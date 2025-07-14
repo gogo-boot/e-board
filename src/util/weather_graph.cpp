@@ -286,8 +286,15 @@ void WeatherGraph::drawRainBars(const WeatherInfo& weather,
                 }
             }
             
+            // Draw bar outline WITHOUT bottom line to avoid thick X-axis
+            // Draw only left, top, and right sides of the rectangle
+            // display.drawLine(barX, barY, barX, barY + barH - 1, GxEPD_BLACK);                    // Left side
+            // display.drawLine(barX, barY, barX + barWidth - 1, barY, GxEPD_BLACK);                // Top side
+            // display.drawLine(barX + barWidth - 1, barY, barX + barWidth - 1, barY + barH - 1, GxEPD_BLACK); // Right side
+
+            // Removed: Bottom line that was making X-axis thick
             // Draw bar outline for clarity
-            display.drawRect(barX, barY, barWidth - 1, barH, GxEPD_BLACK);
+            // display.drawRect(barX, barY, barWidth - 1, barH, GxEPD_BLACK);
         }
     }
 }
