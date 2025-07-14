@@ -1,0 +1,191 @@
+{
+    "JourneyDetailRef": {
+    "ref": "2|#VN#1#ST#1750181993#PI#0#ZI#50589#TA#5#DA#180625#1S#3001217#1T#1837#LS#3002299#LT#1847#PU#80#RT#1#CA#1aE#ZE#56#ZB#Bus 56  #PC#6#FR#3001217#FT#1837#TO#3002299#TT#1847#"
+    },
+    "JourneyStatus": "P",
+    "ProductAtStop": {
+    "icon": {
+        "foregroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "hex": "#FFFFFF"
+        },
+        "backgroundColor": {
+        "r": 167,
+        "g": 22,
+        "b": 128,
+        "hex": "#A71680"
+        },
+        "res": "prod_bus"
+    },
+    "operatorInfo": {
+        "name": "Transdev Rhein-Main GmbH",
+        "nameS": "TRD",
+        "nameN": "TRDBUS",
+        "nameL": "Transdev Rhein-Main GmbH",
+        "id": "556"
+    },
+    "name": "Bus 56",
+    "internalName": "Bus 56  ",
+    "displayNumber": "56",   //Bus Number
+    "num": "1090",
+    "line": "56",
+    "lineId": "de:rmv:00000854:",
+    "catOut": "Bus",  //Gattung
+    "catIn": "1aE",
+    "catCode": "6",
+    "cls": "64",
+    "catOutS": "1aE",
+    "catOutL": "Niederflurbus",
+    "operatorCode": "TRD",
+    "operator": "Transdev Rhein-Main GmbH",
+    "admin": "TRDBUS",
+    "matchId": "560004"
+    },
+    "Product": [
+    {
+        "icon": {
+        "foregroundColor": {
+            "r": 255,
+            "g": 255,
+            "b": 255,
+            "hex": "#FFFFFF"
+        },
+        "backgroundColor": {
+            "r": 167,
+            "g": 22,
+            "b": 128,
+            "hex": "#A71680"
+        },
+        "res": "prod_bus"
+        },
+        "operatorInfo": {
+        "name": "Transdev Rhein-Main GmbH",
+        "nameS": "TRD",
+        "nameN": "TRDBUS",
+        "nameL": "Transdev Rhein-Main GmbH",
+        "id": "556"
+        },
+        "name": "Bus 56",
+        "internalName": "Bus 56  ",
+        "displayNumber": "56",
+        "num": "1090",
+        "line": "56",
+        "lineId": "de:rmv:00000854:",
+        "catOut": "Bus",
+        "catIn": "1aE",
+        "catCode": "6",
+        "cls": "64",
+        "catOutS": "1aE",
+        "catOutL": "Niederflurbus",
+        "operatorCode": "TRD",
+        "operator": "Transdev Rhein-Main GmbH",
+        "admin": "TRDBUS",
+        "routeIdxFrom": 0,
+        "routeIdxTo": 7,
+        "matchId": "560004"
+    }
+    ],
+    "Notes": {
+    "Note": [
+        {
+        "value": "560004",
+        "key": "FD",
+        "type": "I",
+        "routeIdxFrom": 0,
+        "routeIdxTo": 7,
+        "txtN": "560004"
+        },
+        {
+        "value": "2. Klasse: Hohe Belegung",
+        "key": "text.occup.jny.2nd.12",
+        "type": "A",
+        "txtN": "2. Klasse: Hohe Belegung"
+        },
+        {
+        "value": "Hohe Belegung",
+        "key": "text.occup.jny.max.12",
+        "type": "A",
+        "txtN": "Hohe Belegung"
+        },
+        {
+        "key": "WS",
+        "type": "A"
+        },
+        {
+        "key": "V0",
+        "type": "A"
+        },
+        {
+        "key": "IS",
+        "type": "A"
+        },
+        {
+        "key": "HT",
+        "type": "A"
+        },
+        {
+        "key": "HE",
+        "type": "A"
+        },
+        {
+        "key": "HB",
+        "type": "A"
+        },
+        {
+        "value": "de:06412:1217",
+        "key": "IF",
+        "type": "I",
+        "txtN": "de:06412:1217"
+        },
+        {
+        "value": "06412000",
+        "key": "GK",
+        "type": "I",
+        "txtN": "06412000"
+        },
+        {
+        "value": "2. Klasse: Hohe Belegung",
+        "key": "text.occup.loc.2nd.12",
+        "type": "A",
+        "txtN": "2. Klasse: Hohe Belegung"
+        },
+        {
+        "value": "Hohe Belegung",
+        "key": "text.occup.loc.max.12",
+        "type": "A",
+        "txtN": "Hohe Belegung"
+        }
+    ]
+    },
+    "altId": [
+    "de:06412:1217"
+    ],
+    "Occupancy": [
+    {
+        "name": "SECOND",
+        "raw": 12
+    }
+    ],
+    "platform": {
+    "type": "ST",
+    "text": "West"
+    },
+    "name": "Bus 56",
+    "type": "ST",
+    "stop": "Frankfurt (Main) Rödelheim Bahnhof",
+    "stopid": "A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@",
+    "stopExtId": "3001217",
+    "lon": 8.606947,
+    "lat": 50.125164,
+    "prognosisType": "PROGNOSED",
+    "time": "18:37:00",         // Soll Arriving Time
+    "date": "2025-06-18",
+    "track": "West",
+    "rtTime": "18:37:00",             // Ist Arriving time
+    "rtDate": "2025-06-18",
+    "reachable": true,
+    "direction": "Eschborn Südbahnhof",   // Direction
+    "directionFlag": "2"                      // Direction
+}

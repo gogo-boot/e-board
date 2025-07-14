@@ -1,0 +1,427 @@
+{
+    "JourneyDetailRef": {
+    "ref": "2|#VN#1#ST#1750181993#PI#0#ZI#157807#TA#0#DA#180625#1S#3004303#1T#1758#LS#3000912#LT#1837#PU#80#RT#1#CA#S42#ZE#S5#ZB#      S5#PC#3#FR#3004303#FT#1758#TO#3000912#TT#1837#"
+    },
+    "JourneyStatus": "P",
+    "ProductAtStop": {
+    "icon": {
+        "foregroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "hex": "#FFFFFF"
+        },
+        "backgroundColor": {
+        "r": 0,
+        "g": 151,
+        "b": 87,
+        "hex": "#009757"
+        },
+        "res": "prod_comm_t"
+    },
+    "operatorInfo": {
+        "name": "DB Regio AG S-Bahn Rhein-Main",
+        "nameS": "DBR",
+        "nameN": "DBRSBRM",
+        "nameL": "DB Regio AG S-Bahn Rhein-Main",
+        "id": "2251"
+    },
+    "name": "S5",
+    "internalName": "      S5",
+    "displayNumber": "S5",    //Train Number
+    "num": "2893",
+    "line": "S5",
+    "lineId": "de:rmv:00001319:",
+    "catOut": "S",      // Gattung
+    "catIn": "S42",
+    "catCode": "3",
+    "cls": "8",
+    "catOutS": "S42",
+    "catOutL": "S-Bahn",
+    "operatorCode": "DBR",
+    "operator": "DB Regio AG S-Bahn Rhein-Main",
+    "admin": "800528",
+    "matchId": "35559"
+    },
+    "Product": [
+    {
+        "icon": {
+        "foregroundColor": {
+            "r": 255,
+            "g": 255,
+            "b": 255,
+            "hex": "#FFFFFF"
+        },
+        "backgroundColor": {
+            "r": 0,
+            "g": 151,
+            "b": 87,
+            "hex": "#009757"
+        },
+        "res": "prod_comm_t"
+        },
+        "operatorInfo": {
+        "name": "DB Regio AG S-Bahn Rhein-Main",
+        "nameS": "DBR",
+        "nameN": "DBRSBRM",
+        "nameL": "DB Regio AG S-Bahn Rhein-Main",
+        "id": "2251"
+        },
+        "name": "S5",
+        "internalName": "      S5",
+        "displayNumber": "S5",
+        "num": "2893",
+        "line": "S5",
+        "lineId": "de:rmv:00001319:",
+        "catOut": "S",
+        "catIn": "S42",
+        "catCode": "3",
+        "cls": "8",
+        "catOutS": "S42",
+        "catOutL": "S-Bahn",
+        "operatorCode": "DBR",
+        "operator": "DB Regio AG S-Bahn Rhein-Main",
+        "admin": "800528",
+        "routeIdxFrom": 6,
+        "routeIdxTo": 16,
+        "matchId": "35559"
+    }
+    ],
+    "Notes": {
+    "Note": [
+        {
+        "value": "Fahrzeuggebundene Einstiegshilfe vorhanden",
+        "key": "EH",
+        "type": "A",
+        "priority": 560,
+        "routeIdxFrom": 6,
+        "routeIdxTo": 16,
+        "txtN": "Fahrzeuggebundene Einstiegshilfe vorhanden"
+        },
+        {
+        "value": "Klimaanlage",
+        "key": "KL",
+        "type": "A",
+        "priority": 610,
+        "routeIdxFrom": 6,
+        "routeIdxTo": 16,
+        "txtN": "Klimaanlage"
+        },
+        {
+        "value": "WLAN verfügbar",
+        "key": "WV",
+        "type": "A",
+        "priority": 710,
+        "routeIdxFrom": 6,
+        "routeIdxTo": 16,
+        "txtN": "WLAN verfügbar"
+        },
+        {
+        "value": "35559",
+        "key": "FD",
+        "type": "I",
+        "routeIdxFrom": 6,
+        "routeIdxTo": 16,
+        "txtN": "35559"
+        },
+        {
+        "value": "2. Klasse: Sehr hohe Belegung",
+        "key": "text.occup.jny.2nd.13",
+        "type": "A",
+        "txtN": "2. Klasse: Sehr hohe Belegung"
+        },
+        {
+        "value": "Sehr hohe Belegung",
+        "key": "text.occup.jny.max.13",
+        "type": "A",
+        "txtN": "Sehr hohe Belegung"
+        },
+        {
+        "key": "WS",
+        "type": "A"
+        },
+        {
+        "key": "V0",
+        "type": "A"
+        },
+        {
+        "key": "IS",
+        "type": "A"
+        },
+        {
+        "key": "HT",
+        "type": "A"
+        },
+        {
+        "key": "HE",
+        "type": "A"
+        },
+        {
+        "key": "HB",
+        "type": "A"
+        },
+        {
+        "value": "de:06412:1217",
+        "key": "IF",
+        "type": "I",
+        "txtN": "de:06412:1217"
+        },
+        {
+        "value": "06412000",
+        "key": "GK",
+        "type": "I",
+        "txtN": "06412000"
+        },
+        {
+        "value": "2. Klasse: Sehr hohe Belegung",
+        "key": "text.occup.loc.2nd.13",
+        "type": "A",
+        "txtN": "2. Klasse: Sehr hohe Belegung"
+        },
+        {
+        "value": "Sehr hohe Belegung",
+        "key": "text.occup.loc.max.13",
+        "type": "A",
+        "txtN": "Sehr hohe Belegung"
+        }
+    ]
+    },
+    "Messages": {
+    "Message": [
+        {
+        "affectedStops": {
+            "StopLocation": [
+            {
+                "LocationNotes": {
+                "LocationNote": [
+                    {
+                    "value": "",
+                    "key": "WS",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "IS",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "HT",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "HE",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "HB",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "de:06434:4303",
+                    "key": "IF",
+                    "type": "I",
+                    "txtN": "de:06434:4303"
+                    },
+                    {
+                    "value": "06434002",
+                    "key": "GK",
+                    "type": "I",
+                    "txtN": "06434002"
+                    }
+                ]
+                },
+                "altId": [
+                "de:06434:4303"
+                ],
+                "id": "A=1@O=Friedrichsdorf Bahnhof@X=8644279@Y=50252460@U=80@L=3004303@",
+                "extId": "3004303",
+                "name": "Friedrichsdorf Bahnhof",
+                "lon": 8.644279,
+                "lat": 50.25246,
+                "products": 204
+            },
+            {
+                "LocationNotes": {
+                "LocationNote": [
+                    {
+                    "value": "",
+                    "key": "WS",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "V0",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "IS",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "HT",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "HE",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "",
+                    "key": "HB",
+                    "type": "A",
+                    "txtN": ""
+                    },
+                    {
+                    "value": "de:06412:912",
+                    "key": "IF",
+                    "type": "I",
+                    "txtN": "de:06412:912"
+                    },
+                    {
+                    "value": "06412000",
+                    "key": "GK",
+                    "type": "I",
+                    "txtN": "06412000"
+                    }
+                ]
+                },
+                "altId": [
+                "de:06412:912"
+                ],
+                "id": "A=1@O=Frankfurt (Main) Südbahnhof@X=8686447@Y=50099329@U=80@L=3000912@",
+                "extId": "3000912",
+                "name": "Frankfurt (Main) Südbahnhof",
+                "lon": 8.686447,
+                "lat": 50.099329,
+                "products": 127
+            }
+            ]
+        },
+        "validFromStop": {
+            "altId": [
+            "de:06434:4303"
+            ],
+            "name": "Friedrichsdorf Bahnhof",
+            "id": "A=1@O=Friedrichsdorf Bahnhof@X=8644279@Y=50252460@U=80@L=3004303@",
+            "extId": "3004303",
+            "routeIdx": 0,
+            "lon": 8.644279,
+            "lat": 50.25246
+        },
+        "validToStop": {
+            "altId": [
+            "de:06412:912"
+            ],
+            "name": "Frankfurt (Main) Südbahnhof",
+            "id": "A=1@O=Frankfurt (Main) Südbahnhof@X=8686447@Y=50099329@U=80@L=3000912@",
+            "extId": "3000912",
+            "routeIdx": 16,
+            "lon": 8.686447,
+            "lat": 50.099329
+        },
+        "channel": [
+            {
+            "name": "TIMETABLE",
+            "validFromTime": "17:46:00",
+            "validFromDate": "2025-06-18",
+            "validToTime": "20:30:00",
+            "validToDate": "2025-06-18"
+            },
+            {
+            "name": "RSS",
+            "validFromTime": "17:46:00",
+            "validFromDate": "2025-06-18",
+            "validToTime": "20:30:00",
+            "validToDate": "2025-06-18"
+            },
+            {
+            "name": "MAP_CUSTOMER",
+            "validFromTime": "17:46:00",
+            "validFromDate": "2025-06-18",
+            "validToTime": "20:30:00",
+            "validToDate": "2025-06-18"
+            }
+        ],
+        "messageCategory": [
+            {
+            "id": 2,
+            "name": "Betriebsstörung"
+            }
+        ],
+        "id": "2156542",
+        "act": true,
+        "head": "S1, S2, S3, S4, S5, S6, S7, S8, S9: aktuelle Störung (Stand 18.06., 17:46 Uhr)",
+        // Important message
+        "lead": "Es kommt zu Verspätungen auf allen S-Bahn-Linien. Grund dafür ist ein erhöhtes Fahrgastaufkommen wegen einer Großveranstaltung am Halt Frankfurt-Stadion.",
+        "text": "Es kommt zu Verspätungen auf allen S-Bahn-Linien. Grund dafür ist ein erhöhtes Fahrgastaufkommen wegen einer Großveranstaltung am Halt Frankfurt-Stadion.",
+        "company": "RMVU",
+        "category": "2",
+        "priority": 10,
+        "products": 8,
+        "icon": "him_gen_disturb",
+        "routeIdxFrom": 0,
+        "routeIdxTo": 16,
+        "sTime": "17:00:00",
+        "sDate": "2025-06-18",
+        "eTime": "20:30:00",
+        "eDate": "2025-06-18",
+        "altStart": "18.06.2025, 17:45 Uhr",
+        "altEnd": "- Dauer unbekannt",
+        "modTime": "17:46:57",
+        "modDate": "2025-06-18",
+        "dailyStartingAt": "00:00:00",
+        "dailyDuration": "PT23H59M0S"
+        }
+    ]
+    },
+    "altId": [
+    "de:06412:1217"
+    ],
+    "Occupancy": [
+    {
+        "name": "SECOND",
+        "raw": 13
+    }
+    ],
+    "platform": {
+    "type": "PL",
+    "text": "2"
+    },
+    "rtPlatform": {
+    "type": "PL",
+    "text": "2"
+    },
+    "name": "S5",
+    "type": "ST",
+    "stop": "Frankfurt (Main) Rödelheim Bahnhof",
+    "stopid": "A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@",
+    "stopExtId": "3001217",
+    "lon": 8.606947,
+    "lat": 50.125164,
+    "prognosisType": "PROGNOSED",
+    "time": "18:16:00",                     // soll arriving time
+    "date": "2025-06-18",
+    "track": "2",
+    "rtTime": "18:21:00",                   // ist Arriving time
+    "rtDate": "2025-06-18",
+    "rtTrack": "2",                              // Gleis
+    "reachable": true,
+    "direction": "Frankfurt (Main) Südbahnhof",   // Direction
+    "directionFlag": "1"                    // Direction
+}
