@@ -414,8 +414,8 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         currentY += 18;
         
         // Calculate available space for graph
-        int availableHeight = (y + h - 40) - currentY; // Leave 40px for footer
-        int graphHeight = min(150, availableHeight); // Max 150px, but adapt to available space
+        int availableHeight = (y + h - 15) - currentY; // Leave 15px for footer
+        int graphHeight = min(333, availableHeight); // Max 333px, but adapt to available space
         
         if (graphHeight >= 80) { // Only draw graph if we have enough space
             WeatherGraph::drawTemperatureAndRainGraph(weather,

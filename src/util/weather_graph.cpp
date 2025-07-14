@@ -250,15 +250,17 @@ int WeatherGraph::parseRainChance(const String& rainStr) {
 }
 
 float WeatherGraph::calculateDynamicMinTemp(float actualMin) {
-    // Your logic: min temp - 5, then round to nearest 5
-    float adjusted = actualMin - 5.0f;
-    return floor(adjusted / 5.0f) * 5.0f;
+    // Your logic: divide by 5 (integer division), then multiply by 5
+    // Example: 17°C -> 17/5 = 3 -> 3*5 = 15°C
+    int tempDiv = (int)actualMin / 5;
+    return (float)(tempDiv * 5);
 }
 
 float WeatherGraph::calculateDynamicMaxTemp(float actualMax) {
-    // Your logic: max temp + 5, then round to nearest 5  
-    float adjusted = actualMax + 5.0f;
-    return ceil(adjusted / 5.0f) * 5.0f;
+    // Your logic: divide by 5 (integer division), add 1, then multiply by 5
+    // Example: 23°C -> 23/5 = 4 -> (4+1)*5 = 25°C
+    int tempDiv = (int)actualMax / 5;
+    return (float)((tempDiv + 1) * 5);
 }
 
 int16_t WeatherGraph::mapToPixel(float value, float minVal, float maxVal, 
