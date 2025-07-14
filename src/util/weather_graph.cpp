@@ -174,56 +174,64 @@ void WeatherGraph::drawTemperatureLine(const WeatherInfo& weather,
     // Need at least 2 points to draw a line
     if (dataPoints < 2) return;
     
-    // === STEP 1: Draw temperature line segments connecting each hour ===
-    for (int i = 0; i < dataPoints - 1; i++) {
-        // Parse temperature values for current hour (i) and next hour (i+1)
-        float temp1 = parseTemperature(weather.hourlyForecast[i].temperature);
-        float temp2 = parseTemperature(weather.hourlyForecast[i + 1].temperature);
-        
-        // Convert hour index to X pixel position on the graph
-        // Maps hour 0 to graphX, hour 11 to graphX + graphW
-        int16_t x1 = mapToPixel(i, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
-        int16_t x2 = mapToPixel(i + 1, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
-        
-        // Convert temperature to Y pixel position on the graph
-        // Maps minTemp to bottom (graphY + graphH), maxTemp to top (graphY)
-        int16_t y1 = mapToPixel(temp1, minTemp, maxTemp, graphY + graphH, graphY);
-        int16_t y2 = mapToPixel(temp2, minTemp, maxTemp, graphY + graphH, graphY);
-        
-        // Draw thick line for e-paper visibility (3 parallel lines)
-        display.drawLine(x1, y1, x2, y2, GxEPD_BLACK);           // Main line
+    // === STEP 1: Draw smooth temperature curve through all points ===
+    // Create arrays to store all temperature points for smooth curve calculation
+    int16_t tempX[HOURS_TO_SHOW];
+    int16_t tempY[HOURS_TO_SHOW];
+    
+    // Calculate all point positions first
+    for (int i = 0; i < dataPoints; i++) {
+        float temp = parseTemperature(weather.hourlyForecast[i].temperature);
+        tempX[i] = mapToPixel(i, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
+        tempY[i] = mapToPixel(temp, minTemp, maxTemp, graphY + graphH, graphY);
     }
     
-    // === STEP 2: Draw temperature data points (circles) at each hour ===
-    for (int i = 0; i < dataPoints; i++) {
-        // Parse temperature for this hour
-        float temp = parseTemperature(weather.hourlyForecast[i].temperature);
+    // Draw smooth curve using Catmull-Rom spline interpolation
+    // This creates smooth curves that pass through all data points
+    for (int i = 0; i < dataPoints - 1; i++) {
+        // Get control points for smooth curve calculation
+        // Use previous and next points to calculate smooth tangents
+        int16_t p0x = (i > 0) ? tempX[i-1] : tempX[i];
+        int16_t p0y = (i > 0) ? tempY[i-1] : tempY[i];
+        int16_t p1x = tempX[i];
+        int16_t p1y = tempY[i];
+        int16_t p2x = tempX[i+1];
+        int16_t p2y = tempY[i+1];
+        int16_t p3x = (i < dataPoints-2) ? tempX[i+2] : tempX[i+1];
+        int16_t p3y = (i < dataPoints-2) ? tempY[i+2] : tempY[i+1];
         
-        // Convert hour index and temperature to pixel coordinates
-        int16_t x = mapToPixel(i, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
-        int16_t y = mapToPixel(temp, minTemp, maxTemp, graphY + graphH, graphY);
+        // Draw smooth curve between p1 and p2 using many small segments
+        int smoothSteps = 16; // Higher number = smoother curve
         
-        // Draw filled circle (radius 3 pixels) at each data point
-        display.fillCircle(x, y, 3, GxEPD_BLACK);
-        
-        // === STEP 3: Optional temperature value labels (only in full-size mode) ===
-        // Show temperature values near specific points to avoid clutter
-        // Only show for: first hour (0), middle hour (6), and last hour (11)
-        if (graphH > 150 && (i == 0 || i == dataPoints/2 || i == dataPoints - 1)) {
-            DisplayManager::setSmallFont();
+        for (int step = 0; step < smoothSteps; step++) {
+            // Calculate interpolation parameter (0.0 to 1.0)
+            float t1 = (float)step / smoothSteps;
+            float t2 = (float)(step + 1) / smoothSteps;
             
-            // Format temperature as whole number with degree symbol (e.g., "17°")
-            String tempStr = String((int)round(temp)) + "°";
-            int16_t textWidth = DisplayManager::getTextWidth(tempStr);
+            // Catmull-Rom spline calculation for smooth curves
+            // This creates smooth curves that pass exactly through data points
+            auto catmullRom = [](float t, int16_t p0, int16_t p1, int16_t p2, int16_t p3) -> int16_t {
+                float t2 = t * t;
+                float t3 = t2 * t;
+                
+                float result = 0.5f * (
+                    (2.0f * p1) +
+                    (-p0 + p2) * t +
+                    (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+                    (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3
+                );
+                
+                return (int16_t)result;
+            };
             
-            // Position text above or below the point to avoid overlap with the line
-            // If point is in upper half of graph, put text below (y + 15)
-            // If point is in lower half of graph, put text above (y - 5)
-            int16_t textY = (y < graphY + graphH/2) ? y + 15 : y - 5;
+            // Calculate smooth curve points
+            int16_t curve_x1 = catmullRom(t1, p0x, p1x, p2x, p3x);
+            int16_t curve_y1 = catmullRom(t1, p0y, p1y, p2y, p3y);
+            int16_t curve_x2 = catmullRom(t2, p0x, p1x, p2x, p3x);
+            int16_t curve_y2 = catmullRom(t2, p0y, p1y, p2y, p3y);
             
-            // Center the text horizontally on the data point
-            u8g2.setCursor(x - textWidth/2, textY);
-            u8g2.print(tempStr);
+            // Draw the smooth curve segment
+            display.drawLine(curve_x1, curve_y1, curve_x2, curve_y2, GxEPD_BLACK);
         }
     }
 }
