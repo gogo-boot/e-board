@@ -3,6 +3,7 @@
 #include <esp_log.h>
 #include "config/config_manager.h"
 #include "util/time_manager.h"
+#include "util/weather_graph.h"
 
 // Include e-paper display libraries
 #include <GxEPD2_BW.h>
@@ -341,28 +342,14 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         
         currentY += 67; // Move past the day weather info section
         
-        // Weather Graphic section: 333px (placeholder)
+        // Weather Graphic section: 333px
         int graphicY = currentY;
         int graphicHeight = 333;
         
-        // Draw placeholder border for graphic section
-        setSmallFont();
-        display.drawRect(leftMargin, graphicY, rightMargin - leftMargin, graphicHeight, GxEPD_BLACK);
-        
-        // Add placeholder text in center of graphic area
-        int centerX = leftMargin + (rightMargin - leftMargin) / 2;
-        int centerY = graphicY + graphicHeight / 2;
-        
-        String placeholderText = "Weather Graphic";
-        int textWidth = getTextWidth(placeholderText);
-        u8g2.setCursor(centerX - textWidth / 2, centerY);
-        u8g2.print(placeholderText);
-        
-        // Add second line
-        String placeholderText2 = "(Coming Soon)";
-        int textWidth2 = getTextWidth(placeholderText2);
-        u8g2.setCursor(centerX - textWidth2 / 2, centerY + 15);
-        u8g2.print(placeholderText2);
+        // Draw the actual weather graph
+        WeatherGraph::drawTemperatureAndRainGraph(weather, 
+                                                 leftMargin, graphicY, 
+                                                 rightMargin - leftMargin, graphicHeight);
         
         currentY += graphicHeight; // Move past the graphic section
         
@@ -420,27 +407,39 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         u8g2.print("Sunset : ");
         u8g2.print(weather.dailyForecast[0].sunset);
 
-        // Forecast section
+        // Weather Graph section (replaces text-based forecast for better visualization)
         setSmallFont();
         u8g2.setCursor(leftMargin, currentY);
-        u8g2.print("Next Hours:");
+        u8g2.print("Next 12 Hours:");
         currentY += 18;
         
-        int maxForecast = 12; // Limited for half screen
-        for (int i = 0; i < min(maxForecast, weather.hourlyForecastCount); i++) {
-            const auto& forecast = weather.hourlyForecast[i];
-            u8g2.setCursor(leftMargin, currentY);
-            
-            String timeStr = forecast.time.substring(11, 16); // HH:MM
-            u8g2.print(timeStr);
-            u8g2.print(" ");
-            u8g2.print(forecast.temperature);
-            u8g2.print("° ");
-            u8g2.print(forecast.rainChance);
-            u8g2.print("%");
-            
-            currentY += 16;
-            if (currentY > y + h - 20) break;
+        // Calculate available space for graph
+        int availableHeight = (y + h - 40) - currentY; // Leave 40px for footer
+        int graphHeight = min(150, availableHeight); // Max 150px, but adapt to available space
+        
+        if (graphHeight >= 80) { // Only draw graph if we have enough space
+            WeatherGraph::drawTemperatureAndRainGraph(weather,
+                                                     leftMargin, currentY,
+                                                     rightMargin - leftMargin, graphHeight);
+            currentY += graphHeight;
+        } else {
+            // Fallback to compact text forecast if not enough space for graph
+            int maxForecast = min(6, availableHeight / 16); // Limit based on available space
+            for (int i = 0; i < min(maxForecast, weather.hourlyForecastCount); i++) {
+                const auto& forecast = weather.hourlyForecast[i];
+                u8g2.setCursor(leftMargin, currentY);
+                
+                String timeStr = forecast.time.substring(11, 16); // HH:MM
+                u8g2.print(timeStr);
+                u8g2.print(" ");
+                u8g2.print(forecast.temperature);
+                u8g2.print("° ");
+                u8g2.print(forecast.rainChance);
+                u8g2.print("%");
+                
+                currentY += 16;
+                if (currentY > y + h - 40) break; // Leave space for footer
+            }
         }
     }
     
