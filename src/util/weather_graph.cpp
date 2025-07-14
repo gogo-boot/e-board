@@ -57,7 +57,7 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     drawGraphFrame(graphX, graphY, graphW, graphH);
     drawTemperatureAxis(x, graphY, marginLeft, graphH, dynamicMin, dynamicMax);
     drawRainAxis(x + w - marginRight, graphY, marginRight, graphH);
-    drawTimeAxis(graphX, y + h - marginBottom, graphW, marginBottom);
+    drawTimeAxis(graphX, y + h - marginBottom, graphW, marginBottom, weather); // <-- Add weather parameter
     
     // Draw data (rain bars first, then temperature line on top)
     drawRainBars(weather, graphX, graphY, graphW, graphH);
@@ -159,26 +159,34 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
     }
 }
 
-void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
+void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, const WeatherInfo& weather) {
     DisplayManager::setSmallFont();
     
-    // Adaptive time labels based on available width
-    int labelStep = (w < 200) ? 6 : 3; // Every 6 hours for compact, every 3 hours for full
-    int maxLabels = HOURS_TO_SHOW / labelStep + 1;
+    // Get the number of data points available
+    int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
     
-    for (int i = 0; i < maxLabels; i++) {
-        int hourIndex = i * labelStep;
-        if (hourIndex <= HOURS_TO_SHOW) {
-            String timeLabel = String(hourIndex) + "h";
-            
-            int16_t labelX = x + (w * i * labelStep) / HOURS_TO_SHOW;
-            int16_t textWidth = DisplayManager::getTextWidth(timeLabel);
-            
-            // Make sure label fits within bounds
-            if (labelX + textWidth/2 <= x + w) {
-                u8g2.setCursor(labelX - textWidth / 2, y + 15);
-                u8g2.print(timeLabel);
-            }
+    // Adaptive time labels based on available width  
+    int labelStep = (w < 200) ? 6 : 3; // Every 6 hours for compact, every 3 hours for full
+    
+    for (int i = 0; i < dataPoints; i += labelStep) {
+        // Extract actual time from forecast data (HH:MM format)
+        String timeStr = weather.hourlyForecast[i].time;
+        String actualTime;
+        
+        // Extract hour:minute from ISO time string (YYYY-MM-DDTHH:MM:SS)
+        if (timeStr.length() >= 16) {
+            actualTime = timeStr.substring(11, 16); // Gets "HH:MM"
+        } else {
+            actualTime = String(i) + "h"; // Fallback to hour index
+        }
+        
+        int16_t labelX = x + (w * i) / HOURS_TO_SHOW;
+        int16_t textWidth = DisplayManager::getTextWidth(actualTime);
+        
+        // Make sure label fits within bounds
+        if (labelX + textWidth/2 <= x + w && i < dataPoints) {
+            u8g2.setCursor(labelX - textWidth / 2, y + 15);
+            u8g2.print(actualTime);
         }
     }
 }
