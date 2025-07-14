@@ -18,7 +18,7 @@
  * - Manual resets
  */
 
-#define ARDUINOJSON_DECODE_NESTING_LIMIT 200
+#define ARDUINOJSON_DECODE_NESTING_LIMIT 1000
 #include <Arduino.h>
 #include <WebServer.h>
 #include <esp_log.h>
@@ -49,11 +49,15 @@
 #include <GxEPD2_3C.h>
 #include <GxEPD2_4C.h>
 #include <GxEPD2_7C.h>
+#include <U8g2_for_Adafruit_GFX.h>
 #include <Fonts/FreeMonoBold9pt7b.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>  // Specific driver for GDEY075T7
 
 // Create display instance for GDEY075T7 (800x480 resolution)
 GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(GxEPD2_750_GDEY075T7(Pins::EPD_CS, Pins::EPD_DC, Pins::EPD_RES, Pins::EPD_BUSY));
+
+// Create U8g2 instance for UTF-8 font support (for German umlauts)
+U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 static const char* TAG = "MAIN";
 

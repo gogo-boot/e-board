@@ -16,9 +16,11 @@
 #include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
+#include <U8g2_for_Adafruit_GFX.h>
 
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
+extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 static const char* TAG = "DISPLAY_MGR";
 
@@ -34,6 +36,13 @@ void DisplayManager::init(DisplayOrientation orientation) {
     ESP_LOGI(TAG, "Initializing display manager");
     
     display.init(115200);
+    
+    // Initialize U8g2 for UTF-8 font support (German umlauts)
+    u8g2.begin(display);
+    u8g2.setFontMode(1);                // Use u8g2 transparent mode
+    u8g2.setFontDirection(0);           // Left to right
+    u8g2.setForegroundColor(GxEPD_BLACK);
+    u8g2.setBackgroundColor(GxEPD_WHITE);
     
     // Set rotation first to get correct dimensions
     display.setRotation(static_cast<int>(orientation));
@@ -253,13 +262,13 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
     
     // City/Town Name: 40px
     setMediumFont();
-    display.setCursor(leftMargin, currentY);
+    u8g2.setCursor(leftMargin, currentY);
     
     // Calculate available width and fit city name
     RTCConfigData& config = ConfigManager::getConfig();
     int cityMaxWidth = rightMargin - leftMargin;
     String fittedCityName = shortenTextToFit(config.cityName, cityMaxWidth);
-    display.print(fittedCityName);
+    u8g2.print(fittedCityName);
     currentY += 40;
     
     if (isFullScreen) {
@@ -275,34 +284,34 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         
         // Day Weather Icon: 37px
         setLargeFont();
-        display.setCursor(firstColX, colY);
-        display.print(weather.weatherCode); // Weather condition as text
+        u8g2.setCursor(firstColX, colY);
+        u8g2.print(weather.weatherCode); // Weather condition as text
         colY += 37;
         
         // Current Temperature: 30px
         setLargeFont();
-        display.setCursor(firstColX, colY);
-        display.print(weather.temperature);
-        display.print("°C");
+        u8g2.setCursor(firstColX, colY);
+        u8g2.print(weather.temperature);
+        u8g2.print("°C");
         
         // Second Column - Today's temps, UV, Pollen
         colY = currentY; // Reset to baseline Y for second column
         
         // Today low/high temp: 27px
         setMediumFont();
-        display.setCursor(secondColX, colY);
-        display.print(weather.dailyForecast[0].tempMin);
-        display.print(" | ");
-        display.print(weather.dailyForecast[0].tempMax);
-        display.print("°C");
+        u8g2.setCursor(secondColX, colY);
+        u8g2.print(weather.dailyForecast[0].tempMin);
+        u8g2.print(" | ");
+        u8g2.print(weather.dailyForecast[0].tempMax);
+        u8g2.print("°C");
         colY += 13;
         colY += 14; // Total 27px for high/low
         
         // UV Index info: 20px
         setSmallFont();
-        display.setCursor(secondColX, colY);
-        display.print("UV Index: ");
-        display.print(weather.dailyForecast[0].uvIndex);
+        u8g2.setCursor(secondColX, colY);
+        u8g2.print("UV Index: ");
+        u8g2.print(weather.dailyForecast[0].uvIndex);
         colY += 20;
         
         // Third Column - Date, Sunrise, Sunset
@@ -310,25 +319,25 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         
         // Date Info: 27px
         setMediumFont();
-        display.setCursor(thirdColX, colY);
-        display.print("Today");
+        u8g2.setCursor(thirdColX, colY);
+        u8g2.print("Today");
         colY += 13;
-        display.setCursor(thirdColX, colY);
+        u8g2.setCursor(thirdColX, colY);
         // Add current date if available
-        display.print("Juli 13"); // Placeholder - should use actual date
+        u8g2.print("Juli 13"); // Placeholder - should use actual date
         colY += 14; // Total 27px
         
         // Sunrise: 20px
         setSmallFont();
-        display.setCursor(thirdColX, colY);
-        display.print("Sunrise: ");
-        display.print(weather.dailyForecast[0].sunrise);
+        u8g2.setCursor(thirdColX, colY);
+        u8g2.print("Sunrise: ");
+        u8g2.print(weather.dailyForecast[0].sunrise);
         colY += 20;
         
         // Sunset: 20px
-        display.setCursor(thirdColX, colY);
-        display.print("Sunset: ");
-        display.print(weather.dailyForecast[0].sunset);
+        u8g2.setCursor(thirdColX, colY);
+        u8g2.print("Sunset: ");
+        u8g2.print(weather.dailyForecast[0].sunset);
         
         currentY += 67; // Move past the day weather info section
         
@@ -346,14 +355,14 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         
         String placeholderText = "Weather Graphic";
         int textWidth = getTextWidth(placeholderText);
-        display.setCursor(centerX - textWidth / 2, centerY);
-        display.print(placeholderText);
+        u8g2.setCursor(centerX - textWidth / 2, centerY);
+        u8g2.print(placeholderText);
         
         // Add second line
         String placeholderText2 = "(Coming Soon)";
         int textWidth2 = getTextWidth(placeholderText2);
-        display.setCursor(centerX - textWidth2 / 2, centerY + 15);
-        display.print(placeholderText2);
+        u8g2.setCursor(centerX - textWidth2 / 2, centerY + 15);
+        u8g2.print(placeholderText2);
         
         currentY += graphicHeight; // Move past the graphic section
         
@@ -364,17 +373,17 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         setSmallFont();
         
         // Draw first Column - Current Temperature and Condition
-        display.setCursor(leftMargin, currentY);
+        u8g2.setCursor(leftMargin, currentY);
         // weather_code is missing
-        // display.print(weather.coded);
+        // u8g2.print(weather.coded);
         // Day weather Info section: 37px total
         // Todo Add weather icon support
         currentY += 47;
         
         // Current temperature: 30px
-        display.setCursor(leftMargin, currentY);
-        display.print(weather.temperature);
-        display.print("°C  ");
+        u8g2.setCursor(leftMargin, currentY);
+        u8g2.print(weather.temperature);
+        u8g2.print("°C  ");
         currentY += 20;
 
         int16_t currentX = leftMargin + 100;  
@@ -382,53 +391,53 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
         // Today's low/high temp: 27px
         // Today's UV Indexinfo: 20px  
         setSmallFont();
-        display.setCursor(currentX, dayWeatherInfoY);
-        display.print(weather.dailyForecast[0].tempMin);
-        display.print(" | ");
-        display.print(weather.dailyForecast[0].tempMax);
+        u8g2.setCursor(currentX, dayWeatherInfoY);
+        u8g2.print(weather.dailyForecast[0].tempMin);
+        u8g2.print(" | ");
+        u8g2.print(weather.dailyForecast[0].tempMax);
 
-        display.setCursor(currentX, dayWeatherInfoY + 27);
-        display.print("UV Index : ");
-        display.print(weather.dailyForecast[0].uvIndex);
+        u8g2.setCursor(currentX, dayWeatherInfoY + 27);
+        u8g2.print("UV Index : ");
+        u8g2.print(weather.dailyForecast[0].uvIndex);
         
-        display.setCursor(currentX, dayWeatherInfoY + 47);
-        display.print("Pollen : ");
-        display.print("N/A");
+        u8g2.setCursor(currentX, dayWeatherInfoY + 47);
+        u8g2.print("Pollen : ");
+        u8g2.print("N/A");
         currentX += 150; // Move to next column
 
         // Draw third Column - Date, Sunrise, Sunset
         // Date Info: 27px
         setSmallFont();
-        display.setCursor(currentX, dayWeatherInfoY);
-        display.print("Date :");
-        display.print("Juli 13"); // Placeholder - should use actual date
+        u8g2.setCursor(currentX, dayWeatherInfoY);
+        u8g2.print("Date :");
+        u8g2.print("Juli 13"); // Placeholder - should use actual date
 
-        display.setCursor(currentX, dayWeatherInfoY + 27);
-        display.print("Sunrise : ");
-        display.print(weather.dailyForecast[0].sunrise);
+        u8g2.setCursor(currentX, dayWeatherInfoY + 27);
+        u8g2.print("Sunrise : ");
+        u8g2.print(weather.dailyForecast[0].sunrise);
 
-        display.setCursor(currentX, dayWeatherInfoY + 47);
-        display.print("Sunset : ");
-        display.print(weather.dailyForecast[0].sunset);
+        u8g2.setCursor(currentX, dayWeatherInfoY + 47);
+        u8g2.print("Sunset : ");
+        u8g2.print(weather.dailyForecast[0].sunset);
 
         // Forecast section
         setSmallFont();
-        display.setCursor(leftMargin, currentY);
-        display.print("Next Hours:");
+        u8g2.setCursor(leftMargin, currentY);
+        u8g2.print("Next Hours:");
         currentY += 18;
         
         int maxForecast = 12; // Limited for half screen
         for (int i = 0; i < min(maxForecast, weather.hourlyForecastCount); i++) {
             const auto& forecast = weather.hourlyForecast[i];
-            display.setCursor(leftMargin, currentY);
+            u8g2.setCursor(leftMargin, currentY);
             
             String timeStr = forecast.time.substring(11, 16); // HH:MM
-            display.print(timeStr);
-            display.print(" ");
-            display.print(forecast.temperature);
-            display.print("° ");
-            display.print(forecast.rainChance);
-            display.print("%");
+            u8g2.print(timeStr);
+            u8g2.print(" ");
+            u8g2.print(forecast.temperature);
+            u8g2.print("° ");
+            u8g2.print(forecast.rainChance);
+            u8g2.print("%");
             
             currentY += 16;
             if (currentY > y + h - 20) break;
@@ -439,8 +448,8 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
     if (currentY < y + h - 25) {
         currentY = y + h - 15;
         setSmallFont();
-        display.setCursor(leftMargin, currentY);
-        display.print("Aktualisiert: ");
+        u8g2.setCursor(leftMargin, currentY);
+        u8g2.print("Aktualisiert: ");
         
         // Check if time is properly set
         if (TimeManager::isTimeSet()) {
@@ -450,13 +459,13 @@ void DisplayManager::drawWeatherSection(const WeatherInfo& weather, int16_t x, i
                 char timeStr[20];
                 // German time format: "HH:MM DD.MM.YYYY"
                 strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
-                display.print(timeStr);
+                u8g2.print(timeStr);
             } else {
-                display.print("Zeit nicht verfügbar");
+                u8g2.print("Zeit nicht verfügbar");
             }
         } else {
             // Time not synchronized
-            display.print("Zeit nicht synchronisiert");
+            u8g2.print("Zeit nicht synchronisiert");
         }
     }
 }
@@ -470,7 +479,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     
     // Station name
     setMediumFont();
-    display.setCursor(leftMargin, currentY);
+    u8g2.setCursor(leftMargin, currentY);
     RTCConfigData& config = ConfigManager::getConfig();
     String stopName = config.selectedStopName;
     
@@ -478,17 +487,17 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     int stationMaxWidth = rightMargin - leftMargin;
     String fittedStopName = shortenTextToFit(stopName, stationMaxWidth);
     
-    display.print(fittedStopName);
+    u8g2.print(fittedStopName);
     currentY += 40; // Updated: Station Name section gets 40px
     
     // Column headers
-    display.setCursor(leftMargin, currentY);
+    u8g2.setCursor(leftMargin, currentY);
     if (isFullScreen) {
-        display.print("Soll Ist  Linie  Ziel                Gleis");
+        u8g2.print("Soll Ist  Linie  Ziel                Gleis");
     } else {
         setSmallFont();
         // 5 char for soll, one space, 5 char for ist, one space, 4 char for line, 20 char for destination
-        display.print("Soll   Ist      Linie   Ziel");
+        u8g2.print("Soll   Ist      Linie   Ziel");
     }
     currentY += 18; // Column headers spacing
     
@@ -503,7 +512,7 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     for (int i = 0; i < maxDepartures; i++) {
         const auto& dep = departures.departures[i];
         
-        display.setCursor(leftMargin, currentY);
+        u8g2.setCursor(leftMargin, currentY);
         
         // Format for available width
         if (isFullScreen) {
@@ -538,8 +547,8 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             String dest = shortenTextToFit(dep.direction, destMaxWidth);
             
             // Print soll time
-            display.print(sollTime);
-            display.print(" ");
+            u8g2.print(sollTime);
+            u8g2.print(" ");
             
             // Calculate current cursor position for ist time highlighting
             int16_t istX = leftMargin + getTextWidth(sollTime + " ");
@@ -555,22 +564,22 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
                 
                 // Set white text color
                 display.setTextColor(GxEPD_WHITE);
-                display.setCursor(istX, istY);
-                display.print(istTime);
+                u8g2.setCursor(istX, istY);
+                u8g2.print(istTime);
                 
                 // Reset to black text color
                 display.setTextColor(GxEPD_BLACK);
             } else {
                 // Normal ist time display
-                display.print(istTime);
+                u8g2.print(istTime);
             }
             
-            display.print("  ");
-            display.print(line);
-            display.print("  ");
-            display.print(dest);
-            display.print("  ");
-            display.print(track);
+            u8g2.print("  ");
+            u8g2.print(line);
+            u8g2.print("  ");
+            u8g2.print(dest);
+            u8g2.print("  ");
+            u8g2.print(track);
             
         } else {
             // Half screen format: "Soll Ist  Linie  Ziel"
@@ -615,8 +624,8 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             String fittedDest = shortenTextToFit(dest, destMaxWidth);
             
             // Print soll time
-            display.print(sollTime);
-            display.print(" ");
+            u8g2.print(sollTime);
+            u8g2.print(" ");
             
             // Calculate current cursor position for ist time highlighting
             int16_t istX = leftMargin + getTextWidth(sollTime + " ");
@@ -632,20 +641,20 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
                 
                 // Set white text color
                 display.setTextColor(GxEPD_WHITE);
-                display.setCursor(istX, istY);
-                display.print(istTime);
+                u8g2.setCursor(istX, istY);
+                u8g2.print(istTime);
                 
                 // Reset to black text color
                 display.setTextColor(GxEPD_BLACK);
             } else {
                 // Normal ist time display
-                display.print(istTime);
+                u8g2.print(istTime);
             }
             
-            display.print("  ");
-            display.print(fittedLine);
-            display.print("  ");
-            display.print(fittedDest);
+            u8g2.print("  ");
+            u8g2.print(fittedLine);
+            u8g2.print("  ");
+            u8g2.print(fittedDest);
         }
         
         // Always add consistent spacing for disruption area
@@ -662,9 +671,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             
             // Display disruption information
             setSmallFont();
-            display.setCursor(leftMargin + 20, currentY); // Indent disruption text
-            display.print("⚠ "); // Warning symbol
-            display.print(fittedDisruption);
+            u8g2.setCursor(leftMargin + 20, currentY); // Indent disruption text
+            u8g2.print("⚠ "); // Warning symbol
+            u8g2.print(fittedDisruption);
         }
         // If no disruption info, the space is left empty but still allocated
         
@@ -678,9 +687,9 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     if (currentY < y + h - 25) {
         currentY = y + h - 15;
         setSmallFont();
-        display.setCursor(leftMargin, currentY);
+        u8g2.setCursor(leftMargin, currentY);
 
-        display.print("Aktualisiert: ");
+        u8g2.print("Aktualisiert: ");
         
         // Check if time is properly set
         if (TimeManager::isTimeSet()) {
@@ -690,13 +699,13 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
                 char timeStr[20];
                 // German time format: "HH:MM DD.MM.YYYY"
                 strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
-                display.print(timeStr);
+                u8g2.print(timeStr);
             } else {
-                display.print("Zeit nicht verfügbar");
+                u8g2.print("Zeit nicht verfügbar");
             }
         } else {
             // Time not synchronized
-            display.print("Zeit nicht synchronisiert");
+            u8g2.print("Zeit nicht synchronisiert");
         }
     }
 }
@@ -762,26 +771,26 @@ void DisplayManager::hibernate() {
 }
 
 void DisplayManager::setLargeFont() {
-    display.setFont(&FreeSansBold18pt7b);
-    display.setTextColor(GxEPD_BLACK);
+    u8g2.setFont(u8g2_font_helvB18_tf); // 18pt Helvetica Bold with German support
+    u8g2.setForegroundColor(GxEPD_BLACK);
+    u8g2.setBackgroundColor(GxEPD_WHITE);
 }
 
 void DisplayManager::setMediumFont() {
-    display.setFont(&FreeSansBold12pt7b);
-    display.setTextColor(GxEPD_BLACK);
+    u8g2.setFont(u8g2_font_helvB12_tf); // 12pt Helvetica Bold with German support
+    u8g2.setForegroundColor(GxEPD_BLACK);
+    u8g2.setBackgroundColor(GxEPD_WHITE);
 }
 
 void DisplayManager::setSmallFont() {
-    display.setFont(&FreeSansBold9pt7b);
-    display.setTextColor(GxEPD_BLACK);
+    u8g2.setFont(u8g2_font_helvB10_tf); // 10pt Helvetica Bold with German support
+    u8g2.setForegroundColor(GxEPD_BLACK);
+    u8g2.setBackgroundColor(GxEPD_WHITE);
 }
 
 // Text width measurement helpers
 int16_t DisplayManager::getTextWidth(const String& text) {
-    int16_t x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-    return w;
+    return u8g2.getUTF8Width(text.c_str());
 }
 
 int16_t DisplayManager::getTextExcess(const String& text, int16_t maxWidth) {
@@ -823,23 +832,23 @@ String DisplayManager::shortenTextToFit(const String& text, int16_t maxWidth) {
 void DisplayManager::printWrappedText(const String& text, int16_t x, int16_t& y, int16_t maxWidth, int16_t maxChars, int16_t lineHeight) {
     if (text.length() <= maxChars) {
         // Text fits on one line
-        display.setCursor(x, y);
-        display.print(text);
+        u8g2.setCursor(x, y);
+        u8g2.print(text);
     } else {
         // Text needs wrapping
         String firstLine = text.substring(0, maxChars - 3) + "...";
-        display.setCursor(x, y);
-        display.print(firstLine);
+        u8g2.setCursor(x, y);
+        u8g2.print(firstLine);
         
         // Check if we have space for a second line
         if (y + lineHeight < screenHeight - 25) {
             y += lineHeight;
-            display.setCursor(x + 20, y); // Slight indent for continuation
+            u8g2.setCursor(x + 20, y); // Slight indent for continuation
             String secondLine = text.substring(maxChars - 3);
             if (secondLine.length() > maxChars) {
                 secondLine = secondLine.substring(0, maxChars - 3) + "...";
             }
-            display.print(secondLine);
+            u8g2.print(secondLine);
         }
     }
 }
@@ -852,14 +861,14 @@ void DisplayManager::drawHeaderSection(int16_t x, int16_t y, int16_t w, int16_t 
     setSmallFont();
     
     // WiFi status placeholder (left side)
-    display.setCursor(leftMargin, centerY);
-    display.print("WiFi: [●●●]"); // Placeholder for WiFi strength
+    u8g2.setCursor(leftMargin, centerY);
+    u8g2.print("WiFi: [●●●]"); // Placeholder for WiFi strength
     
     // Battery status placeholder (right side)
     String batteryText = "Batt: [85%]"; // Placeholder for battery level
     int16_t batteryWidth = getTextWidth(batteryText);
-    display.setCursor(rightMargin - batteryWidth, centerY);
-    display.print(batteryText);
+    u8g2.setCursor(rightMargin - batteryWidth, centerY);
+    u8g2.print(batteryText);
     
     // Optional: Add separator line at bottom of header
     display.drawLine(x, y + h - 1, x + w, y + h - 1, GxEPD_BLACK);
