@@ -101,14 +101,27 @@ void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t 
     
     // Calculate temperature steps (reduce labels for compact mode)
     int labelCount = (w < 30) ? 3 : 5; // 3 labels for compact, 5 for full
-    float tempStep = (maxTemp - minTemp) / (labelCount - 1);
+    
+    // Force 2.5°C steps for clean labeling
+    float tempRange = maxTemp - minTemp;
+    float tempStep = tempRange / (labelCount - 1);
+    
+    // Round step to nearest 0.5 for cleaner labels (2.5, 3.0, etc.)
+    tempStep = round(tempStep * 2.0f) / 2.0f;
+    
+    ESP_LOGI(TAG, "Temperature axis: min=%.1f, max=%.1f, step=%.1f", minTemp, maxTemp, tempStep);
     
     for (int i = 0; i < labelCount; i++) {
         float temp = minTemp + (tempStep * i);
         int16_t labelY = y + h - (h * i / (labelCount - 1));
         
-        // Format temperature (whole numbers for cleaner display)
-        String tempLabel = String((int)round(temp)) + "°";
+        // Format temperature with 1 decimal place to show .5 values
+        String tempLabel;
+        if (temp == (int)temp) {
+            tempLabel = String((int)temp) + "°";  // Show "20°" for whole numbers
+        } else {
+            tempLabel = String(temp, 1) + "°";    // Show "17.5°" for half numbers
+        }
         
         // Right-align the temperature labels
         int16_t textWidth = DisplayManager::getTextWidth(tempLabel);
@@ -120,7 +133,7 @@ void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t 
     if (w >= 30) {
         DisplayManager::setSmallFont();
         u8g2.setCursor(x + 2, y - 5);
-        u8g2.print("°C");
+        u8g2.print("Temp");
     }
 }
 
@@ -142,7 +155,7 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
     // Rain axis label (skip for very compact mode)
     if (w >= 30) {
         u8g2.setCursor(x + 3, y - 5);
-        u8g2.print("%");
+        u8g2.print("Regen");
     }
 }
 
