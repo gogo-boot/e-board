@@ -168,43 +168,60 @@ void WeatherGraph::drawTemperatureLine(const WeatherInfo& weather,
                                      int16_t graphX, int16_t graphY, 
                                      int16_t graphW, int16_t graphH,
                                      float minTemp, float maxTemp) {
+    // Get the number of data points to draw (limited to HOURS_TO_SHOW = 12)
     int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
+    
+    // Need at least 2 points to draw a line
     if (dataPoints < 2) return;
     
-    // Draw temperature line segments
+    // === STEP 1: Draw temperature line segments connecting each hour ===
     for (int i = 0; i < dataPoints - 1; i++) {
+        // Parse temperature values for current hour (i) and next hour (i+1)
         float temp1 = parseTemperature(weather.hourlyForecast[i].temperature);
         float temp2 = parseTemperature(weather.hourlyForecast[i + 1].temperature);
         
+        // Convert hour index to X pixel position on the graph
+        // Maps hour 0 to graphX, hour 11 to graphX + graphW
         int16_t x1 = mapToPixel(i, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
         int16_t x2 = mapToPixel(i + 1, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
+        
+        // Convert temperature to Y pixel position on the graph
+        // Maps minTemp to bottom (graphY + graphH), maxTemp to top (graphY)
         int16_t y1 = mapToPixel(temp1, minTemp, maxTemp, graphY + graphH, graphY);
         int16_t y2 = mapToPixel(temp2, minTemp, maxTemp, graphY + graphH, graphY);
         
-        // Draw thick line for e-paper visibility
-        display.drawLine(x1, y1, x2, y2, GxEPD_BLACK);
-        display.drawLine(x1, y1 + 1, x2, y2 + 1, GxEPD_BLACK);
-        display.drawLine(x1 + 1, y1, x2 + 1, y2, GxEPD_BLACK);
+        // Draw thick line for e-paper visibility (3 parallel lines)
+        display.drawLine(x1, y1, x2, y2, GxEPD_BLACK);           // Main line
     }
     
-    // Draw temperature data points
+    // === STEP 2: Draw temperature data points (circles) at each hour ===
     for (int i = 0; i < dataPoints; i++) {
+        // Parse temperature for this hour
         float temp = parseTemperature(weather.hourlyForecast[i].temperature);
+        
+        // Convert hour index and temperature to pixel coordinates
         int16_t x = mapToPixel(i, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
         int16_t y = mapToPixel(temp, minTemp, maxTemp, graphY + graphH, graphY);
         
-        // Draw larger dots for temperature points
+        // Draw filled circle (radius 3 pixels) at each data point
         display.fillCircle(x, y, 3, GxEPD_BLACK);
         
-        // Optional: Show temperature value near points for first, middle, and last points
-        // Only show in full-size mode to avoid clutter in compact mode
+        // === STEP 3: Optional temperature value labels (only in full-size mode) ===
+        // Show temperature values near specific points to avoid clutter
+        // Only show for: first hour (0), middle hour (6), and last hour (11)
         if (graphH > 150 && (i == 0 || i == dataPoints/2 || i == dataPoints - 1)) {
             DisplayManager::setSmallFont();
+            
+            // Format temperature as whole number with degree symbol (e.g., "17°")
             String tempStr = String((int)round(temp)) + "°";
             int16_t textWidth = DisplayManager::getTextWidth(tempStr);
             
-            // Position text above or below point to avoid overlap
+            // Position text above or below the point to avoid overlap with the line
+            // If point is in upper half of graph, put text below (y + 15)
+            // If point is in lower half of graph, put text above (y - 5)
             int16_t textY = (y < graphY + graphH/2) ? y + 15 : y - 5;
+            
+            // Center the text horizontally on the data point
             u8g2.setCursor(x - textWidth/2, textY);
             u8g2.print(tempStr);
         }
