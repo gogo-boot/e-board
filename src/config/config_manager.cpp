@@ -64,6 +64,7 @@ void ConfigManager::invalidateConfig() {
     ESP_LOGI(TAG, "RTC config invalidated");
 }
 
+// It loads the configuration from NVS into RTC memory.
 bool ConfigManager::loadFromNVS() {
     if (!preferences.begin("mystation", true)) { // readonly mode
         ESP_LOGE(TAG, "Failed to open NVS for reading");
@@ -150,6 +151,7 @@ bool ConfigManager::loadFromNVS() {
     return hasBasicData;
 }
 
+// Save configuration to NVS. NVS will be used as backup storage. It survives deep sleep and power loss.
 bool ConfigManager::saveToNVS() {
     if (!preferences.begin("mystation", false)) { // read-write mode
         ESP_LOGE(TAG, "Failed to open NVS for writing");

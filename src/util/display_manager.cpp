@@ -481,7 +481,17 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
     setMediumFont();
     u8g2.setCursor(leftMargin, currentY);
     RTCConfigData& config = ConfigManager::getConfig();
-    String stopName = config.selectedStopName;
+    String stopName = config.selectedStopId;
+    
+    // Extract stop name from stopId format: "@O=StopName@"
+    int startIndex = stopName.indexOf("@O=");
+    if (startIndex != -1) {
+        startIndex += 3; // Move past "@O="
+        int endIndex = stopName.indexOf("@", startIndex);
+        if (endIndex != -1) {
+            stopName = stopName.substring(startIndex, endIndex);
+        }
+    }
     
     // Calculate available width and fit station name
     int stationMaxWidth = rightMargin - leftMargin;
