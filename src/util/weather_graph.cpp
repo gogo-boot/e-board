@@ -185,7 +185,7 @@ void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, cons
         
         // Make sure label fits within bounds
         if (labelX + textWidth/2 <= x + w && i < dataPoints) {
-            u8g2.setCursor(labelX - textWidth / 2, y + 15);
+            u8g2.setCursor(labelX - textWidth / 2, y + 20);
             u8g2.print(actualTime);
         }
     }
