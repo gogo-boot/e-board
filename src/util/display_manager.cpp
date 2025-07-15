@@ -641,20 +641,17 @@ void DisplayManager::drawDepartureSection(const DepartureData& departures, int16
             int16_t istY = currentY;
             
             if (timesAreDifferent) {
-                // Highlight ist time with black background and white text
+                // Highlight ist time with underline instead of rectangle
                 int16_t istTextWidth = getTextWidth(istTime);
-                int16_t textHeight = 12; // Approximate text height for small font
                 
-                // Draw black background rectangle
-                display.fillRect(istX, istY - textHeight + 2, istTextWidth, textHeight, GxEPD_BLACK);
-                
-                // Set white text color
-                display.setTextColor(GxEPD_WHITE);
+                // Print the delayed time normally first
                 u8g2.setCursor(istX, istY);
                 u8g2.print(istTime);
                 
-                // Reset to black text color
-                display.setTextColor(GxEPD_BLACK);
+                // Draw underline below the text
+                int16_t underlineY = istY + 2; // Position underline 2px below text baseline
+                display.drawLine(istX, underlineY, istX + istTextWidth, underlineY, GxEPD_BLACK);
+                
             } else {
                 // Normal ist time display
                 u8g2.print(istTime);
