@@ -4,8 +4,7 @@
 
 // Display orientations
 enum class DisplayOrientation {
-    LANDSCAPE = 0,  // Default: 0° rotation (800x480)
-    PORTRAIT = 1    // 90° rotation (480x800)
+    LANDSCAPE = 0   // Default: 0° rotation (800x480)
 };
 
 // Display modes
@@ -21,12 +20,9 @@ enum class DisplayRegion {
     // Landscape mode regions
     LEFT_HALF,         // Left half in landscape (weather area)
     RIGHT_HALF,        // Right half in landscape (departure area)
-    // Portrait mode regions  
-    UPPER_HALF,        // Upper half in portrait (weather area)
-    LOWER_HALF,        // Lower half in portrait (departure area)
     // Generic semantic regions
-    WEATHER_AREA,      // Maps to LEFT_HALF (landscape) or UPPER_HALF (portrait)
-    DEPARTURE_AREA     // Maps to RIGHT_HALF (landscape) or LOWER_HALF (portrait)
+    WEATHER_AREA,      // Maps to LEFT_HALF in landscape
+    DEPARTURE_AREA     // Maps to RIGHT_HALF in landscape
 };
 
 class DisplayManager {
