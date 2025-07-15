@@ -210,7 +210,7 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
         return;
     }
     drawDepartureSection(departures, x, y, w, h);
-    drawWeatherFooter(x, screenHeight - footerHeight);
+    drawDepartureFooter(x, screenHeight - footerHeight);
     // Redraw vertical divider
     display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
 }
@@ -463,6 +463,43 @@ void DisplayManager::wertherInfoFirstColumn(int16_t leftMargin, int16_t &current
     u8g2.print("°C  ");
     currentY += 20;
 }
+
+void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
+{
+    setSmallFont();
+
+    // Ensure footer is positioned properly within bounds
+    int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom
+    int16_t footerX = x + 10;
+    ESP_LOGI(TAG, "Footer position: (%d, %d)", footerX, footerY);
+
+    u8g2.setCursor(footerX, footerY); // Add 10px left margin
+    u8g2.print("Aktualisiert: ");
+
+    // Check if time is properly set
+    if (TimeManager::isTimeSet())
+    {
+        // Get current German time using TimeManager
+        struct tm timeinfo;
+        if (TimeManager::getCurrentLocalTime(timeinfo))
+        {
+            char timeStr[20];
+            // German time format: "HH:MM DD.MM."
+            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
+            u8g2.print(timeStr);
+        }
+        else
+        {
+            u8g2.print("Zeit nicht verfügbar");
+        }
+    }
+    else
+    {
+        // Time not synchronized
+        u8g2.print("Zeit nicht synchronisiert");
+    }
+}
+
 void DisplayManager::drawWeatherFooter(int16_t x, int16_t y)
 {
     setSmallFont();
@@ -726,39 +763,7 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
         if (currentY > y + h - 25)
             break;
     }
-
-    // Footer
-    if (currentY < y + h - 25)
-    {
-        currentY = y + h - 15;
-        setSmallFont();
-        u8g2.setCursor(leftMargin, currentY);
-
-        u8g2.print("Aktualisiert: ");
-
-        // Check if time is properly set
-        if (TimeManager::isTimeSet())
-        {
-            // Get current German time using TimeManager
-            struct tm timeinfo;
-            if (TimeManager::getCurrentLocalTime(timeinfo))
-            {
-                char timeStr[20];
-                // German time format: "HH:MM DD.MM.YYYY"
-                strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.%Y", &timeinfo);
-                u8g2.print(timeStr);
-            }
-            else
-            {
-                u8g2.print("Zeit nicht verfügbar");
-            }
-        }
-        else
-        {
-            // Time not synchronized
-            u8g2.print("Zeit nicht synchronisiert");
-        }
-    }
+   
 }
 
 String DisplayManager::getStopName(RTCConfigData &config)
