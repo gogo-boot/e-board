@@ -614,12 +614,12 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
         ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2", 
                  direction1Departures.size(), direction2Departures.size());
         
-        // Draw first 5 departures from direction 1
+        // Draw first 4 departures from direction 1
         int drawnCount = 0;
-        int maxPerDirection = 5;
+        int maxPerDirection = 4;
         
         // Direction 1 departures
-        for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()) && drawnCount < 10; i++)
+        for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()) && drawnCount < 8; i++)
         {
             const auto &dep = *direction1Departures[i];
             drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
@@ -629,22 +629,14 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
         }
         
         // Draw separator line between directions
-        if (direction1Departures.size() > 0 && direction2Departures.size() > 0 && drawnCount < 10)
+        if (direction1Departures.size() > 0 && direction2Departures.size() > 0 && drawnCount < 8)
         {
-            currentY += 10; // Space before separator
-            
-            // Draw direction separator with labels
-            setSmallFont();
-            u8g2.setCursor(leftMargin, currentY);
-            u8g2.print("─── Richtung 2 ───"); // Direction 2 separator
-            
-            currentY += 5; // Space after separator text
             display.drawLine(leftMargin, currentY, rightMargin, currentY, GxEPD_BLACK);
             currentY += 15; // Space after separator line
         }
         
         // Direction 2 departures
-        for (int i = 0; i < min(maxPerDirection, (int)direction2Departures.size()) && drawnCount < 10; i++)
+        for (int i = 0; i < min(maxPerDirection, (int)direction2Departures.size()) && drawnCount < 8; i++)
         {
             const auto &dep = *direction2Departures[i];
             drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
