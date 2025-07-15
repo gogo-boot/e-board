@@ -277,24 +277,25 @@ void WeatherGraph::drawRainBars(const WeatherInfo& weather,
             int16_t barH = (graphH * rainChance) / 100;
             int16_t barY = graphY + graphH - barH;
             
-            // Draw rain bar with a pattern to distinguish from temperature line
-            // Use diagonal stripes pattern
-            for (int16_t stripe = 0; stripe < barH; stripe += 3) {
-                int16_t stripeY = barY + stripe;
-                for (int16_t x = barX; x < barX + barWidth - 2; x += 4) {
-                    display.drawPixel(x + (stripe % 2), stripeY, GxEPD_BLACK);
+            // Crosshatch pattern for rain bars
+            for (int16_t y = barY; y < barY + barH; y += 4) {
+                // Horizontal lines
+                for (int16_t x = barX + 1; x < barX + barWidth - 1; x += 2) {
+                    display.drawPixel(x, y, GxEPD_BLACK);
                 }
             }
             
-            // Draw bar outline WITHOUT bottom line to avoid thick X-axis
-            // Draw only left, top, and right sides of the rectangle
+            for (int16_t x = barX + 1; x < barX + barWidth - 1; x += 4) {
+                // Vertical lines
+                for (int16_t y = barY; y < barY + barH; y += 2) {
+                    display.drawPixel(x, y, GxEPD_BLACK);
+                }
+            }
+            
+            // Add outline for clear definition (without bottom line)
             // display.drawLine(barX, barY, barX, barY + barH - 1, GxEPD_BLACK);                    // Left side
             // display.drawLine(barX, barY, barX + barWidth - 1, barY, GxEPD_BLACK);                // Top side
             // display.drawLine(barX + barWidth - 1, barY, barX + barWidth - 1, barY + barH - 1, GxEPD_BLACK); // Right side
-
-            // Removed: Bottom line that was making X-axis thick
-            // Draw bar outline for clarity
-            // display.drawRect(barX, barY, barWidth - 1, barH, GxEPD_BLACK);
         }
     }
 }

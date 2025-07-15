@@ -11,6 +11,7 @@ struct Station {
 struct DepartureInfo {
     String line;
     String direction;
+    String directionFlag;
     String time;
     String rtTime;
     String track;

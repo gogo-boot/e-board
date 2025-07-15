@@ -1,4 +1,5 @@
 #include "api/rmv_api.h"
+#include "api/rmv_json_parser.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <vector>
@@ -137,21 +138,38 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     String payload = http.getString();
     http.end();
     
-    ESP_LOGD(TAG, "Departure board response: %s", payload.c_str());
+    ESP_LOGI(TAG, "Received RMV response with length: %d bytes", payload.length());
     
-    // Parse JSON response
+    // Set basic departure data
+    departData.stopId = String(stopId);
+    
+    // Try streaming parser first (recommended for large responses)
+    RMVStreamParser streamParser;
+    bool streamSuccess = streamParser.parseResponse(payload, departData);
+    
+    if (streamSuccess) {
+        ESP_LOGI(TAG, "Successfully parsed %d departures using streaming parser", departData.departureCount);
+        return true;
+    }
+    
+    ESP_LOGW(TAG, "Streaming parser failed, falling back to traditional JSON parsing");
+    
+    // Fallback to traditional parsing with filter for smaller responses
     initDepartureFilter();
     DynamicJsonDocument doc(20480);
     DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(departureFilter));
     
     if (error) {
-        ESP_LOGE(TAG, "Failed to parse RMV departureBoard JSON: %s", error.c_str());
+        ESP_LOGE(TAG, "Both parsing methods failed. Error: %s", error.c_str());
+        ESP_LOGE(TAG, "This is likely due to a very large response exceeding memory limits");
+        ESP_LOGE(TAG, "Response preview: %s", payload.substring(0, 200).c_str());
         return false;
     }
     
-    // Clear previous data
+    ESP_LOGI(TAG, "Fallback parsing successful, processing departures");
+    
+    // Clear data from failed stream attempt
     departData.departures.clear();
-    departData.stopId = String(stopId);
     departData.departureCount = 0;
     
     // Extract stop name if available
@@ -196,6 +214,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
         if (departData.departureCount >= 10) break;
     }
     
-    ESP_LOGI(TAG, "Successfully parsed %d departures for stop %s", departData.departureCount, departData.stopName.c_str());
+    ESP_LOGI(TAG, "Successfully parsed %d departures for stop %s using fallback method", 
+             departData.departureCount, departData.stopName.c_str());
     return true;
 }
