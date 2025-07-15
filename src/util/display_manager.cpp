@@ -664,9 +664,6 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
             // Calculate available space
             int totalWidth = rightMargin - leftMargin;
 
-            // Prepare times
-            String sollTime = dep.time.substring(0, 5);
-            String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
 
             // Check if times are different for highlighting
             bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
@@ -689,17 +686,13 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
                 dest = dep.direction.substring(17);
             }
 
+            // Prepare times
+            String sollTime = dep.time.substring(0, 5);
+            String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+
             // Measure fixed elements: times and spaces
             int timesWidth = getTextWidth(sollTime + "  " + istTime + "  ");
             int remainingWidth = totalWidth - timesWidth;
-
-            // Allocate remaining space: Line gets 1/3, Destination gets 2/3
-            int lineMaxWidth = remainingWidth / 3;
-            int destMaxWidth = (remainingWidth * 2) / 3;
-
-            // Fit line and destination to available space
-            String fittedLine = shortenTextToFit(line, lineMaxWidth);
-            String fittedDest = shortenTextToFit(dest, destMaxWidth);
 
             // Print soll time
             u8g2.print(sollTime);
@@ -727,6 +720,14 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
                 // Normal ist time display
                 u8g2.print(istTime);
             }
+
+            // Allocate remaining space: Line gets 1/3, Destination gets 2/3
+            int lineMaxWidth = remainingWidth / 3;
+            int destMaxWidth = (remainingWidth * 2) / 3;
+
+            // Fit line and destination to available space
+            String fittedLine = shortenTextToFit(line, lineMaxWidth);
+            String fittedDest = shortenTextToFit(dest, destMaxWidth);
 
             u8g2.print("  ");
             u8g2.print(fittedLine);
