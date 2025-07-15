@@ -54,6 +54,10 @@ public:
     static void drawDivider();
     static void hibernate();
     
+    // Font helpers (public for use by graph components)
+    static void setSmallFont();
+    static int16_t getTextWidth(const String& text);
+    
 private:
     static DisplayMode currentMode;
     static DisplayOrientation currentOrientation;
@@ -74,7 +78,7 @@ private:
     // Font and layout helpers
     static void setLargeFont();
     static void setMediumFont();
-    static void setSmallFont();
+    // setSmallFont moved to public section
     
     // Departure-specific larger fonts
     static void setDepartureLargeFont();
@@ -82,7 +86,7 @@ private:
     static void setDepartureSmallFont();
     
     // Text width measurement helpers
-    static int16_t getTextWidth(const String& text);
+    // getTextWidth moved to public section
     static int16_t getTextExcess(const String& text, int16_t maxWidth);
     static String shortenTextToFit(const String& text, int16_t maxWidth);
     
