@@ -349,55 +349,19 @@ void DisplayManager::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
 
         // Draw fist Column - Current Temperature and Condition
         int16_t dayWeatherInfoY = currentY;
-        setSmallFont();
-
-        // Draw first Column - Current Temperature and Condition
-        u8g2.setCursor(leftMargin, currentY);
-        // weather_code is missing
-        // u8g2.print(weather.coded);
-        // Day weather Info section: 37px total
-        // Todo Add weather icon support
-        currentY += 47;
-
-        // Current temperature: 30px
-        u8g2.setCursor(leftMargin, currentY);
-        u8g2.print(weather.temperature);
-        u8g2.print("°C  ");
-        currentY += 20;
+        wertherInfoFirstColumn(leftMargin, currentY, weather);
 
         int16_t currentX = leftMargin + 100;
         // Draw second Column - Today's temps, UV, Pollen
         // Today's low/high temp: 27px
         // Today's UV Indexinfo: 20px
-        setSmallFont();
-        u8g2.setCursor(currentX, dayWeatherInfoY);
-        u8g2.print(weather.dailyForecast[0].tempMin);
-        u8g2.print(" | ");
-        u8g2.print(weather.dailyForecast[0].tempMax);
-
-        u8g2.setCursor(currentX, dayWeatherInfoY + 27);
-        u8g2.print("UV Index : ");
-        u8g2.print(weather.dailyForecast[0].uvIndex);
-
-        u8g2.setCursor(currentX, dayWeatherInfoY + 47);
-        u8g2.print("Pollen : ");
-        u8g2.print("N/A");
+        weatherInfoSecondColumn(currentX, dayWeatherInfoY, weather);
         currentX += 150; // Move to next column
 
         // Draw third Column - Date, Sunrise, Sunset
         // Date Info: 27px
         setSmallFont();
-        u8g2.setCursor(currentX, dayWeatherInfoY);
-        u8g2.print("Date :");
-        u8g2.print("Juli 13"); // Placeholder - should use actual date
-
-        u8g2.setCursor(currentX, dayWeatherInfoY + 27);
-        u8g2.print("Sunrise : ");
-        u8g2.print(weather.dailyForecast[0].sunrise);
-
-        u8g2.setCursor(currentX, dayWeatherInfoY + 47);
-        u8g2.print("Sunset : ");
-        u8g2.print(weather.dailyForecast[0].sunset);
+        weatherInfoThirdColumn(currentX, dayWeatherInfoY, weather);
 
         // Weather Graph section (replaces text-based forecast for better visualization)
         setSmallFont();
@@ -441,6 +405,56 @@ void DisplayManager::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
     }
 }
 
+void DisplayManager::weatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather)
+{
+    u8g2.setCursor(currentX, dayWeatherInfoY);
+    u8g2.print("Date :");
+    u8g2.print("Juli 13"); // Placeholder - should use actual date
+
+    u8g2.setCursor(currentX, dayWeatherInfoY + 27);
+    u8g2.print("Sunrise : ");
+    u8g2.print(weather.dailyForecast[0].sunrise);
+
+    u8g2.setCursor(currentX, dayWeatherInfoY + 47);
+    u8g2.print("Sunset : ");
+    u8g2.print(weather.dailyForecast[0].sunset);
+}
+
+void DisplayManager::weatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather)
+{
+    setSmallFont();
+    u8g2.setCursor(currentX, dayWeatherInfoY);
+    u8g2.print(weather.dailyForecast[0].tempMin);
+    u8g2.print(" | ");
+    u8g2.print(weather.dailyForecast[0].tempMax);
+
+    u8g2.setCursor(currentX, dayWeatherInfoY + 27);
+    u8g2.print("UV Index : ");
+    u8g2.print(weather.dailyForecast[0].uvIndex);
+
+    u8g2.setCursor(currentX, dayWeatherInfoY + 47);
+    u8g2.print("Pollen : ");
+    u8g2.print("N/A");
+}
+
+void DisplayManager::wertherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather)
+{
+    setSmallFont();
+
+    // Draw first Column - Current Temperature and Condition
+    u8g2.setCursor(leftMargin, currentY);
+    // weather_code is missing
+    // u8g2.print(weather.coded);
+    // Day weather Info section: 37px total
+    // Todo Add weather icon support
+    currentY += 47;
+
+    // Current temperature: 30px
+    u8g2.setCursor(leftMargin, currentY);
+    u8g2.print(weather.temperature);
+    u8g2.print("°C  ");
+    currentY += 20;
+}
 void DisplayManager::drawWeatherFooter(int16_t x, int16_t y)
 {
     setSmallFont();
