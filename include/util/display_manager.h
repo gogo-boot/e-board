@@ -1,6 +1,7 @@
 #pragma once
 #include "api/dwd_weather_api.h"
 #include "api/rmv_api.h"
+#include "config/config_manager.h"
 
 // Display orientations
 enum class DisplayOrientation
@@ -74,6 +75,7 @@ private:
     static void wertherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather);
     static void drawWeatherFooter(int16_t x, int16_t y);
     static void drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
+    static String getStopName(RTCConfigData &config);
     static void drawHeaderSection(bool isFullUpate, int16_t x, int16_t y, int16_t w, int16_t h);
 
     // Coordinate calculation helpers

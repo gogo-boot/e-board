@@ -351,7 +351,7 @@ void DisplayManager::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
         int16_t dayWeatherInfoY = currentY;
 
         // Each Column has a fixed height of 67px
-        
+
         // Current weather icon: 37px
         // Current temperature: 30px
         wertherInfoFirstColumn(leftMargin, currentY, weather);
@@ -511,19 +511,7 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
     setMediumFont();
     u8g2.setCursor(leftMargin, currentY);
     RTCConfigData &config = ConfigManager::getConfig();
-    String stopName = config.selectedStopId;
-
-    // Extract stop name from stopId format: "@O=StopName@"
-    int startIndex = stopName.indexOf("@O=");
-    if (startIndex != -1)
-    {
-        startIndex += 3; // Move past "@O="
-        int endIndex = stopName.indexOf("@", startIndex);
-        if (endIndex != -1)
-        {
-            stopName = stopName.substring(startIndex, endIndex);
-        }
-    }
+    String stopName = getStopName(config);
 
     // Calculate available width and fit station name
     int stationMaxWidth = rightMargin - leftMargin;
@@ -542,7 +530,7 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
     {
         setSmallFont();
         // 5 char for soll, one space, 5 char for ist, one space, 4 char for line, 20 char for destination
-        u8g2.print("Soll   Ist      Linie   Ziel");
+        u8g2.print("Soll    Ist      Linie     Ziel");
     }
     currentY += 18; // Column headers spacing
 
@@ -551,7 +539,7 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
     currentY += 12; // Updated: Header underline spacing (18 + 12 = 30px total for headers)
 
     // Departures
-    int maxDepartures = isFullScreen ? 20 : 15;
+    int maxDepartures = isFullScreen ? 20 : 10;
     maxDepartures = min(maxDepartures, departures.departureCount);
 
     for (int i = 0; i < maxDepartures; i++)
@@ -665,7 +653,7 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
             }
 
             // Measure fixed elements: times and spaces
-            int timesWidth = getTextWidth(sollTime + " " + istTime + "  ");
+            int timesWidth = getTextWidth(sollTime + "  " + istTime + "  ");
             int remainingWidth = totalWidth - timesWidth;
 
             // Allocate remaining space: Line gets 1/3, Destination gets 2/3
@@ -707,6 +695,8 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
             u8g2.print(fittedLine);
             u8g2.print("  ");
             u8g2.print(fittedDest);
+            u8g2.print("  ");
+            u8g2.print(dep.directionFlag);
         }
 
         // Always add consistent spacing for disruption area
@@ -769,6 +759,25 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
             u8g2.print("Zeit nicht synchronisiert");
         }
     }
+}
+
+String DisplayManager::getStopName(RTCConfigData &config)
+{
+    String stopName = config.selectedStopId;
+
+    // Extract stop name from stopId format: "@O=StopName@"
+    int startIndex = stopName.indexOf("@O=");
+    if (startIndex != -1)
+    {
+        startIndex += 3; // Move past "@O="
+        int endIndex = stopName.indexOf("@", startIndex);
+        if (endIndex != -1)
+        {
+            stopName = stopName.substring(startIndex, endIndex);
+            return stopName;
+        }
+    }
+    return "";
 }
 
 void DisplayManager::clearRegion(DisplayRegion region)

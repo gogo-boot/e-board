@@ -19,9 +19,10 @@
 │                                    │                                         │
 │  • City/Town Name: 40px            │  • Station Name: 40px                   │
 │  • Day weather Info: 67px          │  • Column Headers: 30px                 │
-│    - first column                  │  • Departure Entries: 37px each         │
+│    - first column                  │  • Departure Entries: 36px each         │
 │       - Day Weather Icon: 37px     │    - Main Line: 20px                    │
-│       - Current Temp : 30 px       │    - Disruption Space: 17px             │
+│       - Current Temp : 30 px       │    - Disruption Space: 16px             │
+│                                    │  • Separation Line  1px                 |
 │    - second column                 │  • Footer: 15px                         │
 │       - today low/high temp: 27px  │                                         │
 │       - UV Index info: 20 px       │                                         │
