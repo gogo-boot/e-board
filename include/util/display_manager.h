@@ -34,16 +34,17 @@ public:
     static void setMode(DisplayMode mode, DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
     
     // Half and half mode - can update one or both halves
-    static void displayHalfAndHalf(const WeatherInfo* weather = nullptr, 
-                                   const DepartureData* departures = nullptr);
-    
+    static void displayHalfAndHalf(const WeatherInfo *weather = nullptr,
+                                   const DepartureData *departures = nullptr);
+
     // Full screen modes
     static void displayWeatherOnly(const WeatherInfo& weather);
     static void displayDeparturesOnly(const DepartureData& departures);
     
     // Partial update functions
-    static void updateWeatherHalf(const WeatherInfo& weather);
-    static void updateDepartureHalf(const DepartureData& departures);
+    static void updateWeatherHalf(bool isFullUpate, const WeatherInfo& weather);
+    static void updateDepartureHalf(bool isFullUpate, const DepartureData& departures);
+    static void displayVerticalLine(bool isFullUpate, const int16_t contentY);
     
     // Utility functions
     static void clearRegion(DisplayRegion region);
@@ -63,9 +64,10 @@ private:
     static int16_t halfHeight;
     
     // Internal drawing functions
-    static void drawWeatherSection(const WeatherInfo& weather, int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawWeatherSection(const WeatherInfo &weather, int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawWeatherFooter(int16_t x, int16_t y);
     static void drawDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w, int16_t h);
-    static void drawHeaderSection(int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawHeaderSection(bool isFullUpate, int16_t x, int16_t y, int16_t w, int16_t h);
     
     // Coordinate calculation helpers
     static void calculateDimensions();
