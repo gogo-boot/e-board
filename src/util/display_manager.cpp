@@ -349,18 +349,25 @@ void DisplayManager::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
 
         // Draw fist Column - Current Temperature and Condition
         int16_t dayWeatherInfoY = currentY;
+
+        // Each Column has a fixed height of 67px
+        
+        // Current weather icon: 37px
+        // Current temperature: 30px
         wertherInfoFirstColumn(leftMargin, currentY, weather);
 
         int16_t currentX = leftMargin + 100;
         // Draw second Column - Today's temps, UV, Pollen
         // Today's low/high temp: 27px
         // Today's UV Indexinfo: 20px
+        // Today's Pollen info: 20px
         weatherInfoSecondColumn(currentX, dayWeatherInfoY, weather);
         currentX += 150; // Move to next column
 
         // Draw third Column - Date, Sunrise, Sunset
         // Date Info: 27px
-        setSmallFont();
+        // Sunrise: 20px
+        // Sunset: 20px
         weatherInfoThirdColumn(currentX, dayWeatherInfoY, weather);
 
         // Weather Graph section (replaces text-based forecast for better visualization)
@@ -407,6 +414,7 @@ void DisplayManager::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
 
 void DisplayManager::weatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather)
 {
+    setSmallFont();
     u8g2.setCursor(currentX, dayWeatherInfoY);
     u8g2.print("Date :");
     u8g2.print("Juli 13"); // Placeholder - should use actual date
