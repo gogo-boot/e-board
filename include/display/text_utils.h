@@ -9,27 +9,41 @@
 /**
  * @brief Text and Font Utility Functions
  * 
- * This class provides shared text rendering and font management utilities
- * that can be used across different display components (weather, departures, etc.)
+ * Font function naming convention: setFont[SIZE]px_margin[MARGIN]px()
+ * - SIZE: actual font height in pixels
+ * - MARGIN: recommended top margin to prevent text clipping
+ * 
+ * Example: setFont12px_margin15px() means 12px font with 15px top margin
  */
 class TextUtils {
 public:
     /**
      * @brief Initialize TextUtils with display references
-     * @param displayRef Reference to the e-paper display
-     * @param u8g2Ref Reference to the U8G2 font renderer
      */
     static void init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> &displayRef, 
                      U8G2_FOR_ADAFRUIT_GFX &u8g2Ref);
 
-    // Font management functions
-    static void setLargeFont();
-    static void setMediumFont();
-    static void setSmallFont();
+    // Font functions with pixel sizes and recommended margins
+    static void setFont8px_margin10px();   // Very small font - 8px height, 10px margin
+    static void setFont10px_margin12px();  // Small font - 10px height, 12px margin
+    static void setFont12px_margin15px();  // Medium font - 12px height, 15px margin
+    static void setFont14px_margin17px();  // Medium-large font - 14px height, 17px margin
+    static void setFont18px_margin22px();  // Extra large font - 18px height, 22px margin
+    static void setFont24px_margin28px();  // Huge font - 24px height, 28px margin
 
     // Text measurement and fitting functions
     static int16_t getTextWidth(const String& text);
     static String shortenTextToFit(const String& text, int16_t maxWidth);
+
+    // Font metrics utilities
+    static int16_t getCurrentFontHeight();
+    static int16_t getCurrentFontAscent();
+    static int16_t getCurrentFontDescent();
+
+    // Helper functions for proper text positioning
+    static void printTextAtWithMargin(int16_t x, int16_t y, const String& text);
+    static void printTextAtTopMargin(int16_t x, int16_t topY, const String& text);
+    static int16_t getFontAscent(); // Get current font ascent for calculations
 
 private:
     static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> *display;

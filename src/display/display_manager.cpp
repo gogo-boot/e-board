@@ -1,5 +1,6 @@
 #include "display/display_manager.h"
 #include "display/weather_display.h"
+#include "display/departure_display.h"
 #include "display/text_utils.h"
 #include <Arduino.h>
 #include <esp_log.h>
@@ -58,6 +59,9 @@ void DisplayManager::init(DisplayOrientation orientation)
     // Initialize WeatherDisplay with shared resources
     WeatherDisplay::init(display, u8g2, screenWidth, screenHeight);
 
+    // Initialize DepartureDisplay with shared resources
+    DepartureDisplay::init(display, u8g2, screenWidth, screenHeight);
+
     // Initialize TextUtils with shared resources
     TextUtils::init(display, u8g2);
 
@@ -108,16 +112,15 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo *weather, const Depart
         return;
     }
 
-    // Define header height
-    const int16_t headerHeight = 25;
+    // Remove header - use full screen height
     const int16_t footerHeight = 15;
-    const int16_t contentY = headerHeight;
-    const int16_t contentHeight = screenHeight - headerHeight - footerHeight;
+    const int16_t contentY = 0; // Start from top instead of after header
+    const int16_t contentHeight = screenHeight - footerHeight;
 
     if (weather && departures)
     {
-        // Full update - both halves with header
-        ESP_LOGI(TAG, "Updating both halves with header");
+        // Full update - both halves without header
+        ESP_LOGI(TAG, "Updating both halves without header");
 
         bool isFullUpdate = true; // Full update for both halves
         display.setFullWindow();
@@ -126,8 +129,7 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo *weather, const Depart
         {
             display.fillScreen(GxEPD_WHITE);
 
-            // Draw header across full width
-            drawHeaderSection(isFullUpdate, 0, 0, screenWidth, headerHeight);
+            // Remove header drawing
             // Landscape: left/right split (weather left, departures right)
             updateWeatherHalf(isFullUpdate, *weather);
             updateDepartureHalf(isFullUpdate, *departures);
@@ -175,12 +177,11 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
 {
     ESP_LOGI(TAG, "Updating weather half");
 
-    const int16_t headerHeight = 25;
     const int16_t footerHeight = 25;
-    const int16_t contentY = headerHeight;
-    const int16_t contentHeight = screenHeight - headerHeight;
+    const int16_t contentY = 0; // Start from top without header
+    const int16_t contentHeight = screenHeight; // Use full height
 
-    // Landscape: weather is LEFT half (including header portion)
+    // Landscape: weather is LEFT half (full height)
     int16_t x = 0, y = 0, w = halfWidth, h = screenHeight;
 
     if (!isFullUpate)
@@ -200,12 +201,11 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
 {
     ESP_LOGI(TAG, "Updating departure half");
 
-    const int16_t headerHeight = 25;
-    const int16_t footerHeight = 25;
-    const int16_t contentY = headerHeight;
-    const int16_t contentHeight = screenHeight - headerHeight;
+    const int16_t footerHeight = 15;
+    const int16_t contentY = 0; // Start from top without header
+    const int16_t contentHeight = screenHeight; // Use full height
 
-    // Landscape: departures are RIGHT half (no header in this section)
+    // Landscape: departures are RIGHT half (full height)
     int16_t x = halfWidth, y = contentY, w = halfWidth, h = contentHeight;
 
     if (!isFullUpate)
@@ -217,8 +217,8 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
         ESP_LOGI(TAG, "Skipping departure half update in non-full update mode");
         return;
     }
-    drawDepartureSection(departures, x, y, w, h);
-    drawDepartureFooter(x, screenHeight - footerHeight);
+    DepartureDisplay::drawDepartureSection(departures, x, y, w, h);
+    DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight);
     // Redraw vertical divider
     display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
 }
@@ -247,337 +247,12 @@ void DisplayManager::displayDeparturesOnly(const DepartureData &departures)
     do
     {
         display.fillScreen(GxEPD_WHITE);
-        drawDepartureSection(departures, 0, 0, screenWidth, screenHeight);
+        DepartureDisplay::drawDepartureSection(departures, 0, 0, screenWidth, screenHeight);
     } while (display.nextPage());
 }
 
 // Weather functions moved to WeatherDisplay class
-
-void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
-{
-    TextUtils::setSmallFont();
-
-    // Ensure footer is positioned properly within bounds
-    int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom
-    int16_t footerX = x + 10;
-    ESP_LOGI(TAG, "Footer position: (%d, %d)", footerX, footerY);
-
-    u8g2.setCursor(footerX, footerY); // Add 10px left margin
-    u8g2.print("Aktualisiert: ");
-
-    // Check if time is properly set
-    if (TimeManager::isTimeSet())
-    {
-        // Get current German time using TimeManager
-        struct tm timeinfo;
-        if (TimeManager::getCurrentLocalTime(timeinfo))
-        {
-            char timeStr[20];
-            // German time format: "HH:MM DD.MM."
-            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
-            u8g2.print(timeStr);
-        }
-        else
-        {
-            u8g2.print("Zeit nicht verfügbar");
-        }
-    }
-    else
-    {
-        // Time not synchronized
-        u8g2.print("Zeit nicht synchronisiert");
-    }
-}
-
-void DisplayManager::drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h)
-{
-    int16_t currentY = y + 25;
-    int16_t leftMargin = x + 10;
-    int16_t rightMargin = x + w - 10;
-
-    bool isFullScreen = (w >= screenWidth * 0.8);
-
-    // Station name
-    TextUtils::setMediumFont();
-    u8g2.setCursor(leftMargin, currentY);
-    RTCConfigData &config = ConfigManager::getConfig();
-    String stopName = getStopName(config);
-
-    // Calculate available width and fit station name
-    int stationMaxWidth = rightMargin - leftMargin;
-    String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
-
-    u8g2.print(fittedStopName);
-    currentY += 40; // Station Name section gets 40px
-
-    // Column headers
-    TextUtils::setSmallFont();
-    u8g2.setCursor(leftMargin, currentY);
-    if (isFullScreen)
-    {
-        u8g2.print("Soll Ist  Linie  Ziel                Gleis");
-    }
-    else
-    {
-        u8g2.print("Soll    Ist      Linie     Ziel");
-    }
-    currentY += 18; // Column headers spacing
-
-    // Underline
-    display.drawLine(leftMargin, currentY - 5, rightMargin, currentY - 5, GxEPD_BLACK);
-    currentY += 12; // Header underline spacing
-
-    if (isFullScreen)
-    {
-        // Original full screen logic (unchanged)
-        int maxDepartures = min(20, departures.departureCount);
-        
-        for (int i = 0; i < maxDepartures; i++)
-        {
-            const auto &dep = departures.departures[i];
-            
-            // ... existing full screen drawing logic ...
-            
-            currentY += 37; // Total spacing per entry
-            if (currentY > y + h - 25) break;
-        }
-    }
-    else
-    {
-        // Half screen mode: Separate by direction flag
-        ESP_LOGI(TAG, "Drawing departures separated by direction flag");
-        
-        // Separate departures by direction flag
-        std::vector<const DepartureInfo*> direction1Departures;
-        std::vector<const DepartureInfo*> direction2Departures;
-        
-        for (int i = 0; i < departures.departureCount; i++)
-        {
-            const auto &dep = departures.departures[i];
-            if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1)
-            {
-                direction1Departures.push_back(&dep);
-            }
-            else if (dep.directionFlag == "2" || dep.directionFlag.toInt() == 2)
-            {
-                direction2Departures.push_back(&dep);
-            }
-        }
-        
-        ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2", 
-                 direction1Departures.size(), direction2Departures.size());
-        
-        // Draw first 4 departures from direction 1
-        int drawnCount = 0;
-        int maxPerDirection = 4;
-        
-        // Direction 1 departures
-        for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()) && drawnCount < 8; i++)
-        {
-            const auto &dep = *direction1Departures[i];
-            drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
-            drawnCount++;
-            
-            if (currentY > y + h - 60) break; // Leave space for separator and direction 2
-        }
-        
-        // Draw separator line between directions
-        if (direction1Departures.size() > 0 && direction2Departures.size() > 0 && drawnCount < 8)
-        {
-            display.drawLine(leftMargin, currentY, rightMargin, currentY, GxEPD_BLACK);
-            currentY += 15; // Space after separator line
-        }
-        
-        // Direction 2 departures
-        for (int i = 0; i < min(maxPerDirection, (int)direction2Departures.size()) && drawnCount < 8; i++)
-        {
-            const auto &dep = *direction2Departures[i];
-            drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
-            drawnCount++;
-            
-            if (currentY > y + h - 25) break; // Leave space for footer
-        }
-        
-        ESP_LOGI(TAG, "Drew %d total departures", drawnCount);
-    }
-}
-
-String DisplayManager::getStopName(RTCConfigData &config)
-{
-    String stopName = config.selectedStopId;
-
-    // Extract stop name from stopId format: "@O=StopName@"
-    int startIndex = stopName.indexOf("@O=");
-    if (startIndex != -1)
-    {
-        startIndex += 3; // Move past "@O="
-        int endIndex = stopName.indexOf("@", startIndex);
-        if (endIndex != -1)
-        {
-            stopName = stopName.substring(startIndex, endIndex);
-            return stopName;
-        }
-    }
-    return "";
-}
-
-// Helper function to draw a single departure
-void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, int16_t &currentY, bool isFullScreen)
-{
-    u8g2.setCursor(leftMargin, currentY);
-    
-    if (isFullScreen)
-    {
-        // Full screen format (existing logic)
-        // ... your existing full screen drawing code ...
-    }
-    else
-    {
-        // Half screen format
-        TextUtils::setSmallFont();
-        
-        // Calculate available space
-        int totalWidth = rightMargin - leftMargin;
-        
-        // Check if times are different for highlighting
-        bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
-        
-        // Clean up line (remove "Bus" prefix)
-        String line = dep.line;
-        String lineLower = line;
-        lineLower.toLowerCase();
-        if (lineLower.startsWith("bus "))
-        {
-            line = line.substring(4);
-        }
-        
-        // Clean up destination (remove "Frankfurt (Main)" prefix)
-        String dest = dep.direction;
-        String destLower = dest;
-        destLower.toLowerCase();
-        if (destLower.startsWith("frankfurt (main) "))
-        {
-            dest = dep.direction.substring(17);
-        }
-        
-        // Prepare times
-        String sollTime = dep.time.substring(0, 5);
-        String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
-        
-        // Measure fixed elements: times and spaces
-        int timesWidth = TextUtils::getTextWidth(sollTime + "  " + istTime + "  ");
-        int remainingWidth = totalWidth - timesWidth;
-        
-        // Print soll time
-        u8g2.print(sollTime);
-        u8g2.print(" ");
-        
-        // Calculate current cursor position for ist time highlighting
-        int16_t istX = leftMargin + TextUtils::getTextWidth(sollTime + " ");
-        int16_t istY = currentY;
-        
-        if (timesAreDifferent)
-        {
-            // Highlight ist time with underline
-            int16_t istTextWidth = TextUtils::getTextWidth(istTime);
-            
-            // Print the delayed time normally first
-            u8g2.setCursor(istX, istY);
-            u8g2.print(istTime);
-            
-            // Draw underline below the text
-            int16_t underlineY = istY + 2;
-            display.drawLine(istX, underlineY, istX + istTextWidth, underlineY, GxEPD_BLACK);
-        }
-        else
-        {
-            // Normal ist time display
-            u8g2.print(istTime);
-        }
-        
-        // Allocate remaining space: Line gets 1/3, Destination gets 2/3
-        int lineMaxWidth = remainingWidth / 3;
-        int destMaxWidth = (remainingWidth * 2) / 3;
-        
-        // Fit line and destination to available space
-        String fittedLine = TextUtils::shortenTextToFit(line, lineMaxWidth);
-        String fittedDest = TextUtils::shortenTextToFit(dest, destMaxWidth);
-        
-        u8g2.print("  ");
-        u8g2.print(fittedLine);
-        u8g2.print("  ");
-        u8g2.print(fittedDest);
-        
-    }
-    
-    // Always add consistent spacing for disruption area
-    currentY += 20; // Main departure line gets 20px
-    
-    // Check if we have disruption information to display
-    if (dep.lead.length() > 0 || dep.text.length() > 0)
-    {
-        // Use the lead text if available, otherwise use text
-        String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
-        
-        // Fit disruption text to available width with some indent
-        int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
-        String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
-        
-        // Display disruption information
-        TextUtils::setSmallFont();
-        u8g2.setCursor(leftMargin + 20, currentY); // Indent disruption text
-        u8g2.print("⚠ ");
-        u8g2.print(fittedDisruption);
-    }
-    
-    // Add consistent spacing after disruption area (whether used or not)
-    currentY += 17; // Disruption space gets 17px (total 37px per entry)
-}
-
-// Add these missing function implementations:
-void DisplayManager::setLargeFont()
-{
-    u8g2.setFont(u8g2_font_helvB18_tf); // 18pt Helvetica Bold with German support
-    u8g2.setForegroundColor(GxEPD_BLACK);
-    u8g2.setBackgroundColor(GxEPD_WHITE);
-}
-
-void DisplayManager::setMediumFont()
-{
-    u8g2.setFont(u8g2_font_helvB12_tf); // 12pt Helvetica Bold with German support
-    u8g2.setForegroundColor(GxEPD_BLACK);
-    u8g2.setBackgroundColor(GxEPD_WHITE);
-}
-
-void DisplayManager::drawHeaderSection(bool isFullUpdate, int16_t x, int16_t y, int16_t w, int16_t h) {
-    ESP_LOGI(TAG, "=== drawHeaderSection called ===");
-    ESP_LOGI(TAG, "Input parameters: isFullUpdate=%s, x=%d, y=%d, w=%d, h=%d", 
-             isFullUpdate ? "true" : "false", x, y, w, h);
-    
-    int16_t leftMargin = x + 10;
-    int16_t rightMargin = x + w - 10;
-    int16_t centerY = y + h / 2 + 5; // Center vertically in header area
-    
-    TextUtils::setSmallFont();
-    
-    // WiFi status placeholder (left side)
-    u8g2.setCursor(leftMargin, centerY);
-    u8g2.print("WiFi: [●●●]"); // Placeholder for WiFi strength
-    
-    // Battery status placeholder (right side)
-    String batteryText = "Batt: [85%]"; // Placeholder for battery level
-    int16_t batteryWidth = TextUtils::getTextWidth(batteryText);
-    int16_t batteryX = rightMargin - batteryWidth;
-    
-    u8g2.setCursor(batteryX, centerY);
-    u8g2.print(batteryText);
-    
-    // Add separator line at bottom of header
-    int16_t lineY = y + h - 1;
-    display.drawLine(x, lineY, x + w, lineY, GxEPD_BLACK);
-    
-    ESP_LOGI(TAG, "=== drawHeaderSection completed ===");
-}
+// Departure functions moved to DepartureDisplay class
 
 void DisplayManager::hibernate() {
     ESP_LOGI(TAG, "Hibernating display");

@@ -98,7 +98,7 @@ void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
 
 void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t h, 
                                       float minTemp, float maxTemp) {
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for axis labels
     
     // Calculate temperature steps (reduce labels for compact mode)
     int labelCount = (w < 30) ? 3 : 5; // 3 labels for compact, 5 for full
@@ -132,14 +132,14 @@ void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t 
     
     // Temperature axis label (skip for very compact mode)
     if (w >= 30) {
-        TextUtils::setSmallFont();
+        TextUtils::setFont10px_margin12px(); // Small font for axis labels
         u8g2.setCursor(x + 2, y - 5);
         u8g2.print("Temp");
     }
 }
 
 void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for rain axis
     
     // Rain percentage labels (reduce for compact mode)
     int labelCount = (w < 30) ? 3 : 5; // 3 labels for compact (0%, 50%, 100%), 5 for full
@@ -161,7 +161,7 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
 }
 
 void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, const WeatherInfo& weather) {
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for time axis
     
     // Get the number of data points available
     int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
