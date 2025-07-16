@@ -31,9 +31,16 @@ private:
                            int16_t graphX, int16_t graphY, 
                            int16_t graphW, int16_t graphH);
     
+    // Humidity drawing functions
+    static void drawHumidityLine(const WeatherInfo& weather,
+                               int16_t graphX, int16_t graphY, 
+                               int16_t graphW, int16_t graphH);
+    static void drawDottedLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2);
+    
     // Utility functions
     static float parseTemperature(const String& tempStr);
     static int parseRainChance(const String& rainStr);
+    static float parseHumidity(const String& humidityStr);
     static float calculateDynamicMinTemp(float actualMin);
     static float calculateDynamicMaxTemp(float actualMax);
     static int16_t mapToPixel(float value, float minVal, float maxVal, 
