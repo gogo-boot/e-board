@@ -1,4 +1,4 @@
-#include "util/text_utils.h"
+#include "display/text_utils.h"
 #include <esp_log.h>
 
 static const char *TAG = "TEXT_UTILS";

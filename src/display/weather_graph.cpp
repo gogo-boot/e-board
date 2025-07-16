@@ -1,5 +1,5 @@
-#include "util/weather_graph.h"
-#include "util/text_utils.h"
+#include "display/weather_graph.h"
+#include "display/text_utils.h"
 #include <esp_log.h>
 #include <math.h>
 

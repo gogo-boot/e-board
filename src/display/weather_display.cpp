@@ -1,7 +1,7 @@
-#include "util/weather_display.h"
-#include "util/text_utils.h"
+#include "display/weather_display.h"
+#include "display/text_utils.h"
 #include "util/time_manager.h"
-#include "util/weather_graph.h"
+#include "display/weather_graph.h"
 #include <esp_log.h>
 
 static const char *TAG = "WEATHER_DISPLAY";

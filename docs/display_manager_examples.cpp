@@ -5,7 +5,7 @@
  * with different modes and orientations.
  */
 
-#include "util/display_manager.h"
+#include "display/display_manager.h"
 #include "api/dwd_weather_api.h"
 #include "api/rmv_api.h"
 

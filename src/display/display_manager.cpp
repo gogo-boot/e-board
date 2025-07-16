@@ -1,11 +1,11 @@
-#include "util/display_manager.h"
-#include "util/weather_display.h"
-#include "util/text_utils.h"
+#include "display/display_manager.h"
+#include "display/weather_display.h"
+#include "display/text_utils.h"
 #include <Arduino.h>
 #include <esp_log.h>
 #include "config/config_manager.h"
 #include "util/time_manager.h"
-#include "util/weather_graph.h"
+#include "display/weather_graph.h"
 
 // Include e-paper display libraries
 #include <GxEPD2_BW.h>
