@@ -162,13 +162,7 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
         // Check if times are different for highlighting
         bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
         
-        // Clean up line (remove "Bus" prefix)
         String line = dep.line;
-        String lineLower = line;
-        lineLower.toLowerCase();
-        if (lineLower.startsWith("bus ")) {
-            line = line.substring(4);
-        }
         
         // Clean up destination (remove "Frankfurt (Main)" prefix)
         String dest = dep.direction;
@@ -182,48 +176,48 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
         String sollTime = dep.time.substring(0, 5);
         String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
         
-        // Measure fixed elements: times and spaces
-        int timesWidth = TextUtils::getTextWidth(sollTime + "  " + istTime + "  ");
-        int remainingWidth = totalWidth - timesWidth;
-        
         // Position text at proper baseline
         int16_t baseline = textTop + TextUtils::getFontAscent();
         
+        // Use fixed column positions instead of dynamic width calculation
+        int16_t sollX = leftMargin;
+        int16_t istX = leftMargin + 45;   // Fixed position for Ist column
+        int16_t lineX = leftMargin + 90; // Fixed position for Line column
+        int16_t destX = leftMargin + 130; // Fixed position for Destination column
+        
         // Print soll time
-        u8g2->setCursor(leftMargin, baseline);
+        u8g2->setCursor(sollX, baseline);
         u8g2->print(sollTime);
-        u8g2->print(" ");
         
-        // Calculate current cursor position for ist time highlighting
-        int16_t istX = leftMargin + TextUtils::getTextWidth(sollTime + " ");
-        
+        // Print ist time or symbol
+        u8g2->setCursor(istX, baseline);
         if (timesAreDifferent) {
-            // Highlight ist time with underline
-            int16_t istTextWidth = TextUtils::getTextWidth(istTime);
-            
-            // Print the delayed time normally first
-            u8g2->setCursor(istX, baseline);
+            // Print the delayed time and add underline
             u8g2->print(istTime);
             
             // Draw underline below the text baseline
+            int16_t istTextWidth = TextUtils::getTextWidth(istTime);
             int16_t underlineY = baseline + 2;
             display->drawLine(istX, underlineY, istX + istTextWidth, underlineY, GxEPD_BLACK);
         } else {
-            // Normal ist time display
-            u8g2->print(istTime);
+            // On-time: Show dash instead of time
+            u8g2->print("  -"); 
+            // Todo: After Changing font, test it again
+            // u8g2->print("✓"); 
+            // u8g2->print("√"); 
+            // u8g2->print("•"); 
+            // u8g2->print("OK");
         }
         
-        // Allocate remaining space: Line gets 1/3, Destination gets 2/3
-        int lineMaxWidth = remainingWidth / 3;
-        int destMaxWidth = (remainingWidth * 2) / 3;
-        
-        // Fit line and destination to available space
-        String fittedLine = TextUtils::shortenTextToFit(line, lineMaxWidth);
-        String fittedDest = TextUtils::shortenTextToFit(dest, destMaxWidth);
-        
-        u8g2->print("  ");
+        // Print line number at fixed position
+        u8g2->setCursor(lineX, baseline);
+        String fittedLine = TextUtils::shortenTextToFit(line, 50); // Limit line width
         u8g2->print(fittedLine);
-        u8g2->print("  ");
+        
+        // Print destination at fixed position
+        u8g2->setCursor(destX, baseline);
+        int destMaxWidth = rightMargin - destX;
+        String fittedDest = TextUtils::shortenTextToFit(dest, destMaxWidth);
         u8g2->print(fittedDest);
     }
     
