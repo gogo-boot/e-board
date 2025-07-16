@@ -345,7 +345,7 @@ void WeatherGraph::drawHumidityLine(const WeatherInfo& weather,
         int16_t p3y = (i < dataPoints-2) ? humidityY[i+2] : humidityY[i+1];
         
         // Draw smooth dotted curve between p1 and p2 using many small segments
-        int smoothSteps = 16; // Higher number = smoother curve
+        int smoothSteps = 3; // Higher number = smoother curve
         
         for (int step = 0; step < smoothSteps; step++) {
             // Calculate interpolation parameter (0.0 to 1.0)
@@ -390,8 +390,10 @@ void WeatherGraph::drawDottedLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2
     
     int16_t x = x1, y = y1;
     int dotCounter = 0;
-    const int dotLength = 2;    // 2 pixels on
-    const int gapLength = 2;    // 2 pixels off
+    
+    // Use shorter dots and gaps for clear dotted pattern
+    const int dotLength = 3;    // 2 pixels on
+    const int gapLength = 4;    // 3 pixels off
     
     while (true) {
         // Draw pixel only during "on" phase of dot pattern
