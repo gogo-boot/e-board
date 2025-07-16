@@ -40,8 +40,10 @@ public:
     static int16_t getCurrentFontAscent();
     static int16_t getCurrentFontDescent();
 
-    // Helper function for proper text positioning
+    // Helper functions for proper text positioning
     static void printTextAtWithMargin(int16_t x, int16_t y, const String& text);
+    static void printTextAtTopMargin(int16_t x, int16_t topY, const String& text);
+    static int16_t getFontAscent(); // Get current font ascent for calculations
 
 private:
     static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> *display;

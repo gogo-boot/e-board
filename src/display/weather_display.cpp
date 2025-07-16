@@ -252,7 +252,7 @@ void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y) {
     TextUtils::setFont10px_margin12px(); // Small font for footer
 
     // Ensure footer is positioned properly within bounds
-    int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom
+    int16_t footerY = min(y, (int16_t)(screenHeight - 14)); // Ensure at least 20px from bottom
     int16_t footerX = x + 10;
     ESP_LOGI(TAG, "Weather footer position: (%d, %d)", footerX, footerY);
 

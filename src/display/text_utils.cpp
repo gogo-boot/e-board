@@ -107,6 +107,22 @@ void TextUtils::printTextAtWithMargin(int16_t x, int16_t y, const String& text) 
     u8g2->print(text);
 }
 
+// Helper function to position text with top margin (more intuitive)
+void TextUtils::printTextAtTopMargin(int16_t x, int16_t topY, const String& text) {
+    if (!u8g2) return;
+    
+    // Calculate baseline from desired top position
+    int16_t baseline = topY + getCurrentFontAscent();
+    u8g2->setCursor(x, baseline);
+    u8g2->print(text);
+}
+
+// Get current font ascent for positioning calculations
+int16_t TextUtils::getFontAscent() {
+    if (!u8g2) return 0;
+    return u8g2->getFontAscent();
+}
+
 int16_t TextUtils::getTextWidth(const String& text) {
     if (!u8g2) {
         ESP_LOGE(TAG, "TextUtils not initialized! Call init() first.");

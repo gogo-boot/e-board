@@ -197,7 +197,7 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
 {
     ESP_LOGI(TAG, "Updating departure half");
 
-    const int16_t footerHeight = 25;
+    const int16_t footerHeight = 15;
     const int16_t contentY = 0; // Start from top without header
     const int16_t contentHeight = screenHeight; // Use full height
 
@@ -254,11 +254,13 @@ void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
     TextUtils::setFont10px_margin12px(); // Small font for footer
 
     // Ensure footer is positioned properly within bounds
-    int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom
+    int16_t footerY = min(y, (int16_t)(screenHeight - 14)); // Ensure space from bottom
     int16_t footerX = x + 10;
     ESP_LOGI(TAG, "Footer position: (%d, %d)", footerX, footerY);
 
-    u8g2.setCursor(footerX, footerY); // Add 10px left margin
+    // Position footer text with proper baseline calculation
+    int16_t baseline = footerY + TextUtils::getFontAscent();
+    u8g2.setCursor(footerX, baseline);
     u8g2.print("Aktualisiert: ");
 
     // Check if time is properly set
@@ -287,15 +289,15 @@ void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
 
 void DisplayManager::drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h)
 {
-    int16_t currentY = y + 15; // Start closer to top without header space
+    int16_t currentY = y; // Start from actual top
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
 
     bool isFullScreen = (w >= screenWidth * 0.8);
 
-    // Station name
+    // Station name with TRUE 15px margin from top
     TextUtils::setFont12px_margin15px(); // Medium font for station name
-    u8g2.setCursor(leftMargin, currentY);
+    int16_t stationTextTop = currentY + 15; // 15px margin from top
     RTCConfigData &config = ConfigManager::getConfig();
     String stopName = getStopName(config);
 
@@ -303,21 +305,21 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
     int stationMaxWidth = rightMargin - leftMargin;
     String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
 
-    u8g2.print(fittedStopName);
-    currentY += 40; // Station Name section gets 40px
+    TextUtils::printTextAtTopMargin(leftMargin, stationTextTop, fittedStopName);
+    currentY = stationTextTop + 12 + 13; // text height + spacing = 25px total
 
-    // Column headers
+    // Column headers with TRUE 12px margin from current position
     TextUtils::setFont10px_margin12px(); // Small font for column headers
-    u8g2.setCursor(leftMargin, currentY);
+    int16_t headerTextTop = currentY + 12; // 12px margin
     if (isFullScreen)
     {
-        u8g2.print("Soll Ist  Linie  Ziel                Gleis");
+        TextUtils::printTextAtTopMargin(leftMargin, headerTextTop, "Soll Ist  Linie  Ziel                Gleis");
     }
     else
     {
-        u8g2.print("Soll    Ist      Linie     Ziel");
+        TextUtils::printTextAtTopMargin(leftMargin, headerTextTop, "Soll    Ist      Linie     Ziel");
     }
-    currentY += 18; // Column headers spacing
+    currentY = headerTextTop + 10 + 8; // text height + spacing = 18px total
 
     // Underline
     display.drawLine(leftMargin, currentY - 5, rightMargin, currentY - 5, GxEPD_BLACK);
@@ -420,8 +422,6 @@ String DisplayManager::getStopName(RTCConfigData &config)
 // Helper function to draw a single departure
 void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, int16_t &currentY, bool isFullScreen)
 {
-    u8g2.setCursor(leftMargin, currentY);
-    
     if (isFullScreen)
     {
         // Full screen format (existing logic)
@@ -429,8 +429,11 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
     }
     else
     {
-        // Half screen format
+        // Half screen format with proper text positioning
         TextUtils::setFont10px_margin12px(); // Small font for departure entries
+        
+        // Calculate text top position with proper margin
+        int16_t textTop = currentY + 12; // 12px margin from function name
         
         // Calculate available space
         int totalWidth = rightMargin - leftMargin;
@@ -464,13 +467,16 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
         int timesWidth = TextUtils::getTextWidth(sollTime + "  " + istTime + "  ");
         int remainingWidth = totalWidth - timesWidth;
         
+        // Position text at proper baseline
+        int16_t baseline = textTop + TextUtils::getFontAscent();
+        
         // Print soll time
+        u8g2.setCursor(leftMargin, baseline);
         u8g2.print(sollTime);
         u8g2.print(" ");
         
         // Calculate current cursor position for ist time highlighting
         int16_t istX = leftMargin + TextUtils::getTextWidth(sollTime + " ");
-        int16_t istY = currentY;
         
         if (timesAreDifferent)
         {
@@ -478,11 +484,11 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
             int16_t istTextWidth = TextUtils::getTextWidth(istTime);
             
             // Print the delayed time normally first
-            u8g2.setCursor(istX, istY);
+            u8g2.setCursor(istX, baseline);
             u8g2.print(istTime);
             
-            // Draw underline below the text
-            int16_t underlineY = istY + 2;
+            // Draw underline below the text baseline
+            int16_t underlineY = baseline + 2;
             display.drawLine(istX, underlineY, istX + istTextWidth, underlineY, GxEPD_BLACK);
         }
         else
@@ -519,11 +525,10 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
         int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
         String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
         
-        // Display disruption information
+        // Display disruption information with proper positioning
         TextUtils::setFont10px_margin12px(); // Small font for disruption info
-        u8g2.setCursor(leftMargin + 20, currentY); // Indent disruption text
-        u8g2.print("⚠ ");
-        u8g2.print(fittedDisruption);
+        int16_t disruptionTextTop = currentY + 12; // 12px margin
+        TextUtils::printTextAtTopMargin(leftMargin + 20, disruptionTextTop, "⚠ " + fittedDisruption);
     }
     
     // Add consistent spacing after disruption area (whether used or not)
