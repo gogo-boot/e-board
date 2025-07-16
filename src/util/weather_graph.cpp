@@ -1,5 +1,5 @@
 #include "util/weather_graph.h"
-#include "util/display_manager.h"
+#include "util/text_utils.h"
 #include <esp_log.h>
 #include <math.h>
 
@@ -98,7 +98,7 @@ void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
 
 void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t h, 
                                       float minTemp, float maxTemp) {
-    DisplayManager::setSmallFont();
+    TextUtils::setSmallFont();
     
     // Calculate temperature steps (reduce labels for compact mode)
     int labelCount = (w < 30) ? 3 : 5; // 3 labels for compact, 5 for full
@@ -125,21 +125,21 @@ void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t 
         }
         
         // Right-align the temperature labels
-        int16_t textWidth = DisplayManager::getTextWidth(tempLabel);
+        int16_t textWidth = TextUtils::getTextWidth(tempLabel);
         u8g2.setCursor(x + w - textWidth - 3, labelY + 4);
         u8g2.print(tempLabel);
     }
     
     // Temperature axis label (skip for very compact mode)
     if (w >= 30) {
-        DisplayManager::setSmallFont();
+        TextUtils::setSmallFont();
         u8g2.setCursor(x + 2, y - 5);
         u8g2.print("Temp");
     }
 }
 
 void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
-    DisplayManager::setSmallFont();
+    TextUtils::setSmallFont();
     
     // Rain percentage labels (reduce for compact mode)
     int labelCount = (w < 30) ? 3 : 5; // 3 labels for compact (0%, 50%, 100%), 5 for full
@@ -161,7 +161,7 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
 }
 
 void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, const WeatherInfo& weather) {
-    DisplayManager::setSmallFont();
+    TextUtils::setSmallFont();
     
     // Get the number of data points available
     int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
@@ -182,7 +182,7 @@ void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, cons
         }
         
         int16_t labelX = x + (w * i) / HOURS_TO_SHOW;
-        int16_t textWidth = DisplayManager::getTextWidth(actualTime);
+        int16_t textWidth = TextUtils::getTextWidth(actualTime);
         
         // Make sure label fits within bounds
         if (labelX + textWidth/2 <= x + w && i < dataPoints) {

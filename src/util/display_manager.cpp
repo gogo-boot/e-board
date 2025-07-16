@@ -1,4 +1,6 @@
 #include "util/display_manager.h"
+#include "util/weather_display.h"
+#include "util/text_utils.h"
 #include <Arduino.h>
 #include <esp_log.h>
 #include "config/config_manager.h"
@@ -52,6 +54,12 @@ void DisplayManager::init(DisplayOrientation orientation)
     // Now get dimensions from display after rotation is set
     screenWidth = display.width();
     screenHeight = display.height();
+
+    // Initialize WeatherDisplay with shared resources
+    WeatherDisplay::init(display, u8g2, screenWidth, screenHeight);
+
+    // Initialize TextUtils with shared resources
+    TextUtils::init(display, u8g2);
 
     ESP_LOGI(TAG, "Display detected - Physical dimensions: %dx%d", screenWidth, screenHeight);
 
@@ -184,8 +192,8 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
         return;
     }
     // Use partial window for faster update
-    drawWeatherSection(weather, x, contentY, w, contentHeight);
-    drawWeatherFooter(x, screenHeight - footerHeight);
+    WeatherDisplay::drawWeatherSection(weather, x, contentY, w, contentHeight);
+    WeatherDisplay::drawWeatherFooter(x, screenHeight - footerHeight);
 }
 
 void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &departures)
@@ -225,7 +233,7 @@ void DisplayManager::displayWeatherOnly(const WeatherInfo &weather)
     do
     {
         display.fillScreen(GxEPD_WHITE);
-        drawWeatherSection(weather, 0, 0, screenWidth, screenHeight);
+        WeatherDisplay::drawWeatherSection(weather, 0, 0, screenWidth, screenHeight);
     } while (display.nextPage());
 }
 
@@ -243,268 +251,11 @@ void DisplayManager::displayDeparturesOnly(const DepartureData &departures)
     } while (display.nextPage());
 }
 
-void DisplayManager::drawWeatherSection(const WeatherInfo &weather, int16_t x, int16_t y, int16_t w, int16_t h)
-{
-    int16_t currentY = y + 25; // Start after header space
-    int16_t leftMargin = x + 10;
-    int16_t rightMargin = x + w - 10;
-
-    bool isFullScreen = (w >= screenWidth * 0.8);
-
-    // City/Town Name: 40px
-    setMediumFont();
-    u8g2.setCursor(leftMargin, currentY);
-
-    // Calculate available width and fit city name
-    RTCConfigData &config = ConfigManager::getConfig();
-    int cityMaxWidth = rightMargin - leftMargin;
-    String fittedCityName = shortenTextToFit(config.cityName, cityMaxWidth);
-    u8g2.print(fittedCityName);
-    currentY += 40;
-
-    if (isFullScreen)
-    {
-        // Day weather Info section: 67px total
-        // Calculate column widths
-        int columnWidth = (rightMargin - leftMargin) / 3;
-        int firstColX = leftMargin;
-        int secondColX = leftMargin + columnWidth;
-        int thirdColX = leftMargin + (2 * columnWidth);
-
-        // First Column - Weather Icon and Current Temperature
-        int colY = currentY; // All columns start at same Y position
-
-        // Day Weather Icon: 37px
-        setLargeFont();
-        u8g2.setCursor(firstColX, colY);
-        u8g2.print(weather.weatherCode); // Weather condition as text
-        colY += 37;
-
-        // Current Temperature: 30px
-        setLargeFont();
-        u8g2.setCursor(firstColX, colY);
-        u8g2.print(weather.temperature);
-        u8g2.print("°C");
-
-        // Second Column - Today's temps, UV, Pollen
-        colY = currentY; // Reset to baseline Y for second column
-
-        // Today low/high temp: 27px
-        setMediumFont();
-        u8g2.setCursor(secondColX, colY);
-        u8g2.print(weather.dailyForecast[0].tempMin);
-        u8g2.print(" | ");
-        u8g2.print(weather.dailyForecast[0].tempMax);
-        u8g2.print("°C");
-        colY += 13;
-        colY += 14; // Total 27px for high/low
-
-        // UV Index info: 20px
-        setSmallFont();
-        u8g2.setCursor(secondColX, colY);
-        u8g2.print("UV Index: ");
-        u8g2.print(weather.dailyForecast[0].uvIndex);
-        colY += 20;
-
-        // Third Column - Date, Sunrise, Sunset
-        colY = currentY; // Reset to baseline Y for third column
-
-        // Date Info: 27px
-        setMediumFont();
-        u8g2.setCursor(thirdColX, colY);
-        u8g2.print("Today");
-        colY += 13;
-        u8g2.setCursor(thirdColX, colY);
-        // Add current date if available
-        u8g2.print("Juli 13"); // Placeholder - should use actual date
-        colY += 14;            // Total 27px
-
-        // Sunrise: 20px
-        setSmallFont();
-        u8g2.setCursor(thirdColX, colY);
-        u8g2.print("Sunrise: ");
-        u8g2.print(weather.dailyForecast[0].sunrise);
-        colY += 20;
-
-        // Sunset: 20px
-        u8g2.setCursor(thirdColX, colY);
-        u8g2.print("Sunset: ");
-        u8g2.print(weather.dailyForecast[0].sunset);
-
-        currentY += 67; // Move past the day weather info section
-
-        // Weather Graphic section: 333px
-        int graphicY = currentY;
-        int graphicHeight = 333;
-
-        // Draw the actual weather graph
-        WeatherGraph::drawTemperatureAndRainGraph(weather,
-                                                  leftMargin, graphicY,
-                                                  rightMargin - leftMargin, graphicHeight);
-
-        currentY += graphicHeight; // Move past the graphic section
-    }
-    else
-    {
-
-        // Draw fist Column - Current Temperature and Condition
-        int16_t dayWeatherInfoY = currentY;
-
-        // Each Column has a fixed height of 67px
-
-        // Current weather icon: 37px
-        // Current temperature: 30px
-        wertherInfoFirstColumn(leftMargin, currentY, weather);
-
-        int16_t currentX = leftMargin + 100;
-        // Draw second Column - Today's temps, UV, Pollen
-        // Today's low/high temp: 27px
-        // Today's UV Indexinfo: 20px
-        // Today's Pollen info: 20px
-        weatherInfoSecondColumn(currentX, dayWeatherInfoY, weather);
-        currentX += 150; // Move to next column
-
-        // Draw third Column - Date, Sunrise, Sunset
-        // Date Info: 27px
-        // Sunrise: 20px
-        // Sunset: 20px
-        weatherInfoThirdColumn(currentX, dayWeatherInfoY, weather);
-
-        // Weather Graph section (replaces text-based forecast for better visualization)
-        setSmallFont();
-        u8g2.setCursor(leftMargin, currentY);
-        u8g2.print("Next 12 Hours:");
-        currentY += 18;
-
-        // Calculate available space for graph
-        int availableHeight = (y + h - 15) - currentY; // Leave 15px for footer
-        int graphHeight = min(333, availableHeight);   // Max 333px, but adapt to available space
-
-        if (graphHeight >= 80)
-        { // Only draw graph if we have enough space
-            WeatherGraph::drawTemperatureAndRainGraph(weather,
-                                                      leftMargin, currentY,
-                                                      rightMargin - leftMargin, graphHeight);
-            currentY += graphHeight;
-        }
-        else
-        {
-            // Fallback to compact text forecast if not enough space for graph
-            int maxForecast = min(6, availableHeight / 16); // Limit based on available space
-            for (int i = 0; i < min(maxForecast, weather.hourlyForecastCount); i++)
-            {
-                const auto &forecast = weather.hourlyForecast[i];
-                u8g2.setCursor(leftMargin, currentY);
-
-                String timeStr = forecast.time.substring(11, 16); // HH:MM
-                u8g2.print(timeStr);
-                u8g2.print(" ");
-                u8g2.print(forecast.temperature);
-                u8g2.print("° ");
-                u8g2.print(forecast.rainChance);
-                u8g2.print("% ");
-                u8g2.print(forecast.humidity); // Add humidity display
-                u8g2.print("%RH");
-
-                currentY += 16;
-                if (currentY > y + h - 40)
-                    break; // Leave space for footer
-            }
-        }
-    }
-}
-
-void DisplayManager::weatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather)
-{
-    setSmallFont();
-    u8g2.setCursor(currentX, dayWeatherInfoY);
-    u8g2.print("Date :");
-    u8g2.print("Juli 13"); // Placeholder - should use actual date
-
-    u8g2.setCursor(currentX, dayWeatherInfoY + 27);
-    u8g2.print("Sunrise : ");
-    u8g2.print(weather.dailyForecast[0].sunrise);
-
-    u8g2.setCursor(currentX, dayWeatherInfoY + 47);
-    u8g2.print("Sunset : ");
-    u8g2.print(weather.dailyForecast[0].sunset);
-}
-
-void DisplayManager::weatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather)
-{
-    setSmallFont();
-    u8g2.setCursor(currentX, dayWeatherInfoY);
-    u8g2.print(weather.dailyForecast[0].tempMin);
-    u8g2.print(" | ");
-    u8g2.print(weather.dailyForecast[0].tempMax);
-
-    u8g2.setCursor(currentX, dayWeatherInfoY + 27);
-    u8g2.print("UV Index : ");
-    u8g2.print(weather.dailyForecast[0].uvIndex);
-
-    u8g2.setCursor(currentX, dayWeatherInfoY + 47);
-    u8g2.print("Pollen : ");
-    u8g2.print("N/A");
-}
-
-void DisplayManager::wertherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather)
-{
-    setSmallFont();
-
-    // Draw first Column - Current Temperature and Condition
-    u8g2.setCursor(leftMargin, currentY);
-    // weather_code is missing
-    // u8g2.print(weather.coded);
-    // Day weather Info section: 37px total
-    // Todo Add weather icon support
-    currentY += 47;
-
-    // Current temperature: 30px
-    u8g2.setCursor(leftMargin, currentY);
-    u8g2.print(weather.temperature);
-    u8g2.print("°C  ");
-    currentY += 20;
-}
+// Weather functions moved to WeatherDisplay class
 
 void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
 {
-    setSmallFont();
-
-    // Ensure footer is positioned properly within bounds
-    int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom
-    int16_t footerX = x + 10;
-    ESP_LOGI(TAG, "Footer position: (%d, %d)", footerX, footerY);
-
-    u8g2.setCursor(footerX, footerY); // Add 10px left margin
-    u8g2.print("Aktualisiert: ");
-
-    // Check if time is properly set
-    if (TimeManager::isTimeSet())
-    {
-        // Get current German time using TimeManager
-        struct tm timeinfo;
-        if (TimeManager::getCurrentLocalTime(timeinfo))
-        {
-            char timeStr[20];
-            // German time format: "HH:MM DD.MM."
-            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
-            u8g2.print(timeStr);
-        }
-        else
-        {
-            u8g2.print("Zeit nicht verfügbar");
-        }
-    }
-    else
-    {
-        // Time not synchronized
-        u8g2.print("Zeit nicht synchronisiert");
-    }
-}
-
-void DisplayManager::drawWeatherFooter(int16_t x, int16_t y)
-{
-    setSmallFont();
+    TextUtils::setSmallFont();
 
     // Ensure footer is positioned properly within bounds
     int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom
@@ -547,20 +298,20 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
     bool isFullScreen = (w >= screenWidth * 0.8);
 
     // Station name
-    setMediumFont();
+    TextUtils::setMediumFont();
     u8g2.setCursor(leftMargin, currentY);
     RTCConfigData &config = ConfigManager::getConfig();
     String stopName = getStopName(config);
 
     // Calculate available width and fit station name
     int stationMaxWidth = rightMargin - leftMargin;
-    String fittedStopName = shortenTextToFit(stopName, stationMaxWidth);
+    String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
 
     u8g2.print(fittedStopName);
     currentY += 40; // Station Name section gets 40px
 
     // Column headers
-    setSmallFont();
+    TextUtils::setSmallFont();
     u8g2.setCursor(leftMargin, currentY);
     if (isFullScreen)
     {
@@ -683,7 +434,7 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
     else
     {
         // Half screen format
-        setSmallFont();
+        TextUtils::setSmallFont();
         
         // Calculate available space
         int totalWidth = rightMargin - leftMargin;
@@ -714,7 +465,7 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
         String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
         
         // Measure fixed elements: times and spaces
-        int timesWidth = getTextWidth(sollTime + "  " + istTime + "  ");
+        int timesWidth = TextUtils::getTextWidth(sollTime + "  " + istTime + "  ");
         int remainingWidth = totalWidth - timesWidth;
         
         // Print soll time
@@ -722,13 +473,13 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
         u8g2.print(" ");
         
         // Calculate current cursor position for ist time highlighting
-        int16_t istX = leftMargin + getTextWidth(sollTime + " ");
+        int16_t istX = leftMargin + TextUtils::getTextWidth(sollTime + " ");
         int16_t istY = currentY;
         
         if (timesAreDifferent)
         {
             // Highlight ist time with underline
-            int16_t istTextWidth = getTextWidth(istTime);
+            int16_t istTextWidth = TextUtils::getTextWidth(istTime);
             
             // Print the delayed time normally first
             u8g2.setCursor(istX, istY);
@@ -749,8 +500,8 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
         int destMaxWidth = (remainingWidth * 2) / 3;
         
         // Fit line and destination to available space
-        String fittedLine = shortenTextToFit(line, lineMaxWidth);
-        String fittedDest = shortenTextToFit(dest, destMaxWidth);
+        String fittedLine = TextUtils::shortenTextToFit(line, lineMaxWidth);
+        String fittedDest = TextUtils::shortenTextToFit(dest, destMaxWidth);
         
         u8g2.print("  ");
         u8g2.print(fittedLine);
@@ -770,10 +521,10 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
         
         // Fit disruption text to available width with some indent
         int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
-        String fittedDisruption = shortenTextToFit(disruptionInfo, disruptionMaxWidth);
+        String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
         
         // Display disruption information
-        setSmallFont();
+        TextUtils::setSmallFont();
         u8g2.setCursor(leftMargin + 20, currentY); // Indent disruption text
         u8g2.print("⚠ ");
         u8g2.print(fittedDisruption);
@@ -798,56 +549,6 @@ void DisplayManager::setMediumFont()
     u8g2.setBackgroundColor(GxEPD_WHITE);
 }
 
-void DisplayManager::setSmallFont()
-{
-    u8g2.setFont(u8g2_font_helvB10_tf); // 10pt Helvetica Bold with German support
-    u8g2.setForegroundColor(GxEPD_BLACK);
-    u8g2.setBackgroundColor(GxEPD_WHITE);
-}
-
-int16_t DisplayManager::getTextWidth(const String& text) {
-    return u8g2.getUTF8Width(text.c_str());
-}
-
-String DisplayManager::shortenTextToFit(const String& text, int16_t maxWidth) {
-    if (getTextWidth(text) <= maxWidth) {
-        return text; // Text fits as-is
-    }
-    
-    // Try progressively shorter versions with "..."
-    String ellipsis = "...";
-    int16_t ellipsisWidth = getTextWidth(ellipsis);
-    
-    if (maxWidth <= ellipsisWidth) {
-        return ""; // Not enough space even for ellipsis
-    }
-    
-    int16_t availableWidth = maxWidth - ellipsisWidth;
-    
-    // Binary search for the longest fitting substring
-    int left = 0;
-    int right = text.length();
-    int bestLength = 0;
-    
-    while (left <= right) {
-        int mid = (left + right) / 2;
-        String testText = text.substring(0, mid);
-        
-        if (getTextWidth(testText) <= availableWidth) {
-            bestLength = mid;
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-    
-    if (bestLength == 0) {
-        return ellipsis;
-    }
-    
-    return text.substring(0, bestLength) + ellipsis;
-}
-
 void DisplayManager::drawHeaderSection(bool isFullUpdate, int16_t x, int16_t y, int16_t w, int16_t h) {
     ESP_LOGI(TAG, "=== drawHeaderSection called ===");
     ESP_LOGI(TAG, "Input parameters: isFullUpdate=%s, x=%d, y=%d, w=%d, h=%d", 
@@ -857,7 +558,7 @@ void DisplayManager::drawHeaderSection(bool isFullUpdate, int16_t x, int16_t y, 
     int16_t rightMargin = x + w - 10;
     int16_t centerY = y + h / 2 + 5; // Center vertically in header area
     
-    setSmallFont();
+    TextUtils::setSmallFont();
     
     // WiFi status placeholder (left side)
     u8g2.setCursor(leftMargin, centerY);
@@ -865,7 +566,7 @@ void DisplayManager::drawHeaderSection(bool isFullUpdate, int16_t x, int16_t y, 
     
     // Battery status placeholder (right side)
     String batteryText = "Batt: [85%]"; // Placeholder for battery level
-    int16_t batteryWidth = getTextWidth(batteryText);
+    int16_t batteryWidth = TextUtils::getTextWidth(batteryText);
     int16_t batteryX = rightMargin - batteryWidth;
     
     u8g2.setCursor(batteryX, centerY);

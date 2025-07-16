@@ -56,10 +56,6 @@ public:
     static void drawDivider();
     static void hibernate();
 
-    // Font helpers (public for use by graph components)
-    static void setSmallFont();
-    static int16_t getTextWidth(const String &text);
-
 private:
     static DisplayMode currentMode;
     static DisplayOrientation currentOrientation;
@@ -69,11 +65,6 @@ private:
     static int16_t halfHeight;
 
     // Internal drawing functions
-    static void drawWeatherSection(const WeatherInfo &weather, int16_t x, int16_t y, int16_t w, int16_t h);
-    static void weatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather);
-    static void weatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather);
-    static void wertherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather);
-    static void drawWeatherFooter(int16_t x, int16_t y);
     static void drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
     static void drawHeaderSection(bool isFullUpate, int16_t x, int16_t y, int16_t w, int16_t h);
     static void drawDepartureFooter(int16_t x, int16_t y);
