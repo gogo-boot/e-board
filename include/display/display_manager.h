@@ -66,7 +66,6 @@ private:
 
     // Internal drawing functions
     static void drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
-    static void drawHeaderSection(bool isFullUpate, int16_t x, int16_t y, int16_t w, int16_t h);
     static void drawDepartureFooter(int16_t x, int16_t y);
 
     static String getStopName(RTCConfigData &config);

@@ -108,16 +108,15 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo *weather, const Depart
         return;
     }
 
-    // Define header height
-    const int16_t headerHeight = 25;
+    // Remove header - use full screen height
     const int16_t footerHeight = 15;
-    const int16_t contentY = headerHeight;
-    const int16_t contentHeight = screenHeight - headerHeight - footerHeight;
+    const int16_t contentY = 0; // Start from top instead of after header
+    const int16_t contentHeight = screenHeight - footerHeight;
 
     if (weather && departures)
     {
-        // Full update - both halves with header
-        ESP_LOGI(TAG, "Updating both halves with header");
+        // Full update - both halves without header
+        ESP_LOGI(TAG, "Updating both halves without header");
 
         bool isFullUpdate = true; // Full update for both halves
         display.setFullWindow();
@@ -126,8 +125,7 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo *weather, const Depart
         {
             display.fillScreen(GxEPD_WHITE);
 
-            // Draw header across full width
-            drawHeaderSection(isFullUpdate, 0, 0, screenWidth, headerHeight);
+            // Remove header drawing
             // Landscape: left/right split (weather left, departures right)
             updateWeatherHalf(isFullUpdate, *weather);
             updateDepartureHalf(isFullUpdate, *departures);
@@ -175,12 +173,11 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
 {
     ESP_LOGI(TAG, "Updating weather half");
 
-    const int16_t headerHeight = 25;
     const int16_t footerHeight = 25;
-    const int16_t contentY = headerHeight;
-    const int16_t contentHeight = screenHeight - headerHeight;
+    const int16_t contentY = 0; // Start from top without header
+    const int16_t contentHeight = screenHeight; // Use full height
 
-    // Landscape: weather is LEFT half (including header portion)
+    // Landscape: weather is LEFT half (full height)
     int16_t x = 0, y = 0, w = halfWidth, h = screenHeight;
 
     if (!isFullUpate)
@@ -200,12 +197,11 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
 {
     ESP_LOGI(TAG, "Updating departure half");
 
-    const int16_t headerHeight = 25;
     const int16_t footerHeight = 25;
-    const int16_t contentY = headerHeight;
-    const int16_t contentHeight = screenHeight - headerHeight;
+    const int16_t contentY = 0; // Start from top without header
+    const int16_t contentHeight = screenHeight; // Use full height
 
-    // Landscape: departures are RIGHT half (no header in this section)
+    // Landscape: departures are RIGHT half (full height)
     int16_t x = halfWidth, y = contentY, w = halfWidth, h = contentHeight;
 
     if (!isFullUpate)
@@ -291,7 +287,7 @@ void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
 
 void DisplayManager::drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h)
 {
-    int16_t currentY = y + 25;
+    int16_t currentY = y + 10; // Start closer to top without header space
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
 
@@ -547,36 +543,6 @@ void DisplayManager::setMediumFont()
     u8g2.setFont(u8g2_font_helvB12_tf); // 12pt Helvetica Bold with German support
     u8g2.setForegroundColor(GxEPD_BLACK);
     u8g2.setBackgroundColor(GxEPD_WHITE);
-}
-
-void DisplayManager::drawHeaderSection(bool isFullUpdate, int16_t x, int16_t y, int16_t w, int16_t h) {
-    ESP_LOGI(TAG, "=== drawHeaderSection called ===");
-    ESP_LOGI(TAG, "Input parameters: isFullUpdate=%s, x=%d, y=%d, w=%d, h=%d", 
-             isFullUpdate ? "true" : "false", x, y, w, h);
-    
-    int16_t leftMargin = x + 10;
-    int16_t rightMargin = x + w - 10;
-    int16_t centerY = y + h / 2 + 5; // Center vertically in header area
-    
-    TextUtils::setSmallFont();
-    
-    // WiFi status placeholder (left side)
-    u8g2.setCursor(leftMargin, centerY);
-    u8g2.print("WiFi: [●●●]"); // Placeholder for WiFi strength
-    
-    // Battery status placeholder (right side)
-    String batteryText = "Batt: [85%]"; // Placeholder for battery level
-    int16_t batteryWidth = TextUtils::getTextWidth(batteryText);
-    int16_t batteryX = rightMargin - batteryWidth;
-    
-    u8g2.setCursor(batteryX, centerY);
-    u8g2.print(batteryText);
-    
-    // Add separator line at bottom of header
-    int16_t lineY = y + h - 1;
-    display.drawLine(x, lineY, x + w, lineY, GxEPD_BLACK);
-    
-    ESP_LOGI(TAG, "=== drawHeaderSection completed ===");
 }
 
 void DisplayManager::hibernate() {

@@ -29,7 +29,7 @@ void WeatherDisplay::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
         return;
     }
     
-    int16_t currentY = y + 25; // Start after header space
+    int16_t currentY = y + 10; // Start closer to top without header space
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
 
