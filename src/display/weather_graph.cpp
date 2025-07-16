@@ -1,5 +1,5 @@
-#include "util/weather_graph.h"
-#include "util/display_manager.h"
+#include "display/weather_graph.h"
+#include "display/text_utils.h"
 #include <esp_log.h>
 #include <math.h>
 
@@ -59,9 +59,10 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     drawRainAxis(x + w - marginRight, graphY, marginRight, graphH);
     drawTimeAxis(graphX, y + h - marginBottom, graphW, marginBottom, weather); // <-- Add weather parameter
     
-    // Draw data (rain bars first, then temperature line on top)
-    drawRainBars(weather, graphX, graphY, graphW, graphH);
-    drawTemperatureLine(weather, graphX, graphY, graphW, graphH, dynamicMin, dynamicMax);
+    // Draw data layers (order matters for visibility)
+    drawRainBars(weather, graphX, graphY, graphW, graphH);                              // Background: Rain bars
+    drawHumidityLine(weather, graphX, graphY, graphW, graphH);                          // Middle: Humidity dotted line
+    drawTemperatureLine(weather, graphX, graphY, graphW, graphH, dynamicMin, dynamicMax); // Foreground: Temperature solid line
     
     ESP_LOGI(TAG, "Weather graph completed with %d data points", dataPoints);
 }
@@ -97,7 +98,7 @@ void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
 
 void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t h, 
                                       float minTemp, float maxTemp) {
-    DisplayManager::setSmallFont();
+    TextUtils::setSmallFont();
     
     // Calculate temperature steps (reduce labels for compact mode)
     int labelCount = (w < 30) ? 3 : 5; // 3 labels for compact, 5 for full
@@ -124,21 +125,21 @@ void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t 
         }
         
         // Right-align the temperature labels
-        int16_t textWidth = DisplayManager::getTextWidth(tempLabel);
+        int16_t textWidth = TextUtils::getTextWidth(tempLabel);
         u8g2.setCursor(x + w - textWidth - 3, labelY + 4);
         u8g2.print(tempLabel);
     }
     
     // Temperature axis label (skip for very compact mode)
     if (w >= 30) {
-        DisplayManager::setSmallFont();
+        TextUtils::setSmallFont();
         u8g2.setCursor(x + 2, y - 5);
         u8g2.print("Temp");
     }
 }
 
 void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
-    DisplayManager::setSmallFont();
+    TextUtils::setSmallFont();
     
     // Rain percentage labels (reduce for compact mode)
     int labelCount = (w < 30) ? 3 : 5; // 3 labels for compact (0%, 50%, 100%), 5 for full
@@ -160,7 +161,7 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
 }
 
 void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, const WeatherInfo& weather) {
-    DisplayManager::setSmallFont();
+    TextUtils::setSmallFont();
     
     // Get the number of data points available
     int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
@@ -181,7 +182,7 @@ void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, cons
         }
         
         int16_t labelX = x + (w * i) / HOURS_TO_SHOW;
-        int16_t textWidth = DisplayManager::getTextWidth(actualTime);
+        int16_t textWidth = TextUtils::getTextWidth(actualTime);
         
         // Make sure label fits within bounds
         if (labelX + textWidth/2 <= x + w && i < dataPoints) {
@@ -300,6 +301,124 @@ void WeatherGraph::drawRainBars(const WeatherInfo& weather,
     }
 }
 
+void WeatherGraph::drawHumidityLine(const WeatherInfo& weather, 
+                                   int16_t graphX, int16_t graphY, 
+                                   int16_t graphW, int16_t graphH) {
+    // Get the number of data points to draw (limited to HOURS_TO_SHOW = 12)
+    int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
+    
+    // Need at least 2 points to draw a line
+    if (dataPoints < 2) return;
+    
+    ESP_LOGI(TAG, "Drawing humidity line with %d data points", dataPoints);
+    
+    // Humidity range is always 0-100%
+    float minHumidity = 0.0f;
+    float maxHumidity = 100.0f;
+    
+    // === STEP 1: Draw smooth humidity curve through all points ===
+    // Create arrays to store all humidity points for smooth curve calculation
+    int16_t humidityX[HOURS_TO_SHOW];
+    int16_t humidityY[HOURS_TO_SHOW];
+    
+    // Calculate all point positions first
+    for (int i = 0; i < dataPoints; i++) {
+        float humidity = parseHumidity(weather.hourlyForecast[i].humidity);
+        humidityX[i] = mapToPixel(i, 0, HOURS_TO_SHOW - 1, graphX, graphX + graphW);
+        humidityY[i] = mapToPixel(humidity, minHumidity, maxHumidity, graphY + graphH, graphY);
+        
+        ESP_LOGD(TAG, "Humidity %d: %.1f%% at pixel (%d, %d)", i, humidity, humidityX[i], humidityY[i]);
+    }
+    
+    // Draw smooth dotted curve using Catmull-Rom spline interpolation
+    // This creates smooth curves that pass through all data points
+    for (int i = 0; i < dataPoints - 1; i++) {
+        // Get control points for smooth curve calculation
+        // Use previous and next points to calculate smooth tangents
+        int16_t p0x = (i > 0) ? humidityX[i-1] : humidityX[i];
+        int16_t p0y = (i > 0) ? humidityY[i-1] : humidityY[i];
+        int16_t p1x = humidityX[i];
+        int16_t p1y = humidityY[i];
+        int16_t p2x = humidityX[i+1];
+        int16_t p2y = humidityY[i+1];
+        int16_t p3x = (i < dataPoints-2) ? humidityX[i+2] : humidityX[i+1];
+        int16_t p3y = (i < dataPoints-2) ? humidityY[i+2] : humidityY[i+1];
+        
+        // Draw smooth dotted curve between p1 and p2 using many small segments
+        int smoothSteps = 3; // Higher number = smoother curve
+        
+        for (int step = 0; step < smoothSteps; step++) {
+            // Calculate interpolation parameter (0.0 to 1.0)
+            float t1 = (float)step / smoothSteps;
+            float t2 = (float)(step + 1) / smoothSteps;
+            
+            // Catmull-Rom spline calculation for smooth curves
+            // This creates smooth curves that pass exactly through data points
+            auto catmullRom = [](float t, int16_t p0, int16_t p1, int16_t p2, int16_t p3) -> int16_t {
+                float t2 = t * t;
+                float t3 = t2 * t;
+                
+                float result = 0.5f * (
+                    (2.0f * p1) +
+                    (-p0 + p2) * t +
+                    (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+                    (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3
+                );
+                
+                return (int16_t)result;
+            };
+            
+            // Calculate smooth curve points
+            int16_t curve_x1 = catmullRom(t1, p0x, p1x, p2x, p3x);
+            int16_t curve_y1 = catmullRom(t1, p0y, p1y, p2y, p3y);
+            int16_t curve_x2 = catmullRom(t2, p0x, p1x, p2x, p3x);
+            int16_t curve_y2 = catmullRom(t2, p0y, p1y, p2y, p3y);
+            
+            // Draw the smooth dotted curve segment
+            drawDottedLine(curve_x1, curve_y1, curve_x2, curve_y2);
+        }
+    }
+}
+
+void WeatherGraph::drawDottedLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
+    // Calculate line length and direction using Bresenham's algorithm
+    int16_t dx = abs(x2 - x1);
+    int16_t dy = abs(y2 - y1);
+    int16_t sx = (x1 < x2) ? 1 : -1;
+    int16_t sy = (y1 < y2) ? 1 : -1;
+    int16_t err = dx - dy;
+    
+    int16_t x = x1, y = y1;
+    int dotCounter = 0;
+    
+    // Use shorter dots and gaps for clear dotted pattern
+    const int dotLength = 3;    // 2 pixels on
+    const int gapLength = 4;    // 3 pixels off
+    
+    while (true) {
+        // Draw pixel only during "on" phase of dot pattern
+        if ((dotCounter % (dotLength + gapLength)) < dotLength) {
+            display.drawPixel(x, y, GxEPD_BLACK);
+        }
+        
+        // Check if we've reached the end point
+        if (x == x2 && y == y2) break;
+        
+        // Bresenham's line algorithm for smooth dotted line
+        int16_t e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y += sy;
+        }
+        
+        dotCounter++;
+    }
+}
+
 // Utility function implementations
 float WeatherGraph::parseTemperature(const String& tempStr) {
     return tempStr.toFloat();
@@ -335,4 +454,8 @@ String WeatherGraph::formatHourFromTime(const String& timeStr) {
         return timeStr.substring(11, 13) + "h";
     }
     return "??h";
+}
+
+float WeatherGraph::parseHumidity(const String& humidityStr) {
+    return humidityStr.toFloat();
 }

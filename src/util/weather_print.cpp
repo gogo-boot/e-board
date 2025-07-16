@@ -9,23 +9,26 @@ RTCConfigData& config = ConfigManager::getConfig();
 void printWeatherInfo(const WeatherInfo &weather) {
     ESP_LOGI(TAG, "--- WeatherInfo ---");
     ESP_LOGI(TAG, "City: %s", config.cityName);
+    ESP_LOGI(TAG, "Current: %s°C, %s mm, Weather Code: %s", 
+             weather.temperature.c_str(), 
+             weather.precipitation.c_str(),
+             weather.weatherCode.c_str());
 
-    // Current weather information
-    ESP_LOGI(TAG, "Current Temperature: %s°C", weather.temperature.c_str());
-    ESP_LOGI(TAG, "Precipitation: %s mm", weather.precipitation.c_str());
-    ESP_LOGI(TAG, "Weather Code: %s", weather.weatherCode.c_str());
-
-    // Hourly forecast information
-    ESP_LOGI(TAG, "Hourly Forecast count: %d", weather.hourlyForecastCount);
-    for (int i = 0; i < weather.hourlyForecastCount && i < 12; ++i) {
-        const auto &hour = weather.hourlyForecast[i];
-        ESP_LOGI(TAG, "Hour %d | Time: %s | Temp: %s°C | Rain Chance: %s%% | Rainfall: %s mm | Weather Code: %s",
-             i + 1,
-             hour.time.c_str(),
-             hour.temperature.c_str(),
-             hour.rainChance.c_str(),
-             hour.rainfall.c_str(),
-             hour.weatherCode.c_str());
+    ESP_LOGI(TAG, "Hourly forecast count: %d", weather.hourlyForecastCount);
+    if (weather.hourlyForecastCount > 0) {
+        for (int i = 0; i < weather.hourlyForecastCount; i++) {
+            const auto& hour = weather.hourlyForecast[i];
+            ESP_LOGI(TAG, "Hour %d: %s | %s°C | Code: %s | Rain: %s%% (%s mm) | Humidity: %s%%", 
+                     i + 1,
+                     hour.time.c_str(),
+                     hour.temperature.c_str(),
+                     hour.weatherCode.c_str(),
+                     hour.rainChance.c_str(),
+                     hour.rainfall.c_str(),
+                     hour.humidity.c_str()); // Add humidity to logs
+        }
+    } else {
+        ESP_LOGI(TAG, "No hourly forecast data available");
     }
 
     // Daily forecast information (if available)

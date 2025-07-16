@@ -8,7 +8,7 @@
 #include "util/sleep_utils.h"
 #include "util/weather_print.h"
 #include "util/departure_print.h"
-#include "util/display_manager.h"
+#include "display/display_manager.h"
 #include "api/rmv_api.h"
 #include "api/google_api.h"
 #include "api/dwd_weather_api.h"

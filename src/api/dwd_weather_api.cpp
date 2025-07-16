@@ -61,11 +61,11 @@ static String weatherCodeToString(int code) {
 
 bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
 
-//https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration&hourly=temperature_2m,weather_code,precipitation_probability,precipitation&current=temperature_2m,precipitation,weather_code&timezone=auto&past_hours=1&forecast_hours=12
+//https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m&current=temperature_2m,precipitation,weather_code&timezone=auto&past_hours=1&forecast_hours=12
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
                  "&longitude=" + String(lon, 6) +
                  "&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration" +
-                 "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation" + 
+                 "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" + // Add relative_humidity_2m
                  "&current=temperature_2m,precipitation,weather_code" + 
                  "&timezone=auto&past_hours=1&forecast_hours=12";
     Serial.printf("Fetching weather from: %s\n", url.c_str());
@@ -95,6 +95,7 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
                 JsonArray wcode = hourly["weather_code"];
                 JsonArray rainProb = hourly["precipitation_probability"];
                 JsonArray precipitation = hourly["precipitation"];
+                JsonArray humidity = hourly["relative_humidity_2m"]; // Add humidity array
                 
                 int count = 0;
                 // Max 12-hour forecast
@@ -104,6 +105,7 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
                     weather.hourlyForecast[count].weatherCode = String(wcode[i].as<int>());
                     weather.hourlyForecast[count].rainChance = String(rainProb[i].as<int>());
                     weather.hourlyForecast[count].rainfall = String(precipitation[i].as<float>(), 2);
+                    weather.hourlyForecast[count].humidity = String(humidity[i].as<int>()); // Parse humidity
                     
                     count++;
                 }

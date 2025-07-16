@@ -7,6 +7,7 @@ struct WeatherHoulyForecast {
     String weatherCode;
     String rainChance;
     String rainfall;
+    String humidity;  // Add this new field
 };
 
 struct WeatherDailyForecast {
