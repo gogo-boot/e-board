@@ -82,22 +82,6 @@ void TextUtils::setFont24px_margin28px() {
     u8g2->setBackgroundColor(GxEPD_WHITE);
 }
 
-// Legacy function names for backward compatibility (now deprecated)
-void TextUtils::setLargeFont() {
-    setFont18px_margin22px();
-    ESP_LOGW(TAG, "setLargeFont() is deprecated, use setFont18px_margin22px() instead");
-}
-
-void TextUtils::setMediumFont() {
-    setFont12px_margin15px();
-    ESP_LOGW(TAG, "setMediumFont() is deprecated, use setFont12px_margin15px() instead");
-}
-
-void TextUtils::setSmallFont() {
-    setFont10px_margin12px();
-    ESP_LOGW(TAG, "setSmallFont() is deprecated, use setFont10px_margin12px() instead");
-}
-
 // Font metrics utilities
 int16_t TextUtils::getCurrentFontHeight() {
     if (!u8g2) return 0;

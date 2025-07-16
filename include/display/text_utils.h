@@ -31,11 +31,6 @@ public:
     static void setFont18px_margin22px();  // Extra large font - 18px height, 22px margin
     static void setFont24px_margin28px();  // Huge font - 24px height, 28px margin
 
-    // Legacy function names for backward compatibility (will be deprecated)
-    static void setSmallFont();   // Maps to setFont10px_margin12px()
-    static void setMediumFont();  // Maps to setFont12px_margin15px()
-    static void setLargeFont();   // Maps to setFont18px_margin22px()
-
     // Text measurement and fitting functions
     static int16_t getTextWidth(const String& text);
     static String shortenTextToFit(const String& text, int16_t maxWidth);

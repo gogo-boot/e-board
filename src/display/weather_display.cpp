@@ -97,7 +97,7 @@ void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather,
     colY = currentY; // Reset to baseline Y for third column
 
     // Date Info: 27px
-    TextUtils::setMediumFont();
+    TextUtils::setFont12px_margin15px(); // Medium font for date info
     u8g2->setCursor(thirdColX, colY);
     u8g2->print("Today");
     colY += 13;
@@ -107,7 +107,7 @@ void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather,
     colY += 14;            // Total 27px
 
     // Sunrise: 20px
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for sunrise/sunset
     u8g2->setCursor(thirdColX, colY);
     u8g2->print("Sunrise: ");
     u8g2->print(weather.dailyForecast[0].sunrise);
@@ -150,7 +150,7 @@ void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather,
     drawWeatherInfoThirdColumn(currentX, dayWeatherInfoY, weather);
 
     // Weather Graph section (replaces text-based forecast for better visualization)
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for graph headers
     u8g2->setCursor(leftMargin, currentY);
     u8g2->print("Next 12 Hours:");
     currentY += 18;
@@ -195,7 +195,7 @@ void WeatherDisplay::drawCompactTextForecast(const WeatherInfo &weather,
 }
 
 void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather) {
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for weather info
 
     // Draw first Column - Current Temperature and Condition
     u8g2->setCursor(leftMargin, currentY);
@@ -213,7 +213,7 @@ void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t &cur
 }
 
 void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for weather info
     u8g2->setCursor(currentX, dayWeatherInfoY);
     u8g2->print(weather.dailyForecast[0].tempMin);
     u8g2->print(" | ");
@@ -229,7 +229,7 @@ void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWe
 }
 
 void WeatherDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for weather info
     u8g2->setCursor(currentX, dayWeatherInfoY);
     u8g2->print("Date :");
     u8g2->print("Juli 13"); // Placeholder - should use actual date
@@ -249,7 +249,7 @@ void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y) {
         return;
     }
     
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for footer
 
     // Ensure footer is positioned properly within bounds
     int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom

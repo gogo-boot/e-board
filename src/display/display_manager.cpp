@@ -251,7 +251,7 @@ void DisplayManager::displayDeparturesOnly(const DepartureData &departures)
 
 void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
 {
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for footer
 
     // Ensure footer is positioned properly within bounds
     int16_t footerY = min(y, (int16_t)(screenHeight - 20)); // Ensure at least 20px from bottom
@@ -287,14 +287,14 @@ void DisplayManager::drawDepartureFooter(int16_t x, int16_t y)
 
 void DisplayManager::drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h)
 {
-    int16_t currentY = y + 10; // Start closer to top without header space
+    int16_t currentY = y + 15; // Start closer to top without header space
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
 
     bool isFullScreen = (w >= screenWidth * 0.8);
 
     // Station name
-    TextUtils::setMediumFont();
+    TextUtils::setFont12px_margin15px(); // Medium font for station name
     u8g2.setCursor(leftMargin, currentY);
     RTCConfigData &config = ConfigManager::getConfig();
     String stopName = getStopName(config);
@@ -307,7 +307,7 @@ void DisplayManager::drawDepartureSection(const DepartureData &departures, int16
     currentY += 40; // Station Name section gets 40px
 
     // Column headers
-    TextUtils::setSmallFont();
+    TextUtils::setFont10px_margin12px(); // Small font for column headers
     u8g2.setCursor(leftMargin, currentY);
     if (isFullScreen)
     {
@@ -430,7 +430,7 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
     else
     {
         // Half screen format
-        TextUtils::setSmallFont();
+        TextUtils::setFont10px_margin12px(); // Small font for departure entries
         
         // Calculate available space
         int totalWidth = rightMargin - leftMargin;
@@ -520,7 +520,7 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
         String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
         
         // Display disruption information
-        TextUtils::setSmallFont();
+        TextUtils::setFont10px_margin12px(); // Small font for disruption info
         u8g2.setCursor(leftMargin + 20, currentY); // Indent disruption text
         u8g2.print("⚠ ");
         u8g2.print(fittedDisruption);
@@ -528,21 +528,6 @@ void DisplayManager::drawSingleDeparture(const DepartureInfo &dep, int16_t leftM
     
     // Add consistent spacing after disruption area (whether used or not)
     currentY += 17; // Disruption space gets 17px (total 37px per entry)
-}
-
-// Add these missing function implementations:
-void DisplayManager::setLargeFont()
-{
-    u8g2.setFont(u8g2_font_helvB18_tf); // 18pt Helvetica Bold with German support
-    u8g2.setForegroundColor(GxEPD_BLACK);
-    u8g2.setBackgroundColor(GxEPD_WHITE);
-}
-
-void DisplayManager::setMediumFont()
-{
-    u8g2.setFont(u8g2_font_helvB12_tf); // 12pt Helvetica Bold with German support
-    u8g2.setForegroundColor(GxEPD_BLACK);
-    u8g2.setBackgroundColor(GxEPD_WHITE);
 }
 
 void DisplayManager::hibernate() {
