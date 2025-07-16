@@ -402,7 +402,9 @@ void DisplayManager::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
                 u8g2.print(forecast.temperature);
                 u8g2.print("° ");
                 u8g2.print(forecast.rainChance);
-                u8g2.print("%");
+                u8g2.print("% ");
+                u8g2.print(forecast.humidity); // Add humidity display
+                u8g2.print("%RH");
 
                 currentY += 16;
                 if (currentY > y + h - 40)
