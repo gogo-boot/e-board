@@ -37,15 +37,10 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     int16_t graphH = h - marginTop - marginBottom;
     
     // Find actual temperature range from data
-    float actualMin = 100.0f, actualMax = -100.0f;
     int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
     
-    for (int i = 0; i < dataPoints; i++) {
-        float temp = parseTemperature(weather.hourlyForecast[i].temperature);
-        actualMin = min(actualMin, temp);
-        actualMax = max(actualMax, temp);
-    }
-    
+    float actualMin = parseTemperature(weather.dailyForecast[0].tempMin);
+    float actualMax = parseTemperature(weather.dailyForecast[0].tempMax);
     // Calculate dynamic temperature range using your specified logic
     float dynamicMin = calculateDynamicMinTemp(actualMin);
     float dynamicMax = calculateDynamicMaxTemp(actualMax);
