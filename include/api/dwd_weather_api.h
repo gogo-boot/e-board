@@ -29,10 +29,8 @@ struct WeatherInfo {
     String precipitation;
     String weatherCode;
 
-    String rawJson;
-
     // Hourly forecast
-    WeatherHoulyForecast hourlyForecast[12]; // 12-hour forecast
+    WeatherHoulyForecast hourlyForecast[13]; // 1hour past and 12-hour forecast
     int hourlyForecastCount = 0;
 
     // Daily forecast

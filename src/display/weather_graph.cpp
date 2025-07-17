@@ -57,7 +57,7 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     drawGraphFrame(graphX, graphY, graphW, graphH);
     drawTemperatureAxis(x, graphY, marginLeft, graphH, dynamicMin, dynamicMax);
     drawRainAxis(x + w - marginRight, graphY, marginRight, graphH);
-    drawTimeAxis(graphX, y + h - marginBottom, graphW, marginBottom, weather); // <-- Add weather parameter
+    drawTimeAxis(graphX, y + h - marginBottom - marginLegend, graphW, marginBottom, weather); // <-- Add weather parameter
     
     // Draw data layers (order matters for visibility)
     drawRainBars(weather, graphX, graphY, graphW, graphH);                              // Background: Rain bars
@@ -152,15 +152,19 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
 void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, const WeatherInfo& weather) {
     TextUtils::setFont10px_margin12px(); // Small font for time axis
     
-    // Get the number of data points available
+    // Get the number of data points available (e.g., 13 for 12h+current)
     int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
     
     // Adaptive time labels based on available width  
+    // If the graph is narrow, show fewer labels (every 6 hours), otherwise every 3 hours
     int labelStep = (w < 200) ? 6 : 3; // Every 6 hours for compact, every 3 hours for full
-    
-    for (int i = 0; i < dataPoints; i += labelStep) {
+
+    // Loop through the time axis and print labels at intervals of labelStep
+    // NOTE: The loop currently may not print the very last label if dataPoints is not a multiple of labelStep
+    for (int i = 0; i < dataPoints ; i += labelStep) {
         // Extract actual time from forecast data (HH:MM format)
-        String timeStr = weather.hourlyForecast[i].time;
+        // Defensive: If index is out of bounds, fallback to hour index
+        String timeStr = (i < weather.hourlyForecastCount) ? weather.hourlyForecast[i].time : "";
         String actualTime;
         
         // Extract hour:minute from ISO time string (YYYY-MM-DDTHH:MM:SS)
@@ -170,14 +174,15 @@ void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, cons
             actualTime = String(i) + "h"; // Fallback to hour index
         }
         
+        // Calculate X position for this label
         int16_t labelX = x + (w * i) / HOURS_TO_SHOW;
         int16_t textWidth = TextUtils::getTextWidth(actualTime);
-        
-        // Make sure label fits within bounds
-        if (labelX + textWidth/2 <= x + w && i < dataPoints) {
+        int8_t labelXTolerance = -30; // Allow some tolerance for label fitting 
+        // Only print label if it fits within the graph area and is within data range
+        // if (labelX + textWidth/2 <= x + w + labelXTolerance && i < dataPoints) {
             u8g2.setCursor(labelX - textWidth / 2, y + 20);
             u8g2.print(actualTime);
-        }
+        // }
     }
 }
 

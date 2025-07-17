@@ -52,6 +52,5 @@ void printWeatherInfo(const WeatherInfo &weather) {
         ESP_LOGI(TAG, "No daily forecast data available");
     }
 
-    ESP_LOGI(TAG, "Raw JSON length: %d characters", weather.rawJson.length());
     ESP_LOGI(TAG, "--- End WeatherInfo ---");
 }

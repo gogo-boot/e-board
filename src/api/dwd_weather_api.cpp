@@ -67,15 +67,14 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
                  "&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration" +
                  "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" + // Add relative_humidity_2m
                  "&current=temperature_2m,precipitation,weather_code" + 
-                 "&timezone=auto&past_hours=1&forecast_hours=12";
+                 "&timezone=auto&past_hours=0&forecast_hours=13";
     Serial.printf("Fetching weather from: %s\n", url.c_str());
     HTTPClient http;
     http.begin(url);
     int httpCode = http.GET();
     if (httpCode > 0) {
         String payload = http.getString();
-        weather.rawJson = payload;
-        DynamicJsonDocument doc(8192);
+        DynamicJsonDocument doc(4096);
         DeserializationError error = deserializeJson(doc, payload);
         if (!error) {
             // Parse current weather
@@ -98,8 +97,7 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
                 JsonArray humidity = hourly["relative_humidity_2m"]; // Add humidity array
                 
                 int count = 0;
-                // Max 12-hour forecast
-                for (size_t i = 0; i < times.size() && count < 12; ++i) {
+                for (size_t i = 0; i < times.size() && count < 13; ++i) {
                     weather.hourlyForecast[count].time = times[i].as<String>();
                     weather.hourlyForecast[count].temperature = String(temps[i].as<float>(), 1);
                     weather.hourlyForecast[count].weatherCode = String(wcode[i].as<int>());
