@@ -159,9 +159,9 @@ void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather,
     currentY += 12; // Space after Day Weather Information section
 
     // Weather Graph section (replaces text-based forecast for better visualization)
-    TextUtils::setFont10px_margin12px(); // Small font for graph headers
+    TextUtils::setFont12px_margin15px(); // Medium font for graph headers
     TextUtils::printTextAtWithMargin(leftMargin, currentY, "Nächste 12 Stunden:");
-    currentY += 12; // Nächste 12 Stunden 
+    currentY += 15; // Nächste 12 Stunden 
     currentY += 12; // Space after header
 
     // Calculate available space for graph
