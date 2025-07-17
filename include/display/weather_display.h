@@ -10,7 +10,7 @@ class WeatherDisplay {
 public:
     // Main weather drawing functions
     static void drawWeatherSection(const WeatherInfo &weather, int16_t x, int16_t y, int16_t w, int16_t h);
-    static void drawWeatherFooter(int16_t x, int16_t y);
+    static void drawWeatherFooter(int16_t x, int16_t y, int16_t h);
     
     // Initialize with display references and screen dimensions
     static void init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> &displayRef, 

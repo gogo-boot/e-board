@@ -177,7 +177,7 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
 {
     ESP_LOGI(TAG, "Updating weather half");
 
-    const int16_t footerHeight = 25;
+    const int16_t footerHeight = 15;
     const int16_t contentY = 0; // Start from top without header
     const int16_t contentHeight = screenHeight; // Use full height
 
@@ -194,7 +194,7 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
     }
     // Use partial window for faster update
     WeatherDisplay::drawWeatherSection(weather, x, contentY, w, contentHeight);
-    WeatherDisplay::drawWeatherFooter(x, screenHeight - footerHeight);
+    WeatherDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
 }
 
 void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &departures)

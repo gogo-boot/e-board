@@ -213,18 +213,15 @@ void WeatherDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWea
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, sunsetText);
 }
 
-void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y) {
+void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
     if (!display || !u8g2) {
         ESP_LOGE(TAG, "WeatherDisplay not initialized! Call init() first.");
         return;
     }
-    
     TextUtils::setFont10px_margin12px(); // Small font for footer
 
-    // Ensure footer is positioned properly within bounds
-    int16_t footerY = y + screenHeight - 14; // Place at bottom of section
+    int16_t footerY = y + h - 14; // Correct: bottom of section
     int16_t footerX = x + 10;
-    ESP_LOGI(TAG, "Departure footer position: (%d, %d)", footerX, footerY);
 
     String footerText = "Aktualisiert: ";
     if (TimeManager::isTimeSet()) {
