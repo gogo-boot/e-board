@@ -68,13 +68,7 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
 }
 
 void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
-    // Draw main graph border
-    // display.drawRect(x, y, w, h, GxEPD_BLACK);
-    // Removed: Left border (Y-axis line)
-    // Removed: Right border (Y-axis line)
-
     // Draw only top and bottom borders (remove left and right Y-axis lines)
-    // display.drawLine(x, y, x + w, y, GxEPD_BLACK);           // Top border
     display.drawLine(x, y + h, x + w, y + h, GxEPD_BLACK);   // Bottom border
     
     // Draw horizontal grid lines (every 25% of height)

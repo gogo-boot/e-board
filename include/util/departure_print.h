@@ -2,4 +2,3 @@
 #include "api/rmv_api.h"
 
 void printDepartInfo(const DepartureData& depart);
-void displayDepartInfo(const DepartureData& depart);
