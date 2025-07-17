@@ -162,11 +162,11 @@ void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather,
     TextUtils::setFont12px_margin15px(); // Medium font for graph headers
     TextUtils::printTextAtWithMargin(leftMargin, currentY, "Nächste 12 Stunden:");
     currentY += 15; // Nächste 12 Stunden 
-    currentY += 12; // Space after header
+    currentY += 15; // Space after 
 
     // Calculate available space for graph
     int availableHeight = (y + h - 15) - currentY; // Leave 15px for footer
-    int graphHeight = min(310, availableHeight);   // Max 310px, but adapt to available space
+    int graphHeight = min(304, availableHeight);   // Max 307px, but adapt to available space
 
     // Only draw graph if we have enough space
     WeatherGraph::drawTemperatureAndRainGraph(weather,

@@ -30,9 +30,9 @@
 │       - Sunrise : 20 px            │                                         │
 │       - Sunset : 20px              │                                         │
 │  • Space 12px                      │                                         │
-│  • Nächste Stunden 12px            │                                         │
-│  • Space 12px                      │                                         │
-│  • Weather Graphic : 310px         │                                         │
+│  • Nächste Stunden 15px            │                                         │
+│  • Space 15px                      │                                         │
+│  • Weather Graphic : 304px         │                                         │
 │  • Space 12px                      │                                         │
 │  • Footer: 15px                    │                                         │
 └────────────────────────────────────┴─────────────────────────────────────────┘
