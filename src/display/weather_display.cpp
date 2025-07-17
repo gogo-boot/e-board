@@ -35,16 +35,6 @@ void WeatherDisplay::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
 
     bool isFullScreen = (w >= screenWidth * 0.8);
 
-    // City/Town Name with proper margin
-    TextUtils::setFont24px_margin28px(); 
-
-    // Calculate available width and fit city name
-    RTCConfigData &config = ConfigManager::getConfig();
-    int cityMaxWidth = rightMargin - leftMargin;
-    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
-    currentY += 28 + 10; // Space after city name
-
     if (isFullScreen) {
         drawFullScreenWeatherLayout(weather, leftMargin, rightMargin, currentY, y, h);
     } else {
@@ -55,6 +45,17 @@ void WeatherDisplay::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
 void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather, 
                                                 int16_t leftMargin, int16_t rightMargin, 
                                                 int16_t &currentY, int16_t y, int16_t h) {
+
+    // City/Town Name with proper margin
+    TextUtils::setFont24px_margin28px(); 
+
+    // Calculate available width and fit city name
+    RTCConfigData &config = ConfigManager::getConfig();
+    int cityMaxWidth = rightMargin - leftMargin;
+    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
+    currentY += 28 + 10; // Space after city name
+
     // Day weather Info section
     // Calculate column widths
     int columnWidth = (rightMargin - leftMargin) / 3;
@@ -131,6 +132,17 @@ void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather,
 void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather, 
                                                 int16_t leftMargin, int16_t rightMargin, 
                                                 int16_t &currentY, int16_t y, int16_t h) {
+
+    // City/Town Name with proper margin
+    TextUtils::setFont24px_margin28px(); 
+
+    // Calculate available width and fit city name
+    RTCConfigData &config = ConfigManager::getConfig();
+    int cityMaxWidth = rightMargin - leftMargin;
+    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
+    currentY += 28 + 10; // Space after city name
+
     // Each Column has a fixed height of 67px
     drawWeatherInfoFirstColumn(leftMargin, currentY, weather);
 
