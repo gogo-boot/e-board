@@ -25,16 +25,17 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     ESP_LOGI(TAG, "Drawing weather graph at (%d,%d) size %dx%d", x, y, w, h);
     
     // Adaptive margins based on graph size
-    int16_t marginLeft = (h < 120) ? 25 : MARGIN_LEFT;      // Smaller margins for compact mode
+    int16_t marginLeft = (h < 120) ? 25 : MARGIN_LEFT;      
     int16_t marginRight = (h < 120) ? 25 : MARGIN_RIGHT;
     int16_t marginTop = (h < 120) ? 10 : MARGIN_TOP;
     int16_t marginBottom = (h < 120) ? 20 : MARGIN_BOTTOM;
+    int16_t marginLegend = (h < 120) ? 20 : LEGEND_MARGIN;
     
     // Calculate graph area (removing margins for axes labels)
     int16_t graphX = x + marginLeft;
     int16_t graphY = y + marginTop;
     int16_t graphW = w - marginLeft - marginRight;
-    int16_t graphH = h - marginTop - marginBottom;
+    int16_t graphH = h - marginTop - marginBottom - marginLegend; // Reserve space for legend
     
     // Find actual temperature range from data
     float actualMin = 100.0f, actualMax = -100.0f;
@@ -125,9 +126,10 @@ void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t 
     
     // Temperature axis label (skip for very compact mode)
     if (w >= 30) {
-        TextUtils::setFont10px_margin12px(); // Small font for axis labels
-        u8g2.setCursor(x + 2, y - 5);
-        u8g2.print("Temp");
+        // Place "Temperatur" above the Y axis, left-aligned
+        int tempLabelX = x; // 10px left of axis (adjust as needed)
+        int tempLabelY = y - 25;  // 5px above the graph area (adjust as needed)
+        TextUtils::printTextAtWithMargin(tempLabelX, tempLabelY, "Temperatur");
     }
 }
 
@@ -144,12 +146,6 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
         String rainLabel = String(rainPercent) + "%";
         u8g2.setCursor(x + 3, labelY + 4);
         u8g2.print(rainLabel);
-    }
-    
-    // Rain axis label (skip for very compact mode)
-    if (w >= 30) {
-        u8g2.setCursor(x + 3, y - 5);
-        u8g2.print("Regen");
     }
 }
 
