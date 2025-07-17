@@ -15,7 +15,8 @@
 │         WEATHER SECTION            │          DEPARTURE SECTION              │
 │           (400x480)                │            (400x480)                    │
 │                                    │                                         │
-│  • City/Town Name: 40px            │  • Station Name: 40px                   │
+│  • City/Town Name: 28px            │  • Station Name: 40px                   │
+│  • Space 12px                      │                                         │
 │  • Day weather Info: 67px          │  • Column Headers: 30px                 │
 │    - first column                  │  • Departure Entries: 36px each         │
 │       - Day Weather Icon: 37px     │    - Main Line: 20px                    │
@@ -29,7 +30,8 @@
 │       - Sunrise : 20 px            │                                         │
 │       - Sunset : 20px              │                                         │
 │  • Space 12px                      │                                         │
-│  • Weather Graphic : 334px         │                                         │
+│  • Nächste Stunden 12px            │                                         │
+│  • Weather Graphic : 322px         │                                         │
 │  • Space 12px                      │                                         │
 │  • Footer: 15px                    │                                         │
 └────────────────────────────────────┴─────────────────────────────────────────┘

@@ -30,9 +30,6 @@ private:
     static void drawHalfScreenWeatherLayout(const WeatherInfo &weather, 
                                            int16_t leftMargin, int16_t rightMargin, 
                                            int16_t &currentY, int16_t y, int16_t h);
-    static void drawCompactTextForecast(const WeatherInfo &weather, 
-                                       int16_t leftMargin, int16_t &currentY, 
-                                       int16_t y, int16_t h, int availableHeight);
     
     // Display references
     static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> *display;

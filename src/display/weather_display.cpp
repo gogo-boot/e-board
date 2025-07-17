@@ -161,36 +161,16 @@ void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather,
     // Weather Graph section (replaces text-based forecast for better visualization)
     TextUtils::setFont10px_margin12px(); // Small font for graph headers
     TextUtils::printTextAtWithMargin(leftMargin, currentY, "Nächste 12 Stunden:");
-    currentY += 18;
 
     // Calculate available space for graph
     int availableHeight = (y + h - 15) - currentY; // Leave 15px for footer
-    int graphHeight = min(333, availableHeight);   // Max 333px, but adapt to available space
+    int graphHeight = min(322, availableHeight);   // Max 322px, but adapt to available space
 
-    if (graphHeight >= 80) { 
-        // Only draw graph if we have enough space
-        WeatherGraph::drawTemperatureAndRainGraph(weather,
-                                                  leftMargin, currentY,
-                                                  rightMargin - leftMargin, graphHeight);
-        currentY += graphHeight;
-    } else {
-        // Fallback to compact text forecast if not enough space for graph
-        drawCompactTextForecast(weather, leftMargin, currentY, y, h, availableHeight);
-    }
-}
-
-void WeatherDisplay::drawCompactTextForecast(const WeatherInfo &weather, 
-                                           int16_t leftMargin, int16_t &currentY, 
-                                           int16_t y, int16_t h, int availableHeight) {
-    int maxForecast = min(6, availableHeight / 16); // Limit based on available space
-    for (int i = 0; i < min(maxForecast, weather.hourlyForecastCount); i++) {
-        const auto &forecast = weather.hourlyForecast[i];
-        String timeStr = forecast.time.substring(11, 16); // HH:MM
-        String line = timeStr + " " + String(forecast.temperature) + "° " + String(forecast.rainChance) + "% " + String(forecast.humidity) + "%RH";
-        TextUtils::printTextAtWithMargin(leftMargin, currentY, line);
-        currentY += 16;
-        if (currentY > y + h - 40) break; // Leave space for footer
-    }
+    // Only draw graph if we have enough space
+    WeatherGraph::drawTemperatureAndRainGraph(weather,
+                                                leftMargin, currentY,
+                                                rightMargin - leftMargin, graphHeight);
+    currentY += graphHeight;
 }
 
 void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
