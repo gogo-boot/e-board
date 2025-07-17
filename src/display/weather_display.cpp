@@ -36,15 +36,14 @@ void WeatherDisplay::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
     bool isFullScreen = (w >= screenWidth * 0.8);
 
     // City/Town Name with proper margin
-    TextUtils::setFont12px_margin15px(); // 12px font needs 15px margin from top
-    currentY += 15; // Apply the margin
+    TextUtils::setFont24px_margin28px(); 
 
     // Calculate available width and fit city name
     RTCConfigData &config = ConfigManager::getConfig();
     int cityMaxWidth = rightMargin - leftMargin;
     String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY - 15, fittedCityName); // Use helper function
-    currentY += 25; // Space after city name
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
+    currentY += 28 + 10; // Space after city name
 
     if (isFullScreen) {
         drawFullScreenWeatherLayout(weather, leftMargin, rightMargin, currentY, y, h);
@@ -135,24 +134,23 @@ void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather,
 void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather, 
                                                 int16_t leftMargin, int16_t rightMargin, 
                                                 int16_t &currentY, int16_t y, int16_t h) {
-    // Draw weather info columns
-    int16_t dayWeatherInfoY = currentY;
-
     // Each Column has a fixed height of 67px
     drawWeatherInfoFirstColumn(leftMargin, currentY, weather);
 
-    int16_t currentX = leftMargin + 100;
     // Draw second Column - Today's temps, UV, Pollen
-    drawWeatherInfoSecondColumn(currentX, dayWeatherInfoY, weather);
-    currentX += 150; // Move to next column
+    int16_t currentX = leftMargin + 100;
+    drawWeatherInfoSecondColumn(currentX, currentY, weather);
 
     // Draw third Column - Date, Sunrise, Sunset
-    drawWeatherInfoThirdColumn(currentX, dayWeatherInfoY, weather);
+    currentX += 150; // Move to next column
+    drawWeatherInfoThirdColumn(currentX, currentY, weather);
+
+    currentY += 67;
 
     // Weather Graph section (replaces text-based forecast for better visualization)
     TextUtils::setFont10px_margin12px(); // Small font for graph headers
     u8g2->setCursor(leftMargin, currentY);
-    u8g2->print("Next 12 Hours:");
+    u8g2->print("Nächste 12 Stunden:");
     currentY += 18;
 
     // Calculate available space for graph
@@ -194,22 +192,20 @@ void WeatherDisplay::drawCompactTextForecast(const WeatherInfo &weather,
     }
 }
 
-void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather) {
+void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
     TextUtils::setFont10px_margin12px(); // Small font for weather info
 
     // Draw first Column - Current Temperature and Condition
-    u8g2->setCursor(leftMargin, currentY);
+    u8g2->setCursor(leftMargin, dayWeatherInfoY);
     // weather_code is missing
     // u8g2->print(weather.coded);
     // Day weather Info section: 37px total
     // Todo Add weather icon support
-    currentY += 47;
 
     // Current temperature: 30px
-    u8g2->setCursor(leftMargin, currentY);
+    u8g2->setCursor(leftMargin, dayWeatherInfoY + 47);
     u8g2->print(weather.temperature);
     u8g2->print("°C  ");
-    currentY += 20;
 }
 
 void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {

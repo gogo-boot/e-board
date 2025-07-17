@@ -19,7 +19,7 @@ public:
 
 private:
     // Weather-specific column drawing functions
-    static void drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather);
+    static void drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY, const WeatherInfo &weather);
     static void drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather);
     static void drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather);
     
