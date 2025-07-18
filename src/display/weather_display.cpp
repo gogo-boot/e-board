@@ -134,14 +134,14 @@ void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather,
                                                 int16_t &currentY, int16_t y, int16_t h) {
 
     // City/Town Name with proper margin
-    TextUtils::setFont24px_margin28px(); 
+    TextUtils::setFont14px_margin17px(); 
 
     // Calculate available width and fit city name
     RTCConfigData &config = ConfigManager::getConfig();
     int cityMaxWidth = rightMargin - leftMargin;
     String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
-    currentY += 28; // city name
+    currentY += 17; // city name
     currentY += 12; // Space after city name
 
     // Each Column has a fixed height of 67px
