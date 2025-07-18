@@ -151,38 +151,31 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
 
 void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, const WeatherInfo& weather) {
     TextUtils::setFont10px_margin12px(); // Small font for time axis
-    
-    // Get the number of data points available (e.g., 13 for 12h+current)
-    int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
-    
-    // Adaptive time labels based on available width  
-    // If the graph is narrow, show fewer labels (every 6 hours), otherwise every 3 hours
-    int labelStep = (w < 200) ? 6 : 3; // Every 6 hours for compact, every 3 hours for full
 
-    // Loop through the time axis and print labels at intervals of labelStep
-    // NOTE: The loop currently may not print the very last label if dataPoints is not a multiple of labelStep
-    for (int i = 0; i < dataPoints ; i += labelStep) {
-        // Extract actual time from forecast data (HH:MM format)
-        // Defensive: If index is out of bounds, fallback to hour index
+    int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
+    if (dataPoints < 2) return;
+
+    // Dynamically choose label count: about one every 3 points, but always at least 2, at most dataPoints
+    int labelCount = constrain((dataPoints + 2) / 3, 2, dataPoints);
+    // If you want at least 5, use: int labelCount = constrain((dataPoints + 2) / 3, 5, dataPoints);
+
+    for (int l = 0; l < labelCount; l++) {
+        // Evenly spaced indices: 0 ... dataPoints-1
+        int i = (l * (dataPoints - 1)) / (labelCount - 1);
+
         String timeStr = (i < weather.hourlyForecastCount) ? weather.hourlyForecast[i].time : "";
         String actualTime;
-        
-        // Extract hour:minute from ISO time string (YYYY-MM-DDTHH:MM:SS)
         if (timeStr.length() >= 16) {
-            actualTime = timeStr.substring(11, 16); // Gets "HH:MM"
+            actualTime = timeStr.substring(11, 16); // "HH:MM"
         } else {
-            actualTime = String(i) + "h"; // Fallback to hour index
+            actualTime = String(i) + "h";
         }
-        
-        // Calculate X position for this label
-        int16_t labelX = x + (w * i) / HOURS_TO_SHOW;
+
+        int16_t labelX = x + (w * i) / (dataPoints - 1);
         int16_t textWidth = TextUtils::getTextWidth(actualTime);
-        int8_t labelXTolerance = -30; // Allow some tolerance for label fitting 
-        // Only print label if it fits within the graph area and is within data range
-        // if (labelX + textWidth/2 <= x + w + labelXTolerance && i < dataPoints) {
-            u8g2.setCursor(labelX - textWidth / 2, y + 20);
-            u8g2.print(actualTime);
-        // }
+
+        u8g2.setCursor(labelX - textWidth / 2, y + 20);
+        u8g2.print(actualTime);
     }
 }
 
