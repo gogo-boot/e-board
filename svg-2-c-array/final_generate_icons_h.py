@@ -65,7 +65,7 @@ def generate_icons_h(directory):
     icons_h_content.append('')
 
     # define the constexpr function
-    icons_h_content.append('constexpr const unsigned char* getBitmap(icon_name_t icon, size_t size)')
+    icons_h_content.append('const unsigned char* getBitmap(icon_name_t icon, size_t size)')
     icons_h_content.append('{')
     icons_h_content.append('  switch (icon) {')
     for icon_name in icon_names:

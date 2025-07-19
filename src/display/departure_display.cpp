@@ -3,6 +3,7 @@
 #include "util/time_manager.h"
 #include <esp_log.h>
 #include <vector>
+#include <icons.h>
 
 static const char *TAG = "DEPARTURE_DISPLAY";
 
@@ -258,7 +259,6 @@ void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y) {
     // Position footer text with proper baseline calculation
     int16_t baseline = footerY + TextUtils::getFontAscent();
     u8g2->setCursor(footerX, baseline);
-    u8g2->print("Aktualisiert: ");
 
     // Check if time is properly set
     if (TimeManager::isTimeSet()) {
@@ -269,6 +269,14 @@ void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y) {
             // German time format: "HH:MM DD.MM."
             strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
             u8g2->print(timeStr);
+            // get width of timeStr
+            int16_t timeStrWidth = TextUtils::getTextWidth(timeStr);
+
+            display->drawInvertedBitmap(
+                footerX + timeStrWidth + 5, baseline - 16,
+                getBitmap(refresh, 16), 16, 16,
+                GxEPD_BLACK
+            ); // Draw logo bitmap at footer position
         } else {
             u8g2->print("Zeit nicht verfügbar");
         }
