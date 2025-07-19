@@ -58,13 +58,61 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     drawTemperatureAxis(x, graphY, marginLeft, graphH, dynamicMin, dynamicMax);
     drawRainAxis(x + w - marginRight, graphY, marginRight, graphH);
     drawTimeAxis(graphX, y + h - marginBottom - marginLegend, graphW, marginBottom, weather); // <-- Add weather parameter
-    
+    drawGraphLegend(x, y + h - marginLegend, w, marginLegend); 
+
     // Draw data layers (order matters for visibility)
     drawRainBars(weather, graphX, graphY, graphW, graphH);                              // Background: Rain bars
     drawHumidityLine(weather, graphX, graphY, graphW, graphH);                          // Middle: Humidity dotted line
     drawTemperatureLine(weather, graphX, graphY, graphW, graphH, dynamicMin, dynamicMax); // Foreground: Temperature solid line
-    
+
     ESP_LOGI(TAG, "Weather graph completed with %d data points", dataPoints);
+}
+
+void WeatherGraph::drawGraphLegend(int16_t x, int16_t y, int16_t w, int16_t h) {
+    // Draw the legend horizontally (side by side), using available width
+
+    TextUtils::setFont8px_margin10px();
+
+    int itemCount = 3;
+    int16_t spacingX = w / itemCount;
+    int16_t lineLen = min(32, spacingX - 40); // leave space for label text
+
+    int16_t legendY = y + h / 2 - 6; // vertically center the legend items
+
+    // 1. Temperature (solid line)
+    int16_t legendX = x;
+    display.drawLine(legendX, legendY + 6, legendX + lineLen, legendY + 6, GxEPD_BLACK); // Draw solid line
+    u8g2.setCursor(legendX + lineLen + 8, legendY + 10);
+    u8g2.print("Temperatur");
+
+    // 2. Humidity (dotted line)
+    legendX += spacingX;
+    u8g2.setCursor(legendX + lineLen + 8, legendY + 10);
+    u8g2.print("Luftfeuchte");
+    // Draw dotted line
+    for (int i = 0; i < lineLen; ++i) {
+        if ((i / 3) % 3 == 0) display.drawPixel(legendX + i, legendY + 6, GxEPD_BLACK);
+    }
+
+    // 3. Rain (crosshatch bar)
+    legendX += spacingX;
+    u8g2.setCursor(legendX + lineLen + 8, legendY + 10);
+    u8g2.print("Regen Chance");
+    // Draw crosshatch bar
+    int16_t barTop = legendY + 2;
+    int16_t barHeight = min(8, h - 4); // fit in legend area
+    // Horizontal lines
+    for (int yb = barTop; yb < barTop + barHeight; yb += 3) {
+        for (int xb = legendX; xb < legendX + lineLen; xb += 2) {
+            display.drawPixel(xb, yb, GxEPD_BLACK);
+        }
+    }
+    // Vertical lines
+    for (int xb = legendX; xb < legendX + lineLen; xb += 4) {
+        for (int yb = barTop; yb < barTop + barHeight; yb += 2) {
+            display.drawPixel(xb, yb, GxEPD_BLACK);
+        }
+    }
 }
 
 void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {

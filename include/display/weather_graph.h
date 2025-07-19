@@ -31,6 +31,8 @@ private:
                            int16_t graphX, int16_t graphY, 
                            int16_t graphW, int16_t graphH);
     
+    static void drawGraphLegend(int16_t x, int16_t y, int16_t w, int16_t h);
+
     // Humidity drawing functions
     static void drawHumidityLine(const WeatherInfo& weather,
                                int16_t graphX, int16_t graphY, 
@@ -51,7 +53,7 @@ private:
     static const int16_t MARGIN_LEFT = 35;    // Space for temperature labels
     static const int16_t MARGIN_RIGHT = 35;   // Space for rain percentage labels
     static const int16_t MARGIN_TOP = 15;     // Top spacing
-    static const int16_t MARGIN_BOTTOM = 25;  // Space for time labels
+    static const int16_t MARGIN_BOTTOM = 20;  // Space for time labels
     static const int16_t LEGEND_MARGIN = 35;  // Space for legend labels
     static const int HOURS_TO_SHOW = 13;      // 13 hours as specified
 };

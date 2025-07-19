@@ -142,7 +142,7 @@ void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather,
     String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
     currentY += 17; // city name
-    currentY += 12; // Space after city name
+    currentY += 15; // Space after city name
 
     // Each Column has a fixed height of 67px
     drawWeatherInfoFirstColumn(leftMargin, currentY, weather);
@@ -155,14 +155,14 @@ void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather,
     currentX += 150; // Move to next column
     drawWeatherInfoThirdColumn(currentX, currentY, weather);
 
-    currentY += 67; // Day Weather Information section height
+    currentY += 100; // Day Weather Information section height
     currentY += 12; // Space after Day Weather Information section
 
     // Weather Graph section (replaces text-based forecast for better visualization)
     TextUtils::setFont12px_margin15px(); // Medium font for graph headers
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Nächste 12 Stunden:");
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Nächste 12 Stunden");
     currentY += 15; // Nächste 12 Stunden 
-    currentY += 15; // Space after 
+    currentY += 25; // Space after 
 
     // Calculate available space for graph
     int availableHeight = (y + h - 15) - currentY; // Leave 15px for footer
