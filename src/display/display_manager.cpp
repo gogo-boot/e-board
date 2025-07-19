@@ -218,7 +218,7 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
         return;
     }
     DepartureDisplay::drawDepartureSection(departures, x, y, w, h);
-    DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight);
+    DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight, 15);
     // Redraw vertical divider
     display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
 }

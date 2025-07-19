@@ -3,6 +3,7 @@
 #include "util/time_manager.h"
 #include "display/weather_graph.h"
 #include <esp_log.h>
+#include <icons.h>
 
 static const char *TAG = "WEATHER_DISPLAY";
 
@@ -223,7 +224,7 @@ void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
     int16_t footerY = y + h - 14; // Correct: bottom of section
     int16_t footerX = x + 10;
 
-    String footerText = "Aktualisiert: ";
+    String footerText = "";
     if (TimeManager::isTimeSet()) {
         struct tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
@@ -237,4 +238,7 @@ void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
         footerText += "Zeit nicht synchronisiert";
     }
     TextUtils::printTextAtWithMargin(footerX, footerY, footerText);
+
+    int16_t timeStrWidth = TextUtils::getTextWidth(footerText);
+    display->drawInvertedBitmap( footerX + timeStrWidth + 5, y , getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
 }
