@@ -31,7 +31,7 @@ public:
     /**
      * @brief Draw the departure footer with timestamp
      */
-    static void drawDepartureFooter(int16_t x, int16_t y);
+    static void drawDepartureFooter(int16_t x, int16_t y, int16_t h);
 
     /**
      * @brief Draw a single departure entry

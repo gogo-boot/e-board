@@ -3,6 +3,7 @@
 #include "util/time_manager.h"
 #include <esp_log.h>
 #include <vector>
+#include <icons.h>
 
 static const char *TAG = "DEPARTURE_DISPLAY";
 
@@ -243,39 +244,33 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
     currentY += 17; // Disruption space gets 17px (total 37px per entry)
 }
 
-void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y) {
-    if (!u8g2) {
-        ESP_LOGE(TAG, "DepartureDisplay not initialized! Call init() first.");
+void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h) {
+    if (!display || !u8g2) {
+        ESP_LOGE(TAG, "WeatherDisplay not initialized! Call init() first.");
         return;
     }
     TextUtils::setFont10px_margin12px(); // Small font for footer
 
-    // Ensure footer is positioned properly within bounds
-    int16_t footerY = min(y, (int16_t)(screenHeight - 14)); // Ensure space from bottom
+    int16_t footerY = y + h - 14; // Correct: bottom of section
     int16_t footerX = x + 10;
-    ESP_LOGI(TAG, "Departure footer position: (%d, %d)", footerX, footerY);
 
-    // Position footer text with proper baseline calculation
-    int16_t baseline = footerY + TextUtils::getFontAscent();
-    u8g2->setCursor(footerX, baseline);
-    u8g2->print("Aktualisiert: ");
-
-    // Check if time is properly set
+    String footerText = "";
     if (TimeManager::isTimeSet()) {
-        // Get current German time using TimeManager
         struct tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
             char timeStr[20];
-            // German time format: "HH:MM DD.MM."
             strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
-            u8g2->print(timeStr);
+            footerText += String(timeStr);
         } else {
-            u8g2->print("Zeit nicht verfügbar");
+            footerText += "Zeit nicht verfügbar";
         }
     } else {
-        // Time not synchronized
-        u8g2->print("Zeit nicht synchronisiert");
+        footerText += "Zeit nicht synchronisiert";
     }
+    TextUtils::printTextAtWithMargin(footerX, footerY, footerText);
+
+    int16_t timeStrWidth = TextUtils::getTextWidth(footerText);
+    display->drawInvertedBitmap( footerX + timeStrWidth + 5, y , getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
 }
 
 String DepartureDisplay::getStopName(RTCConfigData &config) {
