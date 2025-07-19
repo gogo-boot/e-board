@@ -204,14 +204,30 @@ void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWe
 
 void WeatherDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
     TextUtils::setFont10px_margin12px(); // Small font for weather info
-    String dateText = "Date : Juli 13"; // Placeholder - should use actual date
+    // Parse ISO date string (e.g., "2025-07-16T15:30") and format as "01. July"
+    String isoTime = weather.time;
+    int year = 0, month = 0, day = 0;
+    if (isoTime.length() >= 10) {
+        year = isoTime.substring(0, 4).toInt();
+        month = isoTime.substring(5, 7).toInt();
+        day = isoTime.substring(8, 10).toInt();
+    }
+    static const char* monthNames[] = {"", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+    String dateText = "";
+    if (month > 0 && month <= 12 && day > 0) {
+        char buf[20];
+        snprintf(buf, sizeof(buf), "%02d. %s", day, monthNames[month]);
+        dateText = buf;
+    } else {
+        dateText = "Date: N/A";
+    }
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, dateText);
 
-    String sunriseText = "Sunrise : " + String(weather.dailyForecast[0].sunrise);
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, sunriseText);
+    display->drawInvertedBitmap( currentX, dayWeatherInfoY + 27 , getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
 
-    String sunsetText = "Sunset : " + String(weather.dailyForecast[0].sunset);
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, sunsetText);
+    display->drawInvertedBitmap( currentX, dayWeatherInfoY + 47, getBitmap(wi_sunset, 32), 32, 32, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 47, weather.dailyForecast[0].sunset);
 }
 
 void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {

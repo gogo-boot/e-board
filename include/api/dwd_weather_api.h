@@ -25,6 +25,7 @@ struct WeatherDailyForecast {
 struct WeatherInfo {
 
     // Current weather
+    String time;
     String temperature;
     String precipitation;
     String weatherCode;
