@@ -10,7 +10,7 @@ class WeatherDisplay {
 public:
     // Main weather drawing functions
     static void drawWeatherSection(const WeatherInfo &weather, int16_t x, int16_t y, int16_t w, int16_t h);
-    static void drawWeatherFooter(int16_t x, int16_t y);
+    static void drawWeatherFooter(int16_t x, int16_t y, int16_t h);
     
     // Initialize with display references and screen dimensions
     static void init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> &displayRef, 
@@ -19,7 +19,7 @@ public:
 
 private:
     // Weather-specific column drawing functions
-    static void drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather);
+    static void drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY, const WeatherInfo &weather);
     static void drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather);
     static void drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather);
     
@@ -30,9 +30,6 @@ private:
     static void drawHalfScreenWeatherLayout(const WeatherInfo &weather, 
                                            int16_t leftMargin, int16_t rightMargin, 
                                            int16_t &currentY, int16_t y, int16_t h);
-    static void drawCompactTextForecast(const WeatherInfo &weather, 
-                                       int16_t leftMargin, int16_t &currentY, 
-                                       int16_t y, int16_t h, int availableHeight);
     
     // Display references
     static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> *display;

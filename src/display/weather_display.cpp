@@ -35,17 +35,6 @@ void WeatherDisplay::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
 
     bool isFullScreen = (w >= screenWidth * 0.8);
 
-    // City/Town Name with proper margin
-    TextUtils::setFont12px_margin15px(); // 12px font needs 15px margin from top
-    currentY += 15; // Apply the margin
-
-    // Calculate available width and fit city name
-    RTCConfigData &config = ConfigManager::getConfig();
-    int cityMaxWidth = rightMargin - leftMargin;
-    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY - 15, fittedCityName); // Use helper function
-    currentY += 25; // Space after city name
-
     if (isFullScreen) {
         drawFullScreenWeatherLayout(weather, leftMargin, rightMargin, currentY, y, h);
     } else {
@@ -56,6 +45,17 @@ void WeatherDisplay::drawWeatherSection(const WeatherInfo &weather, int16_t x, i
 void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather, 
                                                 int16_t leftMargin, int16_t rightMargin, 
                                                 int16_t &currentY, int16_t y, int16_t h) {
+
+    // City/Town Name with proper margin
+    TextUtils::setFont24px_margin28px(); 
+
+    // Calculate available width and fit city name
+    RTCConfigData &config = ConfigManager::getConfig();
+    int cityMaxWidth = rightMargin - leftMargin;
+    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
+    currentY += 28 + 10; // Space after city name
+
     // Day weather Info section
     // Calculate column widths
     int columnWidth = (rightMargin - leftMargin) / 3;
@@ -98,25 +98,22 @@ void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather,
 
     // Date Info: 27px
     TextUtils::setFont12px_margin15px(); // Medium font for date info
-    u8g2->setCursor(thirdColX, colY);
-    u8g2->print("Today");
+    String todayText = "Today";
+    TextUtils::printTextAtWithMargin(thirdColX, colY, todayText);
     colY += 13;
-    u8g2->setCursor(thirdColX, colY);
-    // Add current date if available
-    u8g2->print("Juli 13"); // Placeholder - should use actual date
+    String dateText = "Juli 13"; // Placeholder - should use actual date
+    TextUtils::printTextAtWithMargin(thirdColX, colY, dateText);
     colY += 14;            // Total 27px
 
     // Sunrise: 20px
     TextUtils::setFont10px_margin12px(); // Small font for sunrise/sunset
-    u8g2->setCursor(thirdColX, colY);
-    u8g2->print("Sunrise: ");
-    u8g2->print(weather.dailyForecast[0].sunrise);
+    String sunriseText = "Sunrise: " + String(weather.dailyForecast[0].sunrise);
+    TextUtils::printTextAtWithMargin(thirdColX, colY, sunriseText);
     colY += 20;
 
     // Sunset: 20px
-    u8g2->setCursor(thirdColX, colY);
-    u8g2->print("Sunset: ");
-    u8g2->print(weather.dailyForecast[0].sunset);
+    String sunsetText = "Sunset: " + String(weather.dailyForecast[0].sunset);
+    TextUtils::printTextAtWithMargin(thirdColX, colY, sunsetText);
 
     currentY += 67; // Move past the day weather info section
 
@@ -135,144 +132,109 @@ void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather,
 void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather, 
                                                 int16_t leftMargin, int16_t rightMargin, 
                                                 int16_t &currentY, int16_t y, int16_t h) {
-    // Draw weather info columns
-    int16_t dayWeatherInfoY = currentY;
+
+    // City/Town Name with proper margin
+    TextUtils::setFont14px_margin17px(); 
+
+    // Calculate available width and fit city name
+    RTCConfigData &config = ConfigManager::getConfig();
+    int cityMaxWidth = rightMargin - leftMargin;
+    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
+    currentY += 17; // city name
+    currentY += 15; // Space after city name
 
     // Each Column has a fixed height of 67px
     drawWeatherInfoFirstColumn(leftMargin, currentY, weather);
 
-    int16_t currentX = leftMargin + 100;
     // Draw second Column - Today's temps, UV, Pollen
-    drawWeatherInfoSecondColumn(currentX, dayWeatherInfoY, weather);
-    currentX += 150; // Move to next column
+    int16_t currentX = leftMargin + 100;
+    drawWeatherInfoSecondColumn(currentX, currentY, weather);
 
     // Draw third Column - Date, Sunrise, Sunset
-    drawWeatherInfoThirdColumn(currentX, dayWeatherInfoY, weather);
+    currentX += 150; // Move to next column
+    drawWeatherInfoThirdColumn(currentX, currentY, weather);
+
+    currentY += 100; // Day Weather Information section height
+    currentY += 12; // Space after Day Weather Information section
 
     // Weather Graph section (replaces text-based forecast for better visualization)
-    TextUtils::setFont10px_margin12px(); // Small font for graph headers
-    u8g2->setCursor(leftMargin, currentY);
-    u8g2->print("Next 12 Hours:");
-    currentY += 18;
+    TextUtils::setFont12px_margin15px(); // Medium font for graph headers
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Nächste 12 Stunden");
+    currentY += 15; // Nächste 12 Stunden 
+    currentY += 25; // Space after 
 
     // Calculate available space for graph
     int availableHeight = (y + h - 15) - currentY; // Leave 15px for footer
-    int graphHeight = min(333, availableHeight);   // Max 333px, but adapt to available space
+    int graphHeight = min(304, availableHeight);   // Max 307px, but adapt to available space
 
-    if (graphHeight >= 80) { 
-        // Only draw graph if we have enough space
-        WeatherGraph::drawTemperatureAndRainGraph(weather,
-                                                  leftMargin, currentY,
-                                                  rightMargin - leftMargin, graphHeight);
-        currentY += graphHeight;
-    } else {
-        // Fallback to compact text forecast if not enough space for graph
-        drawCompactTextForecast(weather, leftMargin, currentY, y, h, availableHeight);
-    }
+    // Only draw graph if we have enough space
+    WeatherGraph::drawTemperatureAndRainGraph(weather,
+                                                leftMargin, currentY,
+                                                rightMargin - leftMargin, graphHeight);
+    currentY += graphHeight;
 }
 
-void WeatherDisplay::drawCompactTextForecast(const WeatherInfo &weather, 
-                                           int16_t leftMargin, int16_t &currentY, 
-                                           int16_t y, int16_t h, int availableHeight) {
-    int maxForecast = min(6, availableHeight / 16); // Limit based on available space
-    for (int i = 0; i < min(maxForecast, weather.hourlyForecastCount); i++) {
-        const auto &forecast = weather.hourlyForecast[i];
-        u8g2->setCursor(leftMargin, currentY);
-
-        String timeStr = forecast.time.substring(11, 16); // HH:MM
-        u8g2->print(timeStr);
-        u8g2->print(" ");
-        u8g2->print(forecast.temperature);
-        u8g2->print("° ");
-        u8g2->print(forecast.rainChance);
-        u8g2->print("% ");
-        u8g2->print(forecast.humidity); // Add humidity display
-        u8g2->print("%RH");
-
-        currentY += 16;
-        if (currentY > y + h - 40) break; // Leave space for footer
-    }
-}
-
-void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t &currentY, const WeatherInfo &weather) {
+void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
     TextUtils::setFont10px_margin12px(); // Small font for weather info
 
     // Draw first Column - Current Temperature and Condition
-    u8g2->setCursor(leftMargin, currentY);
     // weather_code is missing
-    // u8g2->print(weather.coded);
+    // TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY, weather.coded); // Uncomment if available
     // Day weather Info section: 37px total
     // Todo Add weather icon support
-    currentY += 47;
 
     // Current temperature: 30px
-    u8g2->setCursor(leftMargin, currentY);
-    u8g2->print(weather.temperature);
-    u8g2->print("°C  ");
-    currentY += 20;
+    String tempText = String(weather.temperature) + "°C  ";
+    TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);
 }
 
 void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
     TextUtils::setFont10px_margin12px(); // Small font for weather info
-    u8g2->setCursor(currentX, dayWeatherInfoY);
-    u8g2->print(weather.dailyForecast[0].tempMin);
-    u8g2->print(" | ");
-    u8g2->print(weather.dailyForecast[0].tempMax);
+    String tempRange = String(weather.dailyForecast[0].tempMin) + " | " + String(weather.dailyForecast[0].tempMax);
+    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, tempRange);
 
-    u8g2->setCursor(currentX, dayWeatherInfoY + 27);
-    u8g2->print("UV Index : ");
-    u8g2->print(weather.dailyForecast[0].uvIndex);
+    String uvText = "UV Index : " + String(weather.dailyForecast[0].uvIndex);
+    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, uvText);
 
-    u8g2->setCursor(currentX, dayWeatherInfoY + 47);
-    u8g2->print("Pollen : ");
-    u8g2->print("N/A");
+    String pollenText = "Pollen : N/A";
+    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, pollenText);
 }
 
 void WeatherDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
     TextUtils::setFont10px_margin12px(); // Small font for weather info
-    u8g2->setCursor(currentX, dayWeatherInfoY);
-    u8g2->print("Date :");
-    u8g2->print("Juli 13"); // Placeholder - should use actual date
+    String dateText = "Date : Juli 13"; // Placeholder - should use actual date
+    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, dateText);
 
-    u8g2->setCursor(currentX, dayWeatherInfoY + 27);
-    u8g2->print("Sunrise : ");
-    u8g2->print(weather.dailyForecast[0].sunrise);
+    String sunriseText = "Sunrise : " + String(weather.dailyForecast[0].sunrise);
+    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, sunriseText);
 
-    u8g2->setCursor(currentX, dayWeatherInfoY + 47);
-    u8g2->print("Sunset : ");
-    u8g2->print(weather.dailyForecast[0].sunset);
+    String sunsetText = "Sunset : " + String(weather.dailyForecast[0].sunset);
+    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, sunsetText);
 }
 
-void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y) {
+void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
     if (!display || !u8g2) {
         ESP_LOGE(TAG, "WeatherDisplay not initialized! Call init() first.");
         return;
     }
-    
     TextUtils::setFont10px_margin12px(); // Small font for footer
 
-    // Ensure footer is positioned properly within bounds
-    int16_t footerY = min(y, (int16_t)(screenHeight - 14)); // Ensure at least 20px from bottom
+    int16_t footerY = y + h - 14; // Correct: bottom of section
     int16_t footerX = x + 10;
-    ESP_LOGI(TAG, "Weather footer position: (%d, %d)", footerX, footerY);
 
-    u8g2->setCursor(footerX, footerY); // Add 10px left margin
-    u8g2->print("Aktualisiert: ");
-
-    // Check if time is properly set
+    String footerText = "Aktualisiert: ";
     if (TimeManager::isTimeSet()) {
-        // Get current German time using TimeManager
         struct tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
             char timeStr[20];
-            // German time format: "HH:MM DD.MM."
             strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
-            u8g2->print(timeStr);
+            footerText += String(timeStr);
         } else {
-            u8g2->print("Zeit nicht verfügbar");
+            footerText += "Zeit nicht verfügbar";
         }
     } else {
-        // Time not synchronized
-        u8g2->print("Zeit nicht synchronisiert");
+        footerText += "Zeit nicht synchronisiert";
     }
+    TextUtils::printTextAtWithMargin(footerX, footerY, footerText);
 }

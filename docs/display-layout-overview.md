@@ -10,78 +10,38 @@
 
 ### Landscape Mode (800x480)
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            HEADER SECTION (800x25)                           │
-├────────────────────────────────────┬─────────────────────────────────────────┤
+┌────────────────────────────────────┬─────────────────────────────────────────┐
 │                                    │                                         │
 │         WEATHER SECTION            │          DEPARTURE SECTION              │
-│           (400x455)                │            (400x455)                    │
+│           (400x480)                │            (400x480)                    │
 │                                    │                                         │
-│  • City/Town Name: 40px            │  • Station Name: 40px                   │
+│  • City/Town Name: 28px            │  • Station Name: 40px                   │
+│  • Space 12px                      │                                         │
 │  • Day weather Info: 67px          │  • Column Headers: 30px                 │
 │    - first column                  │  • Departure Entries: 36px each         │
 │       - Day Weather Icon: 37px     │    - Main Line: 20px                    │
 │       - Current Temp : 30 px       │    - Disruption Space: 16px             │
-│                                    │  • Separation Line  1px                 |
-│    - second column                 │  • Footer: 15px                         │
-│       - today low/high temp: 27px  │                                         │
+│    - second column                 │   • Separation Line  1px                │
+│       - today low/high temp: 27px  │   • Footer: 15px                        │
 │       - UV Index info: 20 px       │                                         │
 │       - Pollen Info : 20px         │                                         │
 │    - third column                  │                                         │
 │       - Date Info : 27px           │                                         │
 │       - Sunrise : 20 px            │                                         │
 │       - Sunset : 20px              │                                         │
-│  • Weather Graphic : 333px         │                                         │
+│  • Space 12px                      │                                         │
+│  • Nächste Stunden 15px            │                                         │
+│  • Space 15px                      │                                         │
+│  • Weather Graphic : 304px         │                                         │
+│  • Space 12px                      │                                         │
 │  • Footer: 15px                    │                                         │
 └────────────────────────────────────┴─────────────────────────────────────────┘
 ```
 
-### Portrait Mode (480x800)
-```
-┌──────────────────────────────────────────────────────┐
-│              HEADER SECTION (480x25)                 │
-├──────────────────────────────────────────────────────┤
-│                                                      │
-│               WEATHER SECTION                        │
-│                 (480x387.5)                          │
-│                                                      │
-│  • Title: 45px/30px                                  │
-│  • Temperature: 40px                                 │
-│  • Location: 25px                                    │
-│  • Condition: 20px                                   │
-│  • High/Low: 20px                                    │
-│  • Forecast: 16px per entry                          │
-│  • Sunrise/Sunset: 25px                              │
-│                                                      │
-├──────────────────────────────────────────────────────┤
-│                                                      │
-│              DEPARTURE SECTION                       │
-│                (480x387.5)                           │
-│                                                      │
-│  • Station Name: 40px                                │
-│  • Column Headers: 30px (18px + 12px)                │
-│  • Departure Entries: 37px each                      │
-│    - Main Line: 20px                                 │
-│    - Disruption Space: 17px                          │
-│  • Footer: 15px                                      │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
-
 ## Detailed Pixel Allocations
 
-### Header Section
-- **Height**: 25 pixels (fixed)
-- **Width**: Full screen width (800px landscape / 480px portrait)
-- **Content**:
-  - WiFi status indicator (left aligned)
-  - Battery status indicator (right aligned)
-  - Bottom separator line (1px)
-- **Margins**: 10px left/right
-
 ### Weather Section
-- **Landscape**: 400x455 pixels (left half, excluding header)
-- **Portrait**: 480x387.5 pixels (top half, excluding header)
+- **Landscape**: 400x480 pixels (left half, excluding header)
 - **Margins**: 10px left/right, 25px top
 - **Content Allocation**:
   - Title: 45px (full screen) / 30px (half screen)
@@ -93,8 +53,7 @@
   - Sunrise/Sunset: 25px (bottom, if space available)
 
 ### Departure Section
-- **Landscape**: 400x455 pixels (right half, excluding header)
-- **Portrait**: 480x387.5 pixels (bottom half, excluding header)
+- **Landscape**: 400x480 pixels (right half, excluding header)
 - **Margins**: 10px left/right, 25px top
 - **Content Structure**:
   - Station name: 40px
@@ -106,7 +65,7 @@
 - **Height**: 15 pixels (fixed, within departure section)
 - **Position**: Bottom of departure section
 - **Content**: 
-  - Update timestamp in German format: "Aktualisiert: HH:MM DD.MM.YYYY"
+  - Update timestamp in German format: "Aktualisiert: HH:MM DD.MM"
   - Timezone: German local time (CET/CEST)
   - Fallback messages: "Zeit nicht synchronisiert" / "Zeit nicht verfügbar"
 - **Font**: Small font (9pt)
@@ -137,7 +96,7 @@ Each departure entry consists of:
 ### Maximum Entries Per Screen
 
 #### Full Screen Mode (800px width)
-- **Available height**: ~400px (455px - headers - footer)
+- **Available height**: ~480px (480px - footer)
 - **Entries per screen**: ~10 entries (400px ÷ 37px per entry)
 - **Current limit**: 20 entries (code limited)
 
@@ -154,7 +113,7 @@ Each departure entry consists of:
 - **Medium Font**: FreeSansBold12pt7b (12pt)
   - Used for: Station name, weather title (half screen), weather location
 - **Small Font**: FreeSansBold9pt7b (9pt)
-  - Used for: Departure entries, disruption info, footer, header
+  - Used for: Departure entries, disruption info, footer
 
 ### Text Height Approximations
 - **Small Font (9pt)**: ~12px height

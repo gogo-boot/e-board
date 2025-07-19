@@ -25,16 +25,17 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     ESP_LOGI(TAG, "Drawing weather graph at (%d,%d) size %dx%d", x, y, w, h);
     
     // Adaptive margins based on graph size
-    int16_t marginLeft = (h < 120) ? 25 : MARGIN_LEFT;      // Smaller margins for compact mode
+    int16_t marginLeft = (h < 120) ? 25 : MARGIN_LEFT;      
     int16_t marginRight = (h < 120) ? 25 : MARGIN_RIGHT;
     int16_t marginTop = (h < 120) ? 10 : MARGIN_TOP;
     int16_t marginBottom = (h < 120) ? 20 : MARGIN_BOTTOM;
+    int16_t marginLegend = (h < 120) ? 20 : LEGEND_MARGIN;
     
     // Calculate graph area (removing margins for axes labels)
     int16_t graphX = x + marginLeft;
     int16_t graphY = y + marginTop;
     int16_t graphW = w - marginLeft - marginRight;
-    int16_t graphH = h - marginTop - marginBottom;
+    int16_t graphH = h - marginTop - marginBottom - marginLegend; // Reserve space for legend
     
     // Find actual temperature range from data
     float actualMin = 100.0f, actualMax = -100.0f;
@@ -45,7 +46,6 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
         actualMin = min(actualMin, temp);
         actualMax = max(actualMax, temp);
     }
-    
     // Calculate dynamic temperature range using your specified logic
     float dynamicMin = calculateDynamicMinTemp(actualMin);
     float dynamicMax = calculateDynamicMaxTemp(actualMax);
@@ -57,24 +57,66 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
     drawGraphFrame(graphX, graphY, graphW, graphH);
     drawTemperatureAxis(x, graphY, marginLeft, graphH, dynamicMin, dynamicMax);
     drawRainAxis(x + w - marginRight, graphY, marginRight, graphH);
-    drawTimeAxis(graphX, y + h - marginBottom, graphW, marginBottom, weather); // <-- Add weather parameter
-    
+    drawTimeAxis(graphX, y + h - marginBottom - marginLegend, graphW, marginBottom, weather); // <-- Add weather parameter
+    drawGraphLegend(x, y + h - marginLegend, w, marginLegend); 
+
     // Draw data layers (order matters for visibility)
     drawRainBars(weather, graphX, graphY, graphW, graphH);                              // Background: Rain bars
     drawHumidityLine(weather, graphX, graphY, graphW, graphH);                          // Middle: Humidity dotted line
     drawTemperatureLine(weather, graphX, graphY, graphW, graphH, dynamicMin, dynamicMax); // Foreground: Temperature solid line
-    
+
     ESP_LOGI(TAG, "Weather graph completed with %d data points", dataPoints);
 }
 
-void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
-    // Draw main graph border
-    // display.drawRect(x, y, w, h, GxEPD_BLACK);
-    // Removed: Left border (Y-axis line)
-    // Removed: Right border (Y-axis line)
+void WeatherGraph::drawGraphLegend(int16_t x, int16_t y, int16_t w, int16_t h) {
+    // Draw the legend horizontally (side by side), using available width
 
+    TextUtils::setFont8px_margin10px();
+
+    int itemCount = 3;
+    int16_t spacingX = w / itemCount;
+    int16_t lineLen = min(32, spacingX - 40); // leave space for label text
+
+    int16_t legendY = y + h / 2 - 6; // vertically center the legend items
+
+    // 1. Temperature (solid line)
+    int16_t legendX = x;
+    display.drawLine(legendX, legendY + 6, legendX + lineLen, legendY + 6, GxEPD_BLACK); // Draw solid line
+    u8g2.setCursor(legendX + lineLen + 8, legendY + 10);
+    u8g2.print("Temperatur");
+
+    // 2. Humidity (dotted line)
+    legendX += spacingX;
+    u8g2.setCursor(legendX + lineLen + 8, legendY + 10);
+    u8g2.print("Luftfeuchte");
+    // Draw dotted line
+    for (int i = 0; i < lineLen; ++i) {
+        if ((i / 3) % 3 == 0) display.drawPixel(legendX + i, legendY + 6, GxEPD_BLACK);
+    }
+
+    // 3. Rain (crosshatch bar)
+    legendX += spacingX;
+    u8g2.setCursor(legendX + lineLen + 8, legendY + 10);
+    u8g2.print("Regen Chance");
+    // Draw crosshatch bar
+    int16_t barTop = legendY + 2;
+    int16_t barHeight = min(8, h - 4); // fit in legend area
+    // Horizontal lines
+    for (int yb = barTop; yb < barTop + barHeight; yb += 3) {
+        for (int xb = legendX; xb < legendX + lineLen; xb += 2) {
+            display.drawPixel(xb, yb, GxEPD_BLACK);
+        }
+    }
+    // Vertical lines
+    for (int xb = legendX; xb < legendX + lineLen; xb += 4) {
+        for (int yb = barTop; yb < barTop + barHeight; yb += 2) {
+            display.drawPixel(xb, yb, GxEPD_BLACK);
+        }
+    }
+}
+
+void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
     // Draw only top and bottom borders (remove left and right Y-axis lines)
-    // display.drawLine(x, y, x + w, y, GxEPD_BLACK);           // Top border
     display.drawLine(x, y + h, x + w, y + h, GxEPD_BLACK);   // Bottom border
     
     // Draw horizontal grid lines (every 25% of height)
@@ -132,9 +174,10 @@ void WeatherGraph::drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t 
     
     // Temperature axis label (skip for very compact mode)
     if (w >= 30) {
-        TextUtils::setFont10px_margin12px(); // Small font for axis labels
-        u8g2.setCursor(x + 2, y - 5);
-        u8g2.print("Temp");
+        // Place "Temperatur" above the Y axis, left-aligned
+        int tempLabelX = x; // 10px left of axis (adjust as needed)
+        int tempLabelY = y - 25;  // 5px above the graph area (adjust as needed)
+        TextUtils::printTextAtWithMargin(tempLabelX, tempLabelY, "Temperatur");
     }
 }
 
@@ -152,43 +195,35 @@ void WeatherGraph::drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h) {
         u8g2.setCursor(x + 3, labelY + 4);
         u8g2.print(rainLabel);
     }
-    
-    // Rain axis label (skip for very compact mode)
-    if (w >= 30) {
-        u8g2.setCursor(x + 3, y - 5);
-        u8g2.print("Regen");
-    }
 }
 
 void WeatherGraph::drawTimeAxis(int16_t x, int16_t y, int16_t w, int16_t h, const WeatherInfo& weather) {
     TextUtils::setFont10px_margin12px(); // Small font for time axis
-    
-    // Get the number of data points available
+
     int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
-    
-    // Adaptive time labels based on available width  
-    int labelStep = (w < 200) ? 6 : 3; // Every 6 hours for compact, every 3 hours for full
-    
-    for (int i = 0; i < dataPoints; i += labelStep) {
-        // Extract actual time from forecast data (HH:MM format)
-        String timeStr = weather.hourlyForecast[i].time;
+    if (dataPoints < 2) return;
+
+    // Dynamically choose label count: about one every 3 points, but always at least 2, at most dataPoints
+    int labelCount = constrain((dataPoints + 2) / 3, 2, dataPoints);
+    // If you want at least 5, use: int labelCount = constrain((dataPoints + 2) / 3, 5, dataPoints);
+
+    for (int l = 0; l < labelCount; l++) {
+        // Evenly spaced indices: 0 ... dataPoints-1
+        int i = (l * (dataPoints - 1)) / (labelCount - 1);
+
+        String timeStr = (i < weather.hourlyForecastCount) ? weather.hourlyForecast[i].time : "";
         String actualTime;
-        
-        // Extract hour:minute from ISO time string (YYYY-MM-DDTHH:MM:SS)
         if (timeStr.length() >= 16) {
-            actualTime = timeStr.substring(11, 16); // Gets "HH:MM"
+            actualTime = timeStr.substring(11, 16); // "HH:MM"
         } else {
-            actualTime = String(i) + "h"; // Fallback to hour index
+            actualTime = String(i) + "h";
         }
-        
-        int16_t labelX = x + (w * i) / HOURS_TO_SHOW;
+
+        int16_t labelX = x + (w * i) / (dataPoints - 1);
         int16_t textWidth = TextUtils::getTextWidth(actualTime);
-        
-        // Make sure label fits within bounds
-        if (labelX + textWidth/2 <= x + w && i < dataPoints) {
-            u8g2.setCursor(labelX - textWidth / 2, y + 20);
-            u8g2.print(actualTime);
-        }
+
+        u8g2.setCursor(labelX - textWidth / 2, y + 20);
+        u8g2.print(actualTime);
     }
 }
 

@@ -248,7 +248,6 @@ void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y) {
         ESP_LOGE(TAG, "DepartureDisplay not initialized! Call init() first.");
         return;
     }
-
     TextUtils::setFont10px_margin12px(); // Small font for footer
 
     // Ensure footer is positioned properly within bounds
