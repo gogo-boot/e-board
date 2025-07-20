@@ -34,12 +34,6 @@ public:
     static void drawDepartureFooter(int16_t x, int16_t y, int16_t h);
 
     /**
-     * @brief Draw a single departure entry
-     */
-    static void drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, 
-                                  int16_t &currentY, bool isFullScreen);
-
-    /**
      * @brief Extract stop name from config format
      */
     static String getStopName(RTCConfigData &config);
@@ -61,7 +55,13 @@ private:
      * @brief Draw departures in half screen mode (separated by direction)
      */
     static void drawHalfScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
-                                       int16_t rightMargin, int16_t &currentY, int16_t y, int16_t h);
+                                       int16_t rightMargin, int16_t currentY, int16_t h);
+
+    /**
+     * @brief Draw a single departure entry
+     */
+    static void drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, 
+                                  int16_t currentY, bool isFullScreen);
 };
 
 #endif // DEPARTURE_DISPLAY_H

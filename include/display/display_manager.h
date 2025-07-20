@@ -49,7 +49,7 @@ public:
     // Partial update functions
     static void updateWeatherHalf(bool isFullUpate, const WeatherInfo &weather);
     static void updateDepartureHalf(bool isFullUpate, const DepartureData &departures);
-    static void displayVerticalLine(bool isFullUpate, const int16_t contentY);
+    static void displayVerticalLine(const int16_t contentY);
 
     // Utility functions
     static void clearRegion(DisplayRegion region);

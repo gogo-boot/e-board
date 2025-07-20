@@ -29,7 +29,7 @@ void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int
         ESP_LOGE(TAG, "DepartureDisplay not initialized! Call init() first.");
         return;
     }
-
+    ESP_LOGI(TAG, "Drawing departure section at (%d, %d) with size %dx%d", x, y, w, h); 
     int16_t currentY = y; // Start from actual top
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
@@ -37,8 +37,8 @@ void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int
     bool isFullScreen = (w >= screenWidth * 0.8);
 
     // Station name with TRUE 15px margin from top
-    TextUtils::setFont12px_margin15px(); // Medium font for station name
-    int16_t stationTextTop = currentY + 15; // 15px margin from top
+    TextUtils::setFont14px_margin17px(); // Medium font for station name
+    int16_t stationTextTop = currentY + 22; // 15px margin from top
     RTCConfigData &config = ConfigManager::getConfig();
     String stopName = getStopName(config);
 
@@ -46,27 +46,30 @@ void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int
     int stationMaxWidth = rightMargin - leftMargin;
     String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
 
-    TextUtils::printTextAtTopMargin(leftMargin, stationTextTop, fittedStopName);
-    currentY = stationTextTop + 12 + 13; // text height + spacing = 25px total
+    // Print station name at top margin
+    TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
+
+    currentY += 17; // Space for station name 
+    currentY += 10; // Space after station name
 
     // Column headers with TRUE 12px margin from current position
     TextUtils::setFont10px_margin12px(); // Small font for column headers
-    int16_t headerTextTop = currentY + 12; // 12px margin
     if (isFullScreen) {
-        TextUtils::printTextAtTopMargin(leftMargin, headerTextTop, "Soll Ist  Linie  Ziel                Gleis");
+        TextUtils::printTextAtTopMargin(leftMargin, currentY, "Soll Ist  Linie  Ziel                Gleis");
     } else {
-        TextUtils::printTextAtTopMargin(leftMargin, headerTextTop, "Soll    Ist      Linie     Ziel");
+        TextUtils::printTextAtTopMargin(leftMargin, currentY, "Soll    Ist      Linie     Ziel");
     }
-    currentY = headerTextTop + 10 + 8; // text height + spacing = 18px total
+    currentY += 12; 
+    currentY += 5;
 
     // Underline
-    display->drawLine(leftMargin, currentY - 5, rightMargin, currentY - 5, GxEPD_BLACK);
-    currentY += 12; // Header underline spacing
-
+    display->drawLine(leftMargin, currentY, rightMargin, currentY, GxEPD_BLACK);
+ 
+    // 421 px space left for departures
     if (isFullScreen) {
         drawFullScreenDepartures(departures, leftMargin, rightMargin, currentY, y, h);
     } else {
-        drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, y, h);
+        drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, h - currentY);
     }
 }
 
@@ -86,7 +89,7 @@ void DepartureDisplay::drawFullScreenDepartures(const DepartureData &departures,
 }
 
 void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
-                                              int16_t rightMargin, int16_t &currentY, int16_t y, int16_t h) {
+                                              int16_t rightMargin, int16_t currentY, int16_t h) {
     // Half screen mode: Separate by direction flag
     ESP_LOGI(TAG, "Drawing departures separated by direction flag");
     
@@ -106,40 +109,44 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
     ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2", 
              direction1Departures.size(), direction2Departures.size());
     
+    // Draw separator line between directions
+    int16_t halfHeightY = currentY + h / 2;
+    //log the position of the separator line, and y 
+    ESP_LOGI(TAG, "Drawing separator line at Y=%d", halfHeightY);
+    display->drawLine(leftMargin, halfHeightY, rightMargin, halfHeightY, GxEPD_BLACK);
+
     // Draw first 4 departures from direction 1
     int drawnCount = 0;
-    int maxPerDirection = 4;
+    int maxPerDirection = 5;
     
     // Direction 1 departures
-    for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()) && drawnCount < 8; i++) {
+    for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()); i++) {
         const auto &dep = *direction1Departures[i];
         drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
+        currentY += 42;
         drawnCount++;
-        
-        if (currentY > y + h - 60) break; // Leave space for separator and direction 2
     }
-    
-    // Draw separator line between directions
-    if (direction1Departures.size() > 0 && direction2Departures.size() > 0 && drawnCount < 8) {
-        display->drawLine(leftMargin, currentY, rightMargin, currentY, GxEPD_BLACK);
-        currentY += 15; // Space after separator line
-    }
-    
+
+    currentY = halfHeightY + 1; // Reset currentY to halfHeightY for direction 2
     // Direction 2 departures
-    for (int i = 0; i < min(maxPerDirection, (int)direction2Departures.size()) && drawnCount < 8; i++) {
+    for (int i = 0; i < min(maxPerDirection, (int)direction2Departures.size()); i++) {
         const auto &dep = *direction2Departures[i];
+        // log the currentY position and halfHeightY
+        ESP_LOGI(TAG, "Drawing direction 2 departure at Y=%d (halfHeightY=%d)", currentY, halfHeightY);
         drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
+        currentY += 42;
         drawnCount++;
-        
-        if (currentY > y + h - 25) break; // Leave space for footer
     }
     
     ESP_LOGI(TAG, "Drew %d total departures", drawnCount);
 }
 
 void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, 
-                                         int16_t &currentY, bool isFullScreen) {
+                                         int16_t currentY, bool isFullScreen) {
     if (!u8g2) return;
+
+    // Log the departure position and size
+    ESP_LOGI(TAG, "Drawing single departure at Y=%d with full screen=%d", currentY, isFullScreen); 
 
     if (isFullScreen) {
         // Full screen format (existing logic)
@@ -151,19 +158,15 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
         u8g2->print(dep.time.substring(0, 5) + " " + dep.line + " " + dep.direction);
         currentY += 37; // Total spacing per entry
     } else {
+        currentY += 3;
         // Half screen format with proper text positioning
         TextUtils::setFont10px_margin12px(); // Small font for departure entries
-        
-        // Calculate text top position with proper margin
-        int16_t textTop = currentY + 12; // 12px margin from function name
         
         // Calculate available space
         int totalWidth = rightMargin - leftMargin;
         
         // Check if times are different for highlighting
         bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
-        
-        String line = dep.line;
         
         // Clean up destination (remove "Frankfurt (Main)" prefix)
         String dest = dep.direction;
@@ -176,72 +179,36 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
         // Prepare times
         String sollTime = dep.time.substring(0, 5);
         String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
-        
-        // Position text at proper baseline
-        int16_t baseline = textTop + TextUtils::getFontAscent();
-        
-        // Use fixed column positions instead of dynamic width calculation
-        int16_t sollX = leftMargin;
-        int16_t istX = leftMargin + 45;   // Fixed position for Ist column
-        int16_t lineX = leftMargin + 90; // Fixed position for Line column
-        int16_t destX = leftMargin + 130; // Fixed position for Destination column
-        
-        // Print soll time
-        u8g2->setCursor(sollX, baseline);
-        u8g2->print(sollTime);
-        
-        // Print ist time or symbol
-        u8g2->setCursor(istX, baseline);
-        if (timesAreDifferent) {
-            // Print the delayed time and add underline
-            u8g2->print(istTime);
-            
-            // Draw underline below the text baseline
-            int16_t istTextWidth = TextUtils::getTextWidth(istTime);
-            int16_t underlineY = baseline + 2;
-            display->drawLine(istX, underlineY, istX + istTextWidth, underlineY, GxEPD_BLACK);
-        } else {
-            // On-time: Show dash instead of time
-            u8g2->print("  -"); 
-            // Todo: After Changing font, test it again
-            // u8g2->print("✓"); 
-            // u8g2->print("√"); 
-            // u8g2->print("•"); 
-            // u8g2->print("OK");
+
+        if (!timesAreDifferent) {
+            istTime = "  +00"; // Use "00" to indicate on-time
         }
-        
-        // Print line number at fixed position
-        u8g2->setCursor(lineX, baseline);
-        String fittedLine = TextUtils::shortenTextToFit(line, 50); // Limit line width
-        u8g2->print(fittedLine);
-        
-        // Print destination at fixed position
-        u8g2->setCursor(destX, baseline);
-        int destMaxWidth = rightMargin - destX;
-        String fittedDest = TextUtils::shortenTextToFit(dest, destMaxWidth);
-        u8g2->print(fittedDest);
+
+        char buf[64];
+        //Hauputbahnhof/Fernbusterminal
+        snprintf(buf, sizeof(buf), "%5s %5s %6s %-30s %4s", 
+            sollTime.c_str(), istTime.c_str(), dep.line.c_str(), dest.c_str(), dep.track.c_str());
+        String singleDeparture = String(buf);
+
+        // String singleDeparture = sollTime + " " + istTime + " " + dep.line + " " + dest + " " + dep.track;
+        TextUtils::printTextAtTopMargin(leftMargin, currentY, singleDeparture);
+        currentY += 17; // per entry height
+        currentY += 3; // Add spacing after departure entry
+
+        // Check if we have disruption information to display
+        if (dep.lead.length() > 0 || dep.text.length() > 0) {
+            // Use the lead text if available, otherwise use text
+            String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
+            
+            // Fit disruption text to available width with some indent
+            int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
+            String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
+            
+            // Display disruption information with proper positioning
+            TextUtils::setFont10px_margin12px(); // Small font for disruption info
+            TextUtils::printTextAtTopMargin(leftMargin + 20, currentY, fittedDisruption);
+        }
     }
-    
-    // Always add consistent spacing for disruption area
-    currentY += 20; // Main departure line gets 20px
-    
-    // Check if we have disruption information to display
-    if (dep.lead.length() > 0 || dep.text.length() > 0) {
-        // Use the lead text if available, otherwise use text
-        String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
-        
-        // Fit disruption text to available width with some indent
-        int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
-        String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
-        
-        // Display disruption information with proper positioning
-        TextUtils::setFont10px_margin12px(); // Small font for disruption info
-        int16_t disruptionTextTop = currentY + 12; // 12px margin
-        TextUtils::printTextAtTopMargin(leftMargin + 20, disruptionTextTop, "⚠ " + fittedDisruption);
-    }
-    
-    // Add consistent spacing after disruption area (whether used or not)
-    currentY += 17; // Disruption space gets 17px (total 37px per entry)
 }
 
 void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h) {
