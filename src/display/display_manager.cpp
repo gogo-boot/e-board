@@ -133,43 +133,31 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo *weather, const Depart
             // Landscape: left/right split (weather left, departures right)
             updateWeatherHalf(isFullUpdate, *weather);
             updateDepartureHalf(isFullUpdate, *departures);
+            // DepartureDisplay::drawDepartureSection(*departures, halfWidth +1, contentHeight, halfWidth - 1, contentHeight);
+            // DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight, footerHeight);
 
-            // Todo Draw it only in debug mode
-            displayVerticalLine(isFullUpdate, contentY);
+            // Draw vertical divider
+            displayVerticalLine(contentY);
         } while (display.nextPage());
-    }
-    else if (weather)
-    {
-        display.setFullWindow();
+    } else if (weather) {
         display.firstPage();
         // Partial update - weather half only
-        do
-        {
+        do {
             updateWeatherHalf(false, *weather);
         } while (display.nextPage());
-    }
-    else if (departures)
-    {
-        display.setFullWindow();
+    } else if (departures) {
         display.firstPage();
-        do
-        {
+        do {
             // Partial update - departure half only
-            updateDepartureHalf(false, *departures);
+            // updateDepartureHalf(false, *departures);
+            display.setPartialWindow(halfWidth +1, contentHeight, halfWidth - 1, contentHeight);
+            DepartureDisplay::drawDepartureSection(*departures, halfWidth +1, contentHeight, halfWidth - 1, contentHeight);
+            DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight, footerHeight);
         } while (display.nextPage());
     }
 }
 
-void DisplayManager::displayVerticalLine(bool isFoolUpdate, const int16_t contentY)
-{
-    if (!isFoolUpdate)
-    {
-        display.setPartialWindow(halfWidth, contentY, 1, screenHeight - contentY);
-        display.fillRect(halfWidth, contentY, 1, screenHeight - contentY, GxEPD_WHITE);
-        ESP_LOGI(TAG, "Skipping vertical line update in non-full update mode");
-        return;
-    }
-    // Draw vertical divider
+void DisplayManager::displayVerticalLine(const int16_t contentY) {
     display.drawLine(halfWidth, contentY, halfWidth, screenHeight, GxEPD_BLACK);
 }
 
@@ -184,13 +172,8 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
     // Landscape: weather is LEFT half (full height)
     int16_t x = 0, y = 0, w = halfWidth, h = screenHeight;
 
-    if (!isFullUpate)
-    {
+    if (!isFullUpate) {
         display.setPartialWindow(x, y, w, h);
-
-        display.fillRect(x, y, w, h, GxEPD_WHITE);
-        ESP_LOGI(TAG, "Skipping weather half update in non-full update mode");
-        return;
     }
     // Use partial window for faster update
     WeatherDisplay::drawWeatherSection(weather, x, contentY, w, contentHeight);
@@ -208,19 +191,12 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
     // Landscape: departures are RIGHT half (full height)
     int16_t x = halfWidth, y = contentY, w = halfWidth, h = contentHeight;
 
-    if (!isFullUpate)
-    {
+    if (!isFullUpate) {
         // // Use partial window for faster update
         display.setPartialWindow(x, y, w, h);
-
-        display.fillRect(x, y, w, h, GxEPD_WHITE);
-        ESP_LOGI(TAG, "Skipping departure half update in non-full update mode");
-        return;
     }
     DepartureDisplay::drawDepartureSection(departures, x, y, w, h);
     DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight, 15);
-    // Redraw vertical divider
-    display.drawLine(halfWidth, 0, halfWidth, screenHeight, GxEPD_BLACK);
 }
 
 void DisplayManager::displayWeatherOnly(const WeatherInfo &weather)

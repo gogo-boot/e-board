@@ -29,7 +29,7 @@ void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int
         ESP_LOGE(TAG, "DepartureDisplay not initialized! Call init() first.");
         return;
     }
-
+    ESP_LOGI(TAG, "Drawing departure section at (%d, %d) with size %dx%d", x, y, w, h); 
     int16_t currentY = y; // Start from actual top
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
@@ -141,6 +141,9 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
                                          int16_t &currentY, bool isFullScreen) {
     if (!u8g2) return;
 
+    // Log the departure position and size
+    ESP_LOGI(TAG, "Drawing single departure at Y=%d with full screen=%d", currentY, isFullScreen); 
+
     if (isFullScreen) {
         // Full screen format (existing logic)
         // TODO: Implement full screen single departure drawing
@@ -186,6 +189,9 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
         int16_t lineX = leftMargin + 90; // Fixed position for Line column
         int16_t destX = leftMargin + 130; // Fixed position for Destination column
         
+        // Log the positions
+        ESP_LOGI(TAG, "Drawing departure at Y=%d: SollX=%d, IstX=%d, LineX=%d, DestX=%d", 
+                 baseline, sollX, istX, lineX, destX);
         // Print soll time
         u8g2->setCursor(sollX, baseline);
         u8g2->print(sollTime);
@@ -202,7 +208,7 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
             display->drawLine(istX, underlineY, istX + istTextWidth, underlineY, GxEPD_BLACK);
         } else {
             // On-time: Show dash instead of time
-            u8g2->print("  -"); 
+            u8g2->print("  +00"); // Use "00" to indicate on-time
             // Todo: After Changing font, test it again
             // u8g2->print("✓"); 
             // u8g2->print("√"); 
