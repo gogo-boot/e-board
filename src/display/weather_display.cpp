@@ -230,9 +230,9 @@ void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWe
 }
 
 void WeatherDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
-    TextUtils::setFont12px_margin15px(); // Small font for weather info
 
-
+    int8_t padding = 30;
+    currentX += padding; // Add padding to the left
     TextUtils::setFont10px_margin12px(); // Small font for weather info
     display->drawInvertedBitmap( currentX, dayWeatherInfoY + 27 , getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
