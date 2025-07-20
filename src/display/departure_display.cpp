@@ -184,7 +184,13 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t lef
             istTime = "  +00"; // Use "00" to indicate on-time
         }
 
-        String singleDeparture = sollTime + " " + istTime + " " + dep.line + " " + dest + " " + dep.track;
+        char buf[64];
+        //Hauputbahnhof/Fernbusterminal
+        snprintf(buf, sizeof(buf), "%5s %5s %6s %-30s %4s", 
+            sollTime.c_str(), istTime.c_str(), dep.line.c_str(), dest.c_str(), dep.track.c_str());
+        String singleDeparture = String(buf);
+
+        // String singleDeparture = sollTime + " " + istTime + " " + dep.line + " " + dest + " " + dep.track;
         TextUtils::printTextAtTopMargin(leftMargin, currentY, singleDeparture);
         currentY += 17; // per entry height
         currentY += 3; // Add spacing after departure entry
