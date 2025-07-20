@@ -133,30 +133,56 @@ void WeatherDisplay::drawFullScreenWeatherLayout(const WeatherInfo &weather,
 void WeatherDisplay::drawHalfScreenWeatherLayout(const WeatherInfo &weather, 
                                                 int16_t leftMargin, int16_t rightMargin, 
                                                 int16_t &currentY, int16_t y, int16_t h) {
-
     // City/Town Name with proper margin
     TextUtils::setFont14px_margin17px(); 
 
+    // Parse ISO date string (e.g., "2025-07-16T15:30") and format as "01. July"
+    String isoTime = weather.time;
+    int year = 0, month = 0, day = 0;
+    if (isoTime.length() >= 10) {
+        year = isoTime.substring(0, 4).toInt();
+        month = isoTime.substring(5, 7).toInt();
+        day = isoTime.substring(8, 10).toInt();
+    }
+    static const char* monthNames[] = {"", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+    String dateText = "";
+    if (month > 0 && month <= 12 && day > 0) {
+        char buf[20];
+        snprintf(buf, sizeof(buf), "%02d. %s", day, monthNames[month]);
+        dateText = buf;
+    } else {
+        dateText = "Date: N/A";
+    }
+    int16_t dateTextWidth = TextUtils::getTextWidth(dateText); // Ensure the text is measured
+    TextUtils::printTextAtWithMargin(rightMargin - dateTextWidth, currentY, dateText);
+
+    TextUtils::setFont18px_margin22px(); 
     // Calculate available width and fit city name
     RTCConfigData &config = ConfigManager::getConfig();
-    int cityMaxWidth = rightMargin - leftMargin;
-    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
+    int16_t maxCityWidth = rightMargin - leftMargin - dateTextWidth - 20; // Reserve space for date text
+    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, maxCityWidth);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
-    currentY += 17; // city name
-    currentY += 15; // Space after city name
+
+    TextUtils::setFont14px_margin17px(); 
+
+    currentY += 22; // city name
+    currentY += 20; // Space after city name
+
+    int16_t maxWidth = rightMargin - leftMargin;
+    int16_t columnWidth = maxWidth / 3;
 
     // Each Column has a fixed height of 67px
     drawWeatherInfoFirstColumn(leftMargin, currentY, weather);
 
     // Draw second Column - Today's temps, UV, Pollen
-    int16_t currentX = leftMargin + 100;
+    int16_t currentX = leftMargin + columnWidth;
     drawWeatherInfoSecondColumn(currentX, currentY, weather);
 
     // Draw third Column - Date, Sunrise, Sunset
-    currentX += 150; // Move to next column
+    currentX += columnWidth;
     drawWeatherInfoThirdColumn(currentX, currentY, weather);
 
-    currentY += 100; // Day Weather Information section height
+    currentY += 80; // Day Weather Information section height
     currentY += 12; // Space after Day Weather Information section
 
     // Weather Graph section (replaces text-based forecast for better visualization)
@@ -191,10 +217,11 @@ void WeatherDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayW
 }
 
 void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
-    TextUtils::setFont10px_margin12px(); // Small font for weather info
-    String tempRange = String(weather.dailyForecast[0].tempMin) + " | " + String(weather.dailyForecast[0].tempMax);
+    TextUtils::setFont12px_margin15px(); // Small font for weather info
+    String tempRange = String(weather.dailyForecast[0].tempMin) + "°C | " + String(weather.dailyForecast[0].tempMax) + "°C";
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, tempRange);
 
+    TextUtils::setFont10px_margin12px(); // Small font for weather info
     String uvText = "UV Index : " + String(weather.dailyForecast[0].uvIndex);
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, uvText);
 
@@ -203,15 +230,15 @@ void WeatherDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWe
 }
 
 void WeatherDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo &weather) {
+
+    int8_t padding = 30;
+    currentX += padding; // Add padding to the left
     TextUtils::setFont10px_margin12px(); // Small font for weather info
-    String dateText = "Date : Juli 13"; // Placeholder - should use actual date
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, dateText);
+    display->drawInvertedBitmap( currentX, dayWeatherInfoY + 27 , getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
 
-    String sunriseText = "Sunrise : " + String(weather.dailyForecast[0].sunrise);
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, sunriseText);
-
-    String sunsetText = "Sunset : " + String(weather.dailyForecast[0].sunset);
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, sunsetText);
+    display->drawInvertedBitmap( currentX, dayWeatherInfoY + 47, getBitmap(wi_sunset, 32), 32, 32, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 47, weather.dailyForecast[0].sunset);
 }
 
 void WeatherDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {

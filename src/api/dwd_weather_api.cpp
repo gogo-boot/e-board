@@ -80,6 +80,7 @@ bool getWeatherFromDWD(float lat, float lon, WeatherInfo &weather) {
             // Parse current weather
             if (doc.containsKey("current")) {
                 JsonObject current = doc["current"];
+                weather.time = current["time"].as<String>();
                 weather.temperature = String(current["temperature_2m"].as<float>(), 1);
                 weather.precipitation = String(current["precipitation"].as<float>(), 1);
                 weather.weatherCode = current["weather_code"].as<int>();
