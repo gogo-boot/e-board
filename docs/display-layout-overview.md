@@ -13,26 +13,25 @@
 ┌────────────────────────────────────┬─────────────────────────────────────────┐
 │                                    │                                         │
 │         WEATHER SECTION            │          DEPARTURE SECTION              │
-│           (400x480)                │            (400x480)                    │
+│           (400x480)                │            (399x480)                    │
 │                                    │                                         │
-│  • City/Town Name: 28px            │  • Station Name: 40px                   │
-│  • Space 12px                      │                                         │
-│  • Day weather Info: 67px          │  • Column Headers: 30px                 │
-│    - first column                  │  • Departure Entries: 36px each         │
-│       - Day Weather Icon: 37px     │    - Main Line: 20px                    │
-│       - Current Temp : 30 px       │    - Disruption Space: 16px             │
-│    - second column                 │   • Separation Line  1px                │
-│       - today low/high temp: 27px  │   • Footer: 15px                        │
-│       - UV Index info: 20 px       │                                         │
-│       - Pollen Info : 20px         │                                         │
-│    - third column                  │                                         │
-│       - Date Info : 27px           │                                         │
-│       - Sunrise : 20 px            │                                         │
-│       - Sunset : 20px              │                                         │
-│  • Space 12px                      │                                         │
-│  • Nächste Stunden 15px            │                                         │
-│  • Space 15px                      │                                         │
-│  • Weather Graphic : 304px         │                                         │
+│  • City/Town Name: 22px            │  • Station Name: 17px                   │
+│  • Space 20px                      │  • Space 10px                           │
+│  • Day weather Info: 80px          │  • Departure Column Headers: 12px       │
+|    - first column                  │  • Space 4px                            │
+|       - Day Weather Icon: 50px     │  • Line 1px                             |
+|        - Current Temp : 30 px      |     Left 421px for depature Entries     |
+|    - second column                 |      - Depature Entries 42 px 5 times   |
+|       - today low/high temp: 27px  |      - Separation Line 1px              |
+|       - UV Index info: 20 px       |      - Depature Entries 42 px 5 times   |
+|       - Pollen Info : 20px         |      Single Daparture Entry             |
+│    - third column                  |        - Space 3px                      |
+│       - Sunrise : 40 px            |        - Main Line: 17px                │
+|       - Sunset : 40px              |        - Space 3px                      |
+|  • Space 12px                      |        - Disruption Space: 16px         │
+|  • Nächste Stunden 15px            |       - Space 3px                       |
+|  • Space 25px                      │   • Footer Separation Line  1px         │
+│  • Weather Graphic : 304px         │   • Footer: 15px                        │
 │  • Space 12px                      │                                         │
 │  • Footer: 15px                    │                                         │
 └────────────────────────────────────┴─────────────────────────────────────────┘

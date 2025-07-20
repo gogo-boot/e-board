@@ -196,7 +196,7 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
         display.setPartialWindow(x, y, w, h);
     }
     DepartureDisplay::drawDepartureSection(departures, x, y, w, h);
-    DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight, 15);
+    DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight, footerHeight);
 }
 
 void DisplayManager::displayWeatherOnly(const WeatherInfo &weather)
