@@ -195,7 +195,7 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &d
         // // Use partial window for faster update
         display.setPartialWindow(x, y, w, h);
     }
-    DepartureDisplay::drawDepartureSection(departures, x, y, w, h);
+    DepartureDisplay::drawDepartureSection(departures, x, y, w, contentHeight - footerHeight);
     DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight, footerHeight);
 }
 

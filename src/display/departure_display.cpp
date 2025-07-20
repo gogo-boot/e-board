@@ -69,7 +69,7 @@ void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int
     if (isFullScreen) {
         drawFullScreenDepartures(departures, leftMargin, rightMargin, currentY, y, h);
     } else {
-        drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, y, h - currentY);
+        drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, h - currentY);
     }
 }
 
@@ -89,7 +89,7 @@ void DepartureDisplay::drawFullScreenDepartures(const DepartureData &departures,
 }
 
 void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
-                                              int16_t rightMargin, int16_t currentY, int16_t y, int16_t h) {
+                                              int16_t rightMargin, int16_t currentY, int16_t h) {
     // Half screen mode: Separate by direction flag
     ESP_LOGI(TAG, "Drawing departures separated by direction flag");
     
@@ -109,6 +109,12 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
     ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2", 
              direction1Departures.size(), direction2Departures.size());
     
+    // Draw separator line between directions
+    int16_t halfHeightY = currentY + h / 2;
+    //log the position of the separator line, and y 
+    ESP_LOGI(TAG, "Drawing separator line at Y=%d", halfHeightY);
+    display->drawLine(leftMargin, halfHeightY, rightMargin, halfHeightY, GxEPD_BLACK);
+
     // Draw first 4 departures from direction 1
     int drawnCount = 0;
     int maxPerDirection = 5;
@@ -120,12 +126,6 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
         currentY += 42;
         drawnCount++;
     }
-    
-    // Draw separator line between directions
-    int16_t halfHeightY = y + h / 2;
-    //log the position of the separator line, and y 
-    ESP_LOGI(TAG, "Drawing separator line at Y=%d", halfHeightY);
-    display->drawLine(leftMargin, halfHeightY, rightMargin, halfHeightY, GxEPD_BLACK);
 
     currentY = halfHeightY + 1; // Reset currentY to halfHeightY for direction 2
     // Direction 2 departures
