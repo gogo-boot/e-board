@@ -1,3 +1,4 @@
+#include "util/time_manager.h"
 #include "util/sleep_utils.h"
 #include <WiFi.h>
 #include <esp_sleep.h>
@@ -88,22 +89,34 @@ uint64_t calculateSleepUntilTime(int targetHour, int targetMinute) {
 
 // Enhanced deep sleep function with multiple wakeup options
 void enterDeepSleep(uint64_t sleepTimeUs) {
-  ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds (%.1f minutes)", 
-           sleepTimeUs, sleepTimeUs / 60000000.0);
-  
-  // Configure timer wakeup
-  esp_sleep_enable_timer_wakeup(sleepTimeUs);
-  
-  // Optional: Configure GPIO wakeup (e.g., for user button)
-  // esp_sleep_enable_ext0_wakeup(GPIO_NUM_9, 0); // Wake on low signal on GPIO 9
-  
-  // // Power down WiFi and Bluetooth
-  // WiFi.disconnect(true);
-  // WiFi.mode(WIFI_OFF);
-  
-  // Flush serial output
-  Serial.flush();
-  
-  // Enter deep sleep
-  esp_deep_sleep_start();
+  if (sleepTimeUs <= 0) {
+      ESP_LOGE(TAG, "Invalid sleep time: %llu, not entering deep sleep!", sleepTimeUs);
+      return;
+  }
+
+  // Setup time synchronization after WiFi connection
+  if (!TimeManager::isTimeSet()) {
+      ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
+      TimeManager::setupNTPTime();
+
+      ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds (%.1f minutes)", 
+              sleepTimeUs, sleepTimeUs / 60000000.0);
+      
+      // Configure timer wakeup
+      esp_sleep_enable_timer_wakeup(sleepTimeUs);
+      
+      // Optional: Configure GPIO wakeup (e.g., for user button)
+      // esp_sleep_enable_ext0_wakeup(GPIO_NUM_9, 0); // Wake on low signal on GPIO 9
+      
+      // // Power down WiFi and Bluetooth
+      // WiFi.disconnect(true);
+      // WiFi.mode(WIFI_OFF);
+      
+      // Flush serial output
+      Serial.flush();
+      
+      // Enter deep sleep
+      esp_deep_sleep_start();
+  }
+
 }
