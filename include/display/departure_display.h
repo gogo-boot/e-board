@@ -26,7 +26,9 @@ public:
     /**
      * @brief Draw the complete departure section
      */
-    static void drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawHalfScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
+
+    static void drawFullScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
 
     /**
      * @brief Draw the departure footer with timestamp
@@ -49,7 +51,7 @@ private:
      * @brief Draw departures in full screen mode
      */
     static void drawFullScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
-                                       int16_t rightMargin, int16_t &currentY, int16_t y, int16_t h);
+                                       int16_t rightMargin, int16_t currentY, int16_t h);
 
     /**
      * @brief Draw departures in half screen mode (separated by direction)
@@ -61,7 +63,7 @@ private:
      * @brief Draw a single departure entry
      */
     static void drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, 
-                                  int16_t currentY, bool isFullScreen);
+                                  int16_t currentY);
 };
 
 #endif // DEPARTURE_DISPLAY_H

@@ -43,8 +43,8 @@ public:
                                    const DepartureData *departures = nullptr);
 
     // Full screen modes
-    static void displayWeatherOnly(const WeatherInfo &weather);
-    static void displayDeparturesOnly(const DepartureData &departures);
+    static void displayWeatherFull(const WeatherInfo &weather);
+    static void displayDeparturesFull(const DepartureData &departures);
 
     // Partial update functions
     static void updateWeatherHalf(bool isFullUpate, const WeatherInfo &weather);
