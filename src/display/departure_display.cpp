@@ -170,6 +170,14 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData &depar
     // Print station name at top margin
     TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
 
+    String dateTime = TimeManager::getGermanDateTimeString();
+    int16_t dateTimeWidth = TextUtils::getTextWidth(dateTime);
+
+    int16_t refreshIconWidth = 16; // Width of the refresh icon
+    TextUtils::printTextAtTopMargin(rightMargin - dateTimeWidth - refreshIconWidth - 10, currentY, dateTime);
+
+    display->drawInvertedBitmap( rightMargin - refreshIconWidth, currentY , getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+
     currentY += 17; // Space for station name
     currentY += 25; // Space after station name
 
