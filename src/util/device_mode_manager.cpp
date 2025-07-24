@@ -14,7 +14,6 @@
 #include "api/dwd_weather_api.h"
 #include <esp_log.h>
 #include <WiFiManager.h>
-#include <LittleFS.h>
 #include <WebServer.h>
 
 static const char* TAG = "DEVICE_MODE";

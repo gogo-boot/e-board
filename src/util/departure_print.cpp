@@ -4,14 +4,7 @@
 
 // Include e-paper display libraries
 #include <GxEPD2_BW.h>
-#include <GxEPD2_3C.h>
-#include <GxEPD2_4C.h>
-#include <GxEPD2_7C.h>
-#include <Fonts/FreeMonoBold9pt7b.h>
-#include <Fonts/FreeMonoBold12pt7b.h>
-#include <Fonts/FreeMonoBold18pt7b.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>
-#include "config/pins.h"
 
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
