@@ -74,18 +74,9 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
     // Half screen mode: Separate by direction flag
     ESP_LOGI(TAG, "Drawing departures separated by direction flag");
     
-    // Separate departures by direction flag
     std::vector<const DepartureInfo*> direction1Departures;
     std::vector<const DepartureInfo*> direction2Departures;
-    
-    for (int i = 0; i < departures.departureCount; i++) {
-        const auto &dep = departures.departures[i];
-        if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1) {
-            direction1Departures.push_back(&dep);
-        } else if (dep.directionFlag == "2" || dep.directionFlag.toInt() == 2) {
-            direction2Departures.push_back(&dep);
-        }
-    }
+    getSeparatedDepatureDirection(departures, direction1Departures, direction2Departures);
     
     ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2", 
              direction1Departures.size(), direction2Departures.size());
@@ -122,45 +113,33 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
     ESP_LOGI(TAG, "Drew %d total departures", drawnCount);
 }
 
-void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h) {
-    // Half screen mode: Separate by direction flag
-    ESP_LOGI(TAG, "Drawing departures separated by direction flag");
-   
-    ESP_LOGI(TAG, "Drawing departure section at (%d, %d) with size %dx%d", x, y, w, h); 
-    int16_t currentY = y; // Start from actual top
-    int16_t leftMargin = x + 10;
-    int16_t rightMargin = x + w - 10;
-
-
-    // Station name with TRUE 15px margin from top
-    TextUtils::setFont14px_margin17px(); // Medium font for station name
-    int16_t stationTextTop = currentY + 22; // 15px margin from top
-    RTCConfigData &config = ConfigManager::getConfig();
-    String stopName = getStopName(config);
-
-
-    // Calculate available width and fit station name
-    int stationMaxWidth = rightMargin - leftMargin;
-    String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
-
-
-    currentY += 17; // Space for station name 
-    currentY += 10; // Space after station name
-
-    // Print station name at top margin
-    TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
+void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> departure, int16_t x, int16_t y, int16_t w, int16_t h, int maxPerDirection) {
 
     // Column headers with TRUE 12px margin from current position
     TextUtils::setFont10px_margin12px(); // Small font for column headers
-    TextUtils::printTextAtTopMargin(leftMargin, currentY, "Soll    Ist      Linie     Ziel");
+    TextUtils::printTextAtTopMargin(x, y, "Soll    Ist      Linie     Ziel");
 
-    currentY += 12; 
-    currentY += 5;
+    y += 12;
+    y += 5;
 
-    // Separate departures by direction flag
-    std::vector<const DepartureInfo*> direction1Departures;
-    std::vector<const DepartureInfo*> direction2Departures;
-    
+    // Underline
+    display->drawLine(x, y, x + w, y, GxEPD_BLACK);
+
+    // Direction 1 departures
+    for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++) {
+        const auto &dep = *departure[i];
+        drawSingleDeparture(dep, x, w, y); // false = not full screen
+        y += 42;
+
+        if ( y > screenHeight ) {
+            ESP_LOGW(TAG, "Reached end of section height while drawing departures");
+            break; // Stop if we exceed the section height
+        }
+    }
+}
+
+void DepartureDisplay::getSeparatedDepatureDirection(const DepartureData& departures, std::vector<const DepartureInfo*>& direction1Departures, std::vector<const DepartureInfo*>& direction2Departures)
+{
     for (int i = 0; i < departures.departureCount; i++) {
         const auto &dep = departures.departures[i];
         if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1) {
@@ -169,35 +148,45 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData &depar
             direction2Departures.push_back(&dep);
         }
     }
-    
-    ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2", 
+}
+
+void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h) {
+    // Half screen mode: Separate by direction flag
+    ESP_LOGI(TAG, "drawFullScreenDepartureSection at (%d, %d) with size %dx%d", x, y, w, h);
+    int16_t currentY = y; // Start from actual top
+    const int16_t padding = 10;
+    const int16_t leftMargin = x + 10;
+    const int16_t rightMargin = x + w - 10;
+
+    // Station name with TRUE 15px margin from top
+    TextUtils::setFont14px_margin17px(); // Medium font for station name
+    RTCConfigData &config = ConfigManager::getConfig();
+    const String stopName = getStopName(config);
+
+    // Calculate available width and fit station name
+    int stationMaxWidth = rightMargin - leftMargin;
+    String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
+
+    // Print station name at top margin
+    TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
+
+    currentY += 17; // Space for station name
+    currentY += 25; // Space after station name
+
+    std::vector<const DepartureInfo*> direction1Departures;
+    std::vector<const DepartureInfo*> direction2Departures;
+    getSeparatedDepatureDirection(departures, direction1Departures, direction2Departures);
+
+    ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2",
              direction1Departures.size(), direction2Departures.size());
     
     // Draw first 4 departures from direction 1
-    int drawnCount = 0;
-    int maxPerDirection = 10;
-    
-    // Direction 1 departures
-    for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()); i++) {
-        const auto &dep = *direction1Departures[i];
-        drawSingleDeparture(dep, leftMargin, rightMargin, currentY); // false = not full screen
-        currentY += 42;
-        drawnCount++;
-    }
+    constexpr int maxPerDirection = 10;
 
-    int16_t halfWidth = screenWidth/2 -1; 
-    currentY = y;
+    const int16_t halfWidth = screenWidth/2 -1;
+    drawDepartureList(direction1Departures, x + padding, currentY, halfWidth -padding, h - currentY, maxPerDirection);
+    drawDepartureList(direction2Departures, halfWidth + padding, currentY, halfWidth -padding, h - currentY, maxPerDirection);
 
-    // Direction 2 departures
-    for (int i = 0; i < min(maxPerDirection, (int)direction2Departures.size()); i++) {
-        const auto &dep = *direction2Departures[i];
-        // log the currentY position and halfHeightY
-        drawSingleDeparture(dep, halfWidth + leftMargin, halfWidth + rightMargin, currentY); // false = not full screen
-        currentY += 42;
-        drawnCount++;
-    }
-    
-    ESP_LOGI(TAG, "Drew %d total departures", drawnCount);
 }
 
 void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, 

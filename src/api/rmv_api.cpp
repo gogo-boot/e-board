@@ -128,13 +128,13 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
     http.begin(url);
     int httpCode = http.GET();
-    
+
     if (httpCode != HTTP_CODE_OK) {
         ESP_LOGE(TAG, "HTTP GET failed, error: %s", http.errorToString(httpCode).c_str());
         http.end();
         return false;
     }
-    
+
     String payload = http.getString();
     http.end();
     

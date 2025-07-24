@@ -212,12 +212,9 @@ void DisplayManager::displayDeparturesFull(const DepartureData &departures) {
     display.setFullWindow();
     display.firstPage();
 
-    const int16_t footerHeight = 15;
-
     do{
         display.fillScreen(GxEPD_WHITE);
-        DepartureDisplay::drawFullScreenDepartureSection(departures, 0, 0, screenWidth, screenHeight - footerHeight);
-        DepartureDisplay::drawDepartureFooter(0, screenHeight - footerHeight, footerHeight);
+        DepartureDisplay::drawFullScreenDepartureSection(departures, 0, 0, screenWidth, screenHeight );
     } while (display.nextPage());
 }
 
