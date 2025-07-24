@@ -55,16 +55,6 @@ void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& depar
     currentY += 17; // Space for station name
     currentY += 10; // Space after station name
 
-    // Column headers with TRUE 12px margin from current position
-    TextUtils::setFont10px_margin12px(); // Small font for column headers
-    TextUtils::printTextAtTopMargin(leftMargin, currentY, "Soll    Ist      Linie     Ziel");
-
-    currentY += 12;
-    currentY += 5;
-
-    // Underline
-    display->drawLine(leftMargin, currentY, rightMargin, currentY, GxEPD_BLACK);
-
     drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, h - currentY);
 }
 
@@ -93,46 +83,32 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures,
     ESP_LOGI(TAG, "Drawing separator line at Y=%d", halfHeightY);
     display->drawLine(leftMargin, halfHeightY, rightMargin, halfHeightY, GxEPD_BLACK);
 
-    // Draw first 4 departures from direction 1
-    int drawnCount = 0;
-    int maxPerDirection = 5;
+    constexpr int maxPerDirection = 5;
 
-    // Direction 1 departures
-    for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()); i++)
-    {
-        const auto& dep = *direction1Departures[i];
-        drawSingleDeparture(dep, leftMargin, rightMargin, currentY); // false = not full screen
-        currentY += 42;
-        drawnCount++;
-    }
+    const int16_t halfWidth = screenWidth / 2 - 1;
+    drawDepartureList(direction1Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
+                      true, maxPerDirection);
 
     currentY = halfHeightY + 1; // Reset currentY to halfHeightY for direction 2
-    // Direction 2 departures
-    for (int i = 0; i < min(maxPerDirection, (int)direction2Departures.size()); i++)
-    {
-        const auto& dep = *direction2Departures[i];
-        // log the currentY position and halfHeightY
-        ESP_LOGI(TAG, "Drawing direction 2 departure at Y=%d (halfHeightY=%d)", currentY, halfHeightY);
-        drawSingleDeparture(dep, leftMargin, rightMargin, currentY); // false = not full screen
-        currentY += 42;
-        drawnCount++;
-    }
-
-    ESP_LOGI(TAG, "Drew %d total departures", drawnCount);
+    drawDepartureList(direction2Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
+                      false, maxPerDirection);
 }
 
 void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> departure, int16_t x, int16_t y, int16_t w,
-                                         int16_t h, int maxPerDirection)
+                                         int16_t h, bool printLabel, int maxPerDirection)
 {
-    // Column headers with TRUE 12px margin from current position
-    TextUtils::setFont10px_margin12px(); // Small font for column headers
-    TextUtils::printTextAtTopMargin(x, y, "Soll    Ist      Linie     Ziel");
+    if (printLabel)
+    {
+        // Column headers with TRUE 12px margin from current position
+        TextUtils::setFont10px_margin12px(); // Small font for column headers
+        TextUtils::printTextAtTopMargin(x, y, "Soll    Ist      Linie     Ziel");
 
-    y += 12;
-    y += 5;
+        y += 12;
+        y += 5;
 
-    // Underline
-    display->drawLine(x, y, x + w, y, GxEPD_BLACK);
+        // Underline
+        display->drawLine(x, y, x + w, y, GxEPD_BLACK);
+    }
 
     // Direction 1 departures
     for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++)
@@ -211,9 +187,10 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& depar
     constexpr int maxPerDirection = 10;
 
     const int16_t halfWidth = screenWidth / 2 - 1;
-    drawDepartureList(direction1Departures, x + padding, currentY, halfWidth - padding, h - currentY, maxPerDirection);
-    drawDepartureList(direction2Departures, halfWidth + padding, currentY, halfWidth - padding, h - currentY,
+    drawDepartureList(direction1Departures, x + padding, currentY, halfWidth - padding, h - currentY, true,
                       maxPerDirection);
+    drawDepartureList(direction2Departures, halfWidth + padding, currentY, halfWidth - padding, h - currentY,
+                      true, maxPerDirection);
 }
 
 void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,

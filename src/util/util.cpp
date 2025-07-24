@@ -81,7 +81,15 @@ String Util::getUniqueSSID(const String& prefix)
     return String(ssid);
 }
 
-
+// Shortens the destination name by removing common prefix tokens with the departure,
+// and replacing certain words with their shorter forms using a replacements map.
+//
+// Example:
+//   Input:  departure = "Frankfurt Hauptbahnhof", destination = "Frankfurt Hauptbahnhof Südseite"
+//   Output: "Südseite"
+//
+//   Input:  departure = "Frankfurt", destination = "Frankfurt Bahnhof"
+//   Output: "Bhf"
 String Util::shortenDestination(const String departure, const String destination)
 {
     // Tokenize departure
@@ -121,7 +129,7 @@ String Util::shortenDestination(const String departure, const String destination
 
     // Map for replacements
     std::map<String, String> replacements = {
-        {"Bahnhof", "Bhf"}, {"(Tanus)", "Ts"}, {"(Main)", "M"}, {"(Hbf)", "Hbf"}, {"(Hauptbahnhof)", "Hbf"}
+        {"Bahnhof", "Bhf"}, {"(Taunus)", "Ts"}, {"(Main)", "M"}, {"(Hbf)", "Hbf"}, {"(Hauptbahnhof)", "Hbf"}
     };
 
     // Replace map-matched replacements in result

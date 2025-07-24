@@ -59,7 +59,7 @@ private:
     static void drawHalfScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
                                        int16_t rightMargin, int16_t currentY, int16_t h);
     static void drawDepartureList(std::vector<const DepartureInfo*> departure, int16_t x,
-                                    int16_t y, int16_t w, int16_t h, int maxPerDirection);
+                                  int16_t y, int16_t w, int16_t h, bool printLabel, int maxPerDirection);
     static void getSeparatedDepatureDirection(const DepartureData& departures,
                                               std::vector<const DepartureInfo*>& direction1Departures,
                                               std::vector<const DepartureInfo*>& direction2Departures);
