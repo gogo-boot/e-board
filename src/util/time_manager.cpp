@@ -44,9 +44,25 @@ void TimeManager::setupNTPTime() {
         utc_timeinfo.tm_hour, utc_timeinfo.tm_min, utc_timeinfo.tm_sec);
 }
 
+String TimeManager::getGermanDateTimeString() {
+
+    time_t now = time(nullptr);
+    tm *timeinfo = localtime(&now);
+
+    static const char* germanMonths[] = {
+        "Jan", "Feb", "März", "Apr", "Mai", "Juni",
+        "Juli", "Aug", "Sep", "Okt", "Nov", "Dez"
+    };
+    char buf[32];
+    int monthIdx = timeinfo->tm_mon;
+    snprintf(buf, sizeof(buf), "%02d:%02d %02d.%s", timeinfo->tm_hour, timeinfo->tm_min,
+             timeinfo->tm_mday, germanMonths[monthIdx]);
+    return String(buf);
+}
+
 void TimeManager::printCurrentTime() {
     time_t now = time(nullptr);
-    struct tm *timeinfo = localtime(&now);
+    tm *timeinfo = localtime(&now);
     ESP_LOGI(TAG, "Current time: %04d-%02d-%02d %02d:%02d:%02d",
         timeinfo->tm_year + 1900, timeinfo->tm_mon + 1, timeinfo->tm_mday,
         timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);

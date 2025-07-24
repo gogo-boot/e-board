@@ -24,7 +24,7 @@ void DepartureDisplay::init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7
     ESP_LOGI(TAG, "DepartureDisplay initialized with screen size %dx%d", screenW, screenH);
 }
 
-void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h) {
+void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h) {
     if (!display || !u8g2) {
         ESP_LOGE(TAG, "DepartureDisplay not initialized! Call init() first.");
         return;
@@ -33,8 +33,6 @@ void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int
     int16_t currentY = y; // Start from actual top
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
-
-    bool isFullScreen = (w >= screenWidth * 0.8);
 
     // Station name with TRUE 15px margin from top
     TextUtils::setFont14px_margin17px(); // Medium font for station name
@@ -54,38 +52,21 @@ void DepartureDisplay::drawDepartureSection(const DepartureData &departures, int
 
     // Column headers with TRUE 12px margin from current position
     TextUtils::setFont10px_margin12px(); // Small font for column headers
-    if (isFullScreen) {
-        TextUtils::printTextAtTopMargin(leftMargin, currentY, "Soll Ist  Linie  Ziel                Gleis");
-    } else {
-        TextUtils::printTextAtTopMargin(leftMargin, currentY, "Soll    Ist      Linie     Ziel");
-    }
+    TextUtils::printTextAtTopMargin(leftMargin, currentY, "Soll    Ist      Linie     Ziel");
+
     currentY += 12; 
     currentY += 5;
 
     // Underline
     display->drawLine(leftMargin, currentY, rightMargin, currentY, GxEPD_BLACK);
  
-    // 421 px space left for departures
-    if (isFullScreen) {
-        drawFullScreenDepartures(departures, leftMargin, rightMargin, currentY, y, h);
-    } else {
-        drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, h - currentY);
-    }
+    drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, h - currentY);
 }
 
-void DepartureDisplay::drawFullScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
-                                              int16_t rightMargin, int16_t &currentY, int16_t y, int16_t h) {
-    // Original full screen logic
-    int maxDepartures = min(20, departures.departureCount);
-    
-    for (int i = 0; i < maxDepartures; i++) {
-        const auto &dep = departures.departures[i];
-        
-        // TODO: Implement full screen departure drawing logic
-        drawSingleDeparture(dep, leftMargin, rightMargin, currentY, true); // true = full screen
-        
-        if (currentY > y + h - 25) break; // Leave space for footer
-    }
+void DepartureDisplay::drawFullScreenDepartures(const DepartureData &departures, int16_t x, 
+                                              int16_t y, int16_t w, int16_t h) {
+
+    return;
 }
 
 void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
@@ -93,18 +74,9 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
     // Half screen mode: Separate by direction flag
     ESP_LOGI(TAG, "Drawing departures separated by direction flag");
     
-    // Separate departures by direction flag
     std::vector<const DepartureInfo*> direction1Departures;
     std::vector<const DepartureInfo*> direction2Departures;
-    
-    for (int i = 0; i < departures.departureCount; i++) {
-        const auto &dep = departures.departures[i];
-        if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1) {
-            direction1Departures.push_back(&dep);
-        } else if (dep.directionFlag == "2" || dep.directionFlag.toInt() == 2) {
-            direction2Departures.push_back(&dep);
-        }
-    }
+    getSeparatedDepatureDirection(departures, direction1Departures, direction2Departures);
     
     ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2", 
              direction1Departures.size(), direction2Departures.size());
@@ -122,7 +94,7 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
     // Direction 1 departures
     for (int i = 0; i < min(maxPerDirection, (int)direction1Departures.size()); i++) {
         const auto &dep = *direction1Departures[i];
-        drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
+        drawSingleDeparture(dep, leftMargin, rightMargin, currentY); // false = not full screen
         currentY += 42;
         drawnCount++;
     }
@@ -133,7 +105,7 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
         const auto &dep = *direction2Departures[i];
         // log the currentY position and halfHeightY
         ESP_LOGI(TAG, "Drawing direction 2 departure at Y=%d (halfHeightY=%d)", currentY, halfHeightY);
-        drawSingleDeparture(dep, leftMargin, rightMargin, currentY, false); // false = not full screen
+        drawSingleDeparture(dep, leftMargin, rightMargin, currentY); // false = not full screen
         currentY += 42;
         drawnCount++;
     }
@@ -141,73 +113,146 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData &departures,
     ESP_LOGI(TAG, "Drew %d total departures", drawnCount);
 }
 
+void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> departure, int16_t x, int16_t y, int16_t w, int16_t h, int maxPerDirection) {
+
+    // Column headers with TRUE 12px margin from current position
+    TextUtils::setFont10px_margin12px(); // Small font for column headers
+    TextUtils::printTextAtTopMargin(x, y, "Soll    Ist      Linie     Ziel");
+
+    y += 12;
+    y += 5;
+
+    // Underline
+    display->drawLine(x, y, x + w, y, GxEPD_BLACK);
+
+    // Direction 1 departures
+    for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++) {
+        const auto &dep = *departure[i];
+        drawSingleDeparture(dep, x, w, y); // false = not full screen
+        y += 42;
+
+        if ( y > screenHeight ) {
+            ESP_LOGW(TAG, "Reached end of section height while drawing departures");
+            break; // Stop if we exceed the section height
+        }
+    }
+}
+
+void DepartureDisplay::getSeparatedDepatureDirection(const DepartureData& departures, std::vector<const DepartureInfo*>& direction1Departures, std::vector<const DepartureInfo*>& direction2Departures)
+{
+    for (int i = 0; i < departures.departureCount; i++) {
+        const auto &dep = departures.departures[i];
+        if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1) {
+            direction1Departures.push_back(&dep);
+        } else if (dep.directionFlag == "2" || dep.directionFlag.toInt() == 2) {
+            direction2Departures.push_back(&dep);
+        }
+    }
+}
+
+void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h) {
+    // Half screen mode: Separate by direction flag
+    ESP_LOGI(TAG, "drawFullScreenDepartureSection at (%d, %d) with size %dx%d", x, y, w, h);
+    int16_t currentY = y; // Start from actual top
+    const int16_t padding = 10;
+    const int16_t leftMargin = x + 10;
+    const int16_t rightMargin = x + w - 10;
+
+    // Station name with TRUE 15px margin from top
+    TextUtils::setFont14px_margin17px(); // Medium font for station name
+    RTCConfigData &config = ConfigManager::getConfig();
+    const String stopName = getStopName(config);
+
+    // Calculate available width and fit station name
+    int stationMaxWidth = rightMargin - leftMargin;
+    String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
+
+    // Print station name at top margin
+    TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
+
+    String dateTime = TimeManager::getGermanDateTimeString();
+    int16_t dateTimeWidth = TextUtils::getTextWidth(dateTime);
+
+    int16_t refreshIconWidth = 16; // Width of the refresh icon
+    TextUtils::printTextAtTopMargin(rightMargin - dateTimeWidth - refreshIconWidth - 10, currentY, dateTime);
+
+    display->drawInvertedBitmap( rightMargin - refreshIconWidth, currentY , getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+
+    currentY += 17; // Space for station name
+    currentY += 25; // Space after station name
+
+    std::vector<const DepartureInfo*> direction1Departures;
+    std::vector<const DepartureInfo*> direction2Departures;
+    getSeparatedDepatureDirection(departures, direction1Departures, direction2Departures);
+
+    ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2",
+             direction1Departures.size(), direction2Departures.size());
+    
+    // Draw first 4 departures from direction 1
+    constexpr int maxPerDirection = 10;
+
+    const int16_t halfWidth = screenWidth/2 -1;
+    drawDepartureList(direction1Departures, x + padding, currentY, halfWidth -padding, h - currentY, maxPerDirection);
+    drawDepartureList(direction2Departures, halfWidth + padding, currentY, halfWidth -padding, h - currentY, maxPerDirection);
+
+}
+
 void DepartureDisplay::drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, 
-                                         int16_t currentY, bool isFullScreen) {
+                                         int16_t currentY) {
     if (!u8g2) return;
 
     // Log the departure position and size
-    ESP_LOGI(TAG, "Drawing single departure at Y=%d with full screen=%d", currentY, isFullScreen); 
+    ESP_LOGI(TAG, "Drawing single departure at Y=%d", currentY); 
 
-    if (isFullScreen) {
-        // Full screen format (existing logic)
-        // TODO: Implement full screen single departure drawing
-        TextUtils::setFont10px_margin12px();
-        int16_t textTop = currentY + 12;
-        int16_t baseline = textTop + TextUtils::getFontAscent();
-        u8g2->setCursor(leftMargin, baseline);
-        u8g2->print(dep.time.substring(0, 5) + " " + dep.line + " " + dep.direction);
-        currentY += 37; // Total spacing per entry
-    } else {
-        currentY += 3;
-        // Half screen format with proper text positioning
-        TextUtils::setFont10px_margin12px(); // Small font for departure entries
+    currentY += 3;
+    // Half screen format with proper text positioning
+    TextUtils::setFont10px_margin12px(); // Small font for departure entries
+    
+    // Calculate available space
+    int totalWidth = rightMargin - leftMargin;
+    
+    // Check if times are different for highlighting
+    bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
+    
+    // Clean up destination (remove "Frankfurt (Main)" prefix)
+    String dest = dep.direction;
+    String destLower = dest;
+    destLower.toLowerCase();
+    if (destLower.startsWith("frankfurt (main) ")) {
+        dest = dep.direction.substring(17);
+    }
+    
+    // Prepare times
+    String sollTime = dep.time.substring(0, 5);
+    String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+
+    if (!timesAreDifferent) {
+        istTime = "  +00"; // Use "00" to indicate on-time
+    }
+
+    char buf[64];
+    //Hauputbahnhof/Fernbusterminal
+    snprintf(buf, sizeof(buf), "%5s %5s %6s %-30s %4s", 
+        sollTime.c_str(), istTime.c_str(), dep.line.c_str(), dest.c_str(), dep.track.c_str());
+    String singleDeparture = String(buf);
+
+    // String singleDeparture = sollTime + " " + istTime + " " + dep.line + " " + dest + " " + dep.track;
+    TextUtils::printTextAtTopMargin(leftMargin, currentY, singleDeparture);
+    currentY += 17; // per entry height
+    currentY += 3; // Add spacing after departure entry
+
+    // Check if we have disruption information to display
+    if (dep.lead.length() > 0 || dep.text.length() > 0) {
+        // Use the lead text if available, otherwise use text
+        String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
         
-        // Calculate available space
-        int totalWidth = rightMargin - leftMargin;
+        // Fit disruption text to available width with some indent
+        int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
+        String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
         
-        // Check if times are different for highlighting
-        bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
-        
-        // Clean up destination (remove "Frankfurt (Main)" prefix)
-        String dest = dep.direction;
-        String destLower = dest;
-        destLower.toLowerCase();
-        if (destLower.startsWith("frankfurt (main) ")) {
-            dest = dep.direction.substring(17);
-        }
-        
-        // Prepare times
-        String sollTime = dep.time.substring(0, 5);
-        String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
-
-        if (!timesAreDifferent) {
-            istTime = "  +00"; // Use "00" to indicate on-time
-        }
-
-        char buf[64];
-        //Hauputbahnhof/Fernbusterminal
-        snprintf(buf, sizeof(buf), "%5s %5s %6s %-30s %4s", 
-            sollTime.c_str(), istTime.c_str(), dep.line.c_str(), dest.c_str(), dep.track.c_str());
-        String singleDeparture = String(buf);
-
-        // String singleDeparture = sollTime + " " + istTime + " " + dep.line + " " + dest + " " + dep.track;
-        TextUtils::printTextAtTopMargin(leftMargin, currentY, singleDeparture);
-        currentY += 17; // per entry height
-        currentY += 3; // Add spacing after departure entry
-
-        // Check if we have disruption information to display
-        if (dep.lead.length() > 0 || dep.text.length() > 0) {
-            // Use the lead text if available, otherwise use text
-            String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
-            
-            // Fit disruption text to available width with some indent
-            int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
-            String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
-            
-            // Display disruption information with proper positioning
-            TextUtils::setFont10px_margin12px(); // Small font for disruption info
-            TextUtils::printTextAtTopMargin(leftMargin + 20, currentY, fittedDisruption);
-        }
+        // Display disruption information with proper positioning
+        TextUtils::setFont10px_margin12px(); // Small font for disruption info
+        TextUtils::printTextAtTopMargin(leftMargin + 20, currentY, fittedDisruption);
     }
 }
 

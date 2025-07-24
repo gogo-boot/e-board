@@ -117,24 +117,23 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo *weather, const Depart
     const int16_t contentY = 0; // Start from top instead of after header
     const int16_t contentHeight = screenHeight - footerHeight;
 
-    if (weather && departures)
-    {
+    if (weather && departures) {
         // Full update - both halves without header
         ESP_LOGI(TAG, "Updating both halves without header");
 
         bool isFullUpdate = true; // Full update for both halves
+
+        // Set the display update region to the entire screen.
+        // This ensures all drawing operations affect the whole display.
         display.setFullWindow();
         display.firstPage();
-        do
-        {
+        do {
             display.fillScreen(GxEPD_WHITE);
 
             // Remove header drawing
             // Landscape: left/right split (weather left, departures right)
             updateWeatherHalf(isFullUpdate, *weather);
             updateDepartureHalf(isFullUpdate, *departures);
-            // DepartureDisplay::drawDepartureSection(*departures, halfWidth +1, contentHeight, halfWidth - 1, contentHeight);
-            // DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight, footerHeight);
 
             // Draw vertical divider
             displayVerticalLine(contentY);
@@ -151,8 +150,7 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo *weather, const Depart
             // Partial update - departure half only
             // updateDepartureHalf(false, *departures);
             display.setPartialWindow(halfWidth +1, contentHeight, halfWidth - 1, contentHeight);
-            DepartureDisplay::drawDepartureSection(*departures, halfWidth +1, contentHeight, halfWidth - 1, contentHeight);
-            DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight, footerHeight);
+            updateDepartureHalf(false, *departures);
         } while (display.nextPage());
     }
 }
@@ -173,6 +171,7 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
     int16_t x = 0, y = 0, w = halfWidth, h = screenHeight;
 
     if (!isFullUpate) {
+        // Use setPartialWindow(x, y, w, h) for partial updates instead.
         display.setPartialWindow(x, y, w, h);
     }
     // Use partial window for faster update
@@ -180,50 +179,42 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate, const WeatherInfo &weat
     WeatherDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
 }
 
-void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &departures)
-{
+void DisplayManager::updateDepartureHalf(bool isFullUpate,const DepartureData &departures) {
     ESP_LOGI(TAG, "Updating departure half");
 
     const int16_t footerHeight = 15;
     const int16_t contentY = 0; // Start from top without header
     const int16_t contentHeight = screenHeight; // Use full height
 
-    // Landscape: departures are RIGHT half (full height)
-    int16_t x = halfWidth, y = contentY, w = halfWidth, h = contentHeight;
-
     if (!isFullUpate) {
         // // Use partial window for faster update
-        display.setPartialWindow(x, y, w, h);
+        display.setPartialWindow(halfWidth, contentY, halfWidth, contentHeight);
     }
-    DepartureDisplay::drawDepartureSection(departures, x, y, w, contentHeight - footerHeight);
-    DepartureDisplay::drawDepartureFooter(x, screenHeight - footerHeight, footerHeight);
+    DepartureDisplay::drawHalfScreenDepartureSection(departures, halfWidth, contentY, halfWidth, contentHeight - footerHeight);
+    DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight, footerHeight);
 }
 
-void DisplayManager::displayWeatherOnly(const WeatherInfo &weather)
-{
+void DisplayManager::displayWeatherFull(const WeatherInfo &weather) {
     ESP_LOGI(TAG, "Displaying weather only mode");
 
     display.setFullWindow();
     display.firstPage();
 
-    do
-    {
+    do{
         display.fillScreen(GxEPD_WHITE);
         WeatherDisplay::drawWeatherSection(weather, 0, 0, screenWidth, screenHeight);
     } while (display.nextPage());
 }
 
-void DisplayManager::displayDeparturesOnly(const DepartureData &departures)
-{
+void DisplayManager::displayDeparturesFull(const DepartureData &departures) {
     ESP_LOGI(TAG, "Displaying departures only mode");
 
     display.setFullWindow();
     display.firstPage();
 
-    do
-    {
+    do{
         display.fillScreen(GxEPD_WHITE);
-        DepartureDisplay::drawDepartureSection(departures, 0, 0, screenWidth, screenHeight);
+        DepartureDisplay::drawFullScreenDepartureSection(departures, 0, 0, screenWidth, screenHeight );
     } while (display.nextPage());
 }
 

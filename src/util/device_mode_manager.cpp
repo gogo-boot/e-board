@@ -188,18 +188,18 @@ void DeviceModeManager::runOperationalMode() {
         }
         
         // Display using new display manager
-        if (hasWeather && hasTransport) {
-            ESP_LOGI(TAG, "Displaying both weather and transport data");
-            DisplayManager::displayHalfAndHalf(&weather, &depart);
-        } else if (hasWeather) {
-            ESP_LOGI(TAG, "Displaying weather only");
-            DisplayManager::displayWeatherOnly(weather);
-        } else if (hasTransport) {
-            ESP_LOGI(TAG, "Displaying transport only");
-            DisplayManager::displayDeparturesOnly(depart);
-        } else {
-            ESP_LOGW(TAG, "No data to display");
-        }
+        // if (hasWeather && hasTransport) {
+        //     ESP_LOGI(TAG, "Displaying both weather and transport data");
+        //     DisplayManager::displayHalfAndHalf(&weather, &depart);
+        // } else if (hasWeather) {
+        //     ESP_LOGI(TAG, "Displaying weather only");
+        //     DisplayManager::updateWeatherHalf(false, weather);
+        // } else if (hasTransport) {
+         ESP_LOGI(TAG, "Displaying transport only");
+         DisplayManager::displayDeparturesFull(depart);
+        // } else {
+        //     ESP_LOGW(TAG, "No data to display");
+        // }
         
     } else {
         ESP_LOGW(TAG, "WiFi not connected - cannot fetch data");
