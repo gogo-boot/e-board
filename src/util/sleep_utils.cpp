@@ -8,12 +8,10 @@
 static const char* TAG = "SLEEP";
 
 // Print wakeup reason after deep sleep
-void printWakeupReason()
-{
+void printWakeupReason() {
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  switch (wakeup_reason)
-  {
+  switch (wakeup_reason) {
   case ESP_SLEEP_WAKEUP_EXT0:
     ESP_LOGI(TAG, "Wakeup caused by external signal using RTC_IO");
     break;
@@ -36,8 +34,7 @@ void printWakeupReason()
 }
 
 // Calculate sleep time until next scheduled wakeup
-uint64_t calculateSleepTime(int wakeupIntervalMinutes)
-{
+uint64_t calculateSleepTime(int wakeupIntervalMinutes) {
   time_t now = time(nullptr);
   struct tm* timeinfo = localtime(&now);
 
@@ -51,8 +48,7 @@ uint64_t calculateSleepTime(int wakeupIntervalMinutes)
   int secondsToSleep = (minutesToSleep * 60) - currentSecond;
 
   // Handle hour boundary
-  if (nextWakeupMinute >= 60)
-  {
+  if (nextWakeupMinute >= 60) {
     secondsToSleep = (60 - currentMinute) * 60 - currentSecond;
   }
 
@@ -64,8 +60,7 @@ uint64_t calculateSleepTime(int wakeupIntervalMinutes)
 }
 
 // Calculate sleep time until specific time (e.g., 01:00)
-uint64_t calculateSleepUntilTime(int targetHour, int targetMinute)
-{
+uint64_t calculateSleepUntilTime(int targetHour, int targetMinute) {
   time_t now = time(nullptr);
   struct tm* timeinfo = localtime(&now);
 
@@ -78,8 +73,7 @@ uint64_t calculateSleepUntilTime(int targetHour, int targetMinute)
   time_t targetTimestamp = mktime(&targetTime);
 
   // If target time is in the past today, set it for tomorrow
-  if (targetTimestamp <= now)
-  {
+  if (targetTimestamp <= now) {
     targetTime.tm_mday += 1;
     targetTimestamp = mktime(&targetTime);
   }
@@ -94,23 +88,20 @@ uint64_t calculateSleepUntilTime(int targetHour, int targetMinute)
 }
 
 // Enhanced deep sleep function with multiple wakeup options
-void enterDeepSleep(uint64_t sleepTimeUs)
-{
-  if (sleepTimeUs <= 0)
-  {
+void enterDeepSleep(uint64_t sleepTimeUs) {
+  if (sleepTimeUs <= 0) {
     ESP_LOGE(TAG, "Invalid sleep time: %llu, not entering deep sleep!", sleepTimeUs);
     return;
   }
 
   // Setup time synchronization after WiFi connection
-  if (!TimeManager::isTimeSet())
-  {
+  if (!TimeManager::isTimeSet()) {
     ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
     TimeManager::setupNTPTime();
   }
 
-  ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds (%.1f minutes)",
-           sleepTimeUs, sleepTimeUs / 60000000.0);
+  ESP_LOGI(TAG, "Entering deep sleep for %llu seconds (%.1f minutes)",
+           sleepTimeUs / 1000000, sleepTimeUs / 60000000.0);
 
   // Configure timer wakeup
   esp_sleep_enable_timer_wakeup(sleepTimeUs);
@@ -118,12 +109,10 @@ void enterDeepSleep(uint64_t sleepTimeUs)
   // Optional: Configure GPIO wakeup (e.g., for user button)
   // esp_sleep_enable_ext0_wakeup(GPIO_NUM_9, 0); // Wake on low signal on GPIO 9
 
-  // // Power down WiFi and Bluetooth
-  // WiFi.disconnect(true);
-  // WiFi.mode(WIFI_OFF);
-
+  // can cause issues after deep sleep, especially if the serial monitor is not actively reading data.
+  // It can cause the ESP32 to block on the Serial.flush() call if the serial port is not properly re-established after deep sleep.
   // Flush serial output
-  Serial.flush();
+  // Serial.flush();
 
   // Enter deep sleep
   esp_deep_sleep_start();
