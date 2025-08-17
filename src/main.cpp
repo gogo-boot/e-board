@@ -31,7 +31,7 @@
 #include "config/pins.h"
 
 // GxEPD2 display library includes for GDEY075T7 (800x480)
-  //IO settings
+//IO settings
 //SCLK--GPIO18
 //MOSI--GPIO23
 #define isEPD_W21_BUSY digitalRead(Pins::EPD_BUSY)  //BUSY
@@ -42,9 +42,9 @@
 #define EPD_W21_CS_0 digitalWrite(Pins::EPD_CS,LOW) //CS
 #define EPD_W21_CS_1 digitalWrite(Pins::EPD_CS,HIGH)
 
-#define EPD_WIDTH   800 
+#define EPD_WIDTH   800
 #define EPD_HEIGHT  480
-#define EPD_ARRAY  EPD_WIDTH*EPD_HEIGHT/8  
+#define EPD_ARRAY  EPD_WIDTH*EPD_HEIGHT/8
 #include <GxEPD2_BW.h>
 #include <GxEPD2_3C.h>
 #include <GxEPD2_4C.h>
@@ -54,7 +54,8 @@
 #include <gdey/GxEPD2_750_GDEY075T7.h>  // Specific driver for GDEY075T7
 
 // Create display instance for GDEY075T7 (800x480 resolution)
-GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(GxEPD2_750_GDEY075T7(Pins::EPD_CS, Pins::EPD_DC, Pins::EPD_RES, Pins::EPD_BUSY));
+GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(
+  GxEPD2_750_GDEY075T7(Pins::EPD_CS, Pins::EPD_DC, Pins::EPD_RES, Pins::EPD_BUSY));
 
 // Create U8g2 instance for UTF-8 font support (for German umlauts)
 U8G2_FOR_ADAFRUIT_GFX u8g2;
@@ -73,23 +74,25 @@ ConfigOption g_webConfigPageData;
 
 void setup() {
   Serial.begin(115200);
-  delay(1000); // Allow time for serial monitor to connect, only for local debugging, todo remove in production or activate by flag
+  delay(1000);
+  // Allow time for serial monitor to connect, only for local debugging, todo remove in production or activate by flag
 
   // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
   ESP_LOGI(TAG, "System starting...");
 
   // Initialize pins for e-paper display
-  pinMode(Pins::EPD_BUSY, INPUT);  //BUSY
-  pinMode(Pins::EPD_RES, OUTPUT); //RES 
-  pinMode(Pins::EPD_DC, OUTPUT); //DC   
-  pinMode(Pins::EPD_CS, OUTPUT); //CS   
+  // pinMode(Pins::EPD_BUSY, INPUT);  //BUSY
+  // pinMode(Pins::EPD_RES, OUTPUT); //RES
+  // pinMode(Pins::EPD_DC, OUTPUT); //DC
+  // pinMode(Pins::EPD_CS, OUTPUT); //CS
 
   // TODO: Add any additional display initialization code here
 
   // Determine device mode based on saved configuration
-  if ( hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
+  if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
     DeviceModeManager::runOperationalMode();
-  } else {
+  }
+  else {
     DeviceModeManager::runConfigurationMode();
   }
 }
@@ -99,7 +102,8 @@ void loop() {
   if (ConfigManager::isConfigMode()) {
     server.handleClient();
     delay(10); // Small delay to prevent watchdog issues
-  } else {
+  }
+  else {
     // Normal operation happens in setup() and then device goes to sleep
     // This should never be reached in normal operation
     ESP_LOGW(TAG, "Unexpected: loop() called in normal operation mode");
