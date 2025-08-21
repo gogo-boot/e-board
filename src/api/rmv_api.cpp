@@ -12,7 +12,8 @@
 #include "config/config_manager.h"
 
 static const char* TAG = "RMV_API";
-const size_t JSON_CAPACITY = 16384; // 16KB - safer for API responses
+// const size_t JSON_CAPACITY = 16384; // 16KB - safer for API responses
+const size_t JSON_CAPACITY = 10240; // 10KB - safer for API responses
 
 namespace {
     StaticJsonDocument<256> departureFilter;
@@ -180,6 +181,12 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     serializeJsonPretty(doc, prettyJson);
     ESP_LOGI(TAG, "JSON Document (pretty):\n%s", prettyJson.c_str());
 
+    // Check actual memory usage
+    // Memory used: 7128/10240 bytes for 30 rmv departure response
+    ESP_LOGI(TAG, "Memory used: %u/%u bytes", doc.memoryUsage(), doc.capacity());
+
+    // Check heap before/after
+    ESP_LOGI(TAG, "Free heap: %u bytes", ESP.getFreeHeap());
     // ESP_LOGI(TAG, "Received RMV response with length: %d bytes", payload.length());
 
     // Set basic departure data
