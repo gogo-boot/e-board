@@ -7,6 +7,7 @@
 #include "secrets/rmv_secrets.h"
 #include "util/util.h"
 #include <esp_log.h>
+#include <StreamUtils.h>
 #include "config/config_struct.h"
 #include "config/config_manager.h"
 
@@ -133,6 +134,10 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
 
     ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
     http.begin(url);
+
+    const char* keys[] = {"Transfer-Encoding"};
+    http.collectHeaders(keys, 1);
+
     int httpCode = http.GET();
 
     if (httpCode != HTTP_CODE_OK) {
@@ -143,12 +148,21 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
 
     initDepartureFilter();
 
+    // Create the raw and decoded stream
+    Stream& rawStream = http.getStream();
+    ChunkDecodingStream decodedStream(http.getStream());
+
+    // Choose the stream based on the Transfer-Encoding header
+    Stream& response = http.header("Transfer-Encoding") == "chunked" ? decodedStream : rawStream;
+
     DynamicJsonDocument doc(JSON_CAPACITY);
     DeserializationOption::NestingLimit nestingLimit(20);
     // ReadLoggingStream loggingStream(http.getStream(), Serial);
 
+    // ReadBufferingStream bufferingStream(http.getStream(), 64);
+
     // Always check for memory errors
-    DeserializationError error = deserializeJson(doc, http.getStream(), DeserializationOption::Filter(departureFilter),
+    DeserializationError error = deserializeJson(doc, response, DeserializationOption::Filter(departureFilter),
                                                  nestingLimit);
 
     if (error) {
