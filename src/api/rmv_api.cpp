@@ -121,36 +121,27 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
     departData.departures.clear();
     departData.departureCount = 0;
 
-    // Check if Departure array exists directly in root
-    if (!doc["Departure"].is<JsonArray>()) {
-        ESP_LOGW(TAG, "No departures found in response");
-        return true; // Not an error, just no departures
-    }
-
     // Use JsonArrayConst for const document
     JsonArrayConst departures = doc["Departure"];
+    if (departures.size() == 0) {
+        ESP_LOGW(TAG, "Departure array is empty");
+        return false; // ← Also return false for empty array
+    }
     ESP_LOGI(TAG, "Found %d departures in response", departures.size());
 
     // Reserve capacity to avoid multiple reallocations
     departData.departures.reserve(departures.size());
 
     for (JsonVariantConst departureVariant : departures) {
-        // Safely convert to JsonObjectConst
-        if (!departureVariant.is<JsonObject>()) {
-            ESP_LOGW(TAG, "Skipping invalid departure entry");
-            continue;
-        }
-
-        JsonObjectConst departure = departureVariant;
         DepartureInfo depInfo;
 
         // Extract basic departure information with safe string conversion
-        const char* name = departure["name"];
-        const char* direction = departure["direction"];
-        const char* directionFlag = departure["directionFlag"];
-        const char* time = departure["time"];
-        const char* rtTime = departure["rtTime"];
-        const char* track = departure["track"];
+        const char* name = departureVariant["name"];
+        const char* direction = departureVariant["direction"];
+        const char* directionFlag = departureVariant["directionFlag"];
+        const char* time = departureVariant["time"];
+        const char* rtTime = departureVariant["rtTime"];
+        const char* track = departureVariant["track"];
 
         // Safe string assignment with null checks
         depInfo.line = name ? String(name) : "";
@@ -161,21 +152,19 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
         depInfo.track = track ? String(track) : "";
 
         // Extract category from Product array with safety checks
-        if (departure["Product"].is<JsonArray>()) {
-            JsonArrayConst products = departure["Product"];
-            if (products.size() > 0) {
-                JsonVariantConst productVariant = products[0];
-                if (productVariant.is<JsonObject>()) {
-                    JsonObjectConst product = productVariant;
-                    const char* catOut = product["catOut"];
-                    depInfo.category = catOut ? String(catOut) : "";
-                }
+        JsonArrayConst products = departureVariant["Product"];
+        if (products.size() > 0) {
+            JsonVariantConst productVariant = products[0];
+            if (productVariant.is<JsonObject>()) {
+                JsonObjectConst product = productVariant;
+                const char* catOut = product["catOut"];
+                depInfo.category = catOut ? String(catOut) : "";
             }
         }
 
         // Extract message information with comprehensive safety checks
-        if (departure["Messages"].is<JsonObject>()) {
-            JsonObjectConst messages = departure["Messages"];
+        if (departureVariant["Messages"].is<JsonObject>()) {
+            JsonObjectConst messages = departureVariant["Messages"];
             if (messages["Message"].is<JsonArray>()) {
                 JsonArrayConst messageArray = messages["Message"];
                 if (messageArray.size() > 0) {
