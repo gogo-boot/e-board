@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
 struct Station {
     String id;
@@ -16,8 +17,8 @@ struct DepartureInfo {
     String rtTime;
     String track;
     String category;
-    String lead;      // Service disruption lead text
-    String text;      // Service disruption full text
+    String lead; // Service disruption lead text
+    String text; // Service disruption full text
 };
 
 struct DepartureData {
@@ -31,3 +32,4 @@ extern std::vector<Station> stations;
 
 void getNearbyStops(float lat, float lon);
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData);
+bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& departData);

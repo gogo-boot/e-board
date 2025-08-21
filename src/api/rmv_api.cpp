@@ -1,7 +1,5 @@
 #include "api/rmv_api.h"
-#include "api/rmv_json_parser.h"
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 #include <vector>
 #include <Arduino.h>
 #include "secrets/rmv_secrets.h"
@@ -9,7 +7,6 @@
 #include <esp_log.h>
 #include <StreamUtils.h>
 #include "config/config_struct.h"
-#include "config/config_manager.h"
 
 static const char* TAG = "RMV_API";
 // const size_t JSON_CAPACITY = 16384; // 16KB - safer for API responses
@@ -116,6 +113,101 @@ void getNearbyStops(float lat, float lon) {
     Util::printFreeHeap("After RMV request:");
 }
 
+// Populate departure data from JSON document
+bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& departData) {
+    ESP_LOGI(TAG, "Populating departure data from JSON response");
+
+    // Clear existing departures
+    departData.departures.clear();
+    departData.departureCount = 0;
+
+    // Check if Departure array exists directly in root
+    if (!doc["Departure"].is<JsonArray>()) {
+        ESP_LOGW(TAG, "No departures found in response");
+        return true; // Not an error, just no departures
+    }
+
+    // Use JsonArrayConst for const document
+    JsonArrayConst departures = doc["Departure"];
+    ESP_LOGI(TAG, "Found %d departures in response", departures.size());
+
+    // Reserve capacity to avoid multiple reallocations
+    departData.departures.reserve(departures.size());
+
+    for (JsonVariantConst departureVariant : departures) {
+        // Safely convert to JsonObjectConst
+        if (!departureVariant.is<JsonObject>()) {
+            ESP_LOGW(TAG, "Skipping invalid departure entry");
+            continue;
+        }
+
+        JsonObjectConst departure = departureVariant;
+        DepartureInfo depInfo;
+
+        // Extract basic departure information with safe string conversion
+        const char* name = departure["name"];
+        const char* direction = departure["direction"];
+        const char* directionFlag = departure["directionFlag"];
+        const char* time = departure["time"];
+        const char* rtTime = departure["rtTime"];
+        const char* track = departure["track"];
+
+        // Safe string assignment with null checks
+        depInfo.line = name ? String(name) : "";
+        depInfo.direction = direction ? String(direction) : "";
+        depInfo.directionFlag = directionFlag ? String(directionFlag) : "";
+        depInfo.time = time ? String(time) : "";
+        depInfo.rtTime = rtTime ? String(rtTime) : (time ? String(time) : "");
+        depInfo.track = track ? String(track) : "";
+
+        // Extract category from Product array with safety checks
+        if (departure["Product"].is<JsonArray>()) {
+            JsonArrayConst products = departure["Product"];
+            if (products.size() > 0) {
+                JsonVariantConst productVariant = products[0];
+                if (productVariant.is<JsonObject>()) {
+                    JsonObjectConst product = productVariant;
+                    const char* catOut = product["catOut"];
+                    depInfo.category = catOut ? String(catOut) : "";
+                }
+            }
+        }
+
+        // Extract message information with comprehensive safety checks
+        if (departure["Messages"].is<JsonObject>()) {
+            JsonObjectConst messages = departure["Messages"];
+            if (messages["Message"].is<JsonArray>()) {
+                JsonArrayConst messageArray = messages["Message"];
+                if (messageArray.size() > 0) {
+                    JsonVariantConst messageVariant = messageArray[0];
+                    if (messageVariant.is<JsonObject>()) {
+                        JsonObjectConst firstMessage = messageVariant;
+                        const char* head = firstMessage["head"];
+                        const char* lead = firstMessage["lead"];
+                        depInfo.text = head ? String(head) : "";
+                        depInfo.lead = lead ? String(lead) : "";
+                    }
+                }
+            }
+        }
+
+        // Add to departures vector
+        departData.departures.push_back(depInfo);
+
+        ESP_LOGD(TAG, "Added: %s -> %s at %s (RT: %s) [%s]",
+                 depInfo.line.c_str(),
+                 depInfo.direction.c_str(),
+                 depInfo.time.c_str(),
+                 depInfo.rtTime.c_str(),
+                 depInfo.category.c_str());
+    }
+
+    departData.departureCount = static_cast<int>(departData.departures.size());
+    ESP_LOGI(TAG, "Successfully populated %d departures", departData.departureCount);
+
+    return true;
+}
+
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     ESP_LOGI(TAG, "Fetching departure data for stop: %s", stopId);
 
@@ -123,7 +215,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     String encodedId = Util::urlEncode(String(stopId));
     String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
         "&id=" + encodedId +
-        "&format=json&maxJourneys=30";
+        "&format=json&maxJourneys=20";
 
     String urlForLog = url;
     int keyPos = urlForLog.indexOf("accessId=");
@@ -158,9 +250,6 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
 
     DynamicJsonDocument doc(JSON_CAPACITY);
     DeserializationOption::NestingLimit nestingLimit(20);
-    // ReadLoggingStream loggingStream(http.getStream(), Serial);
-
-    // ReadBufferingStream bufferingStream(http.getStream(), 64);
 
     // Always check for memory errors
     DeserializationError error = deserializeJson(doc, response, DeserializationOption::Filter(departureFilter),
@@ -179,7 +268,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     // Pretty print to string
     String prettyJson;
     serializeJsonPretty(doc, prettyJson);
-    ESP_LOGI(TAG, "JSON Document (pretty):\n%s", prettyJson.c_str());
+    ESP_LOGD(TAG, "JSON Document (pretty):\n%s", prettyJson.c_str());
 
     // Check actual memory usage
     // Memory used: 7128/10240 bytes for 30 rmv departure response
@@ -187,10 +276,15 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
 
     // Check heap before/after
     ESP_LOGI(TAG, "Free heap: %u bytes", ESP.getFreeHeap());
-    // ESP_LOGI(TAG, "Received RMV response with length: %d bytes", payload.length());
 
     // Set basic departure data
     departData.stopId = String(stopId);
+
+    // Populate departure data from JSON
+    if (!populateDepartureData(doc, departData)) {
+        ESP_LOGE(TAG, "Failed to populate departure data");
+        return false;
+    }
 
     return true;
 }
