@@ -4,9 +4,10 @@
 #include <esp_log.h>
 
 #include "config/config_manager.h"
-#include "display/departure_display.h"
 #include "display/text_utils.h"
-#include "display/weather_display.h"
+#include "display/departure_display.h"
+#include "display/weather_general_half.h"
+#include "display/weather_general_full.h"
 #include "display/weather_graph.h"
 #include "util/time_manager.h"
 
@@ -60,10 +61,10 @@ void DisplayManager::init(DisplayOrientation orientation) {
   screenHeight = display.height();
 
   // Initialize WeatherDisplay with shared resources
-  WeatherDisplay::init(display, u8g2, screenWidth, screenHeight);
+  WeatherHalfDisplay::init(display, u8g2, screenWidth, screenHeight);
 
   // Initialize DepartureDisplay with shared resources
-  DepartureDisplay::init(display, u8g2, screenWidth, screenHeight);
+  WeatherHalfDisplay::init(display, u8g2, screenWidth, screenHeight);
 
   // Initialize TextUtils with shared resources
   TextUtils::init(display, u8g2);
@@ -141,18 +142,14 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
 
       // Draw vertical divider
       displayVerticalLine(contentY);
-    }
-    while (display.nextPage());
-  }
-  else if (weather->hourlyForecastCount > 0) {
+    } while (display.nextPage());
+  } else if (weather->hourlyForecastCount > 0) {
     display.firstPage();
     // Partial update - weather half only
     do {
       updateWeatherHalf(false, *weather);
-    }
-    while (display.nextPage());
-  }
-  else if (departures->departureCount > 0) {
+    } while (display.nextPage());
+  } else if (departures->departureCount > 0) {
     display.firstPage();
     do {
       // Partial update - departure half only
@@ -160,8 +157,7 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
       display.setPartialWindow(halfWidth + 1, contentHeight, halfWidth - 1,
                                contentHeight);
       updateDepartureHalf(false, *departures);
-    }
-    while (display.nextPage());
+    } while (display.nextPage());
   }
 }
 
@@ -185,8 +181,8 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate,
     display.setPartialWindow(x, y, w, h);
   }
   // Use partial window for faster update
-  WeatherDisplay::drawWeatherSection(weather, x, contentY, w, contentHeight);
-  WeatherDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
+  WeatherHalfDisplay::drawHalfScreenWeatherLayout(weather, x + 10, contentY, w - 10, contentHeight);
+  WeatherHalfDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
 }
 
 void DisplayManager::updateDepartureHalf(bool isFullUpate,
@@ -215,10 +211,9 @@ void DisplayManager::displayWeatherFull(const WeatherInfo& weather) {
 
   do {
     display.fillScreen(GxEPD_WHITE);
-    WeatherDisplay::drawWeatherSection(weather, 0, 0, screenWidth,
-                                       screenHeight);
-  }
-  while (display.nextPage());
+    WeatherFullDisplay::drawFullScreenWeatherLayout(weather, 0, 0, screenWidth,
+                                                    screenHeight);
+  } while (display.nextPage());
 }
 
 void DisplayManager::displayDeparturesFull(const DepartureData& departures) {
@@ -231,8 +226,7 @@ void DisplayManager::displayDeparturesFull(const DepartureData& departures) {
     display.fillScreen(GxEPD_WHITE);
     DepartureDisplay::drawFullScreenDepartureSection(departures, 0, 0,
                                                      screenWidth, screenHeight);
-  }
-  while (display.nextPage());
+  } while (display.nextPage());
 }
 
 // Weather functions moved to WeatherDisplay class
