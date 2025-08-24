@@ -64,7 +64,7 @@ void DisplayManager::init(DisplayOrientation orientation) {
   WeatherHalfDisplay::init(display, u8g2, screenWidth, screenHeight);
 
   // Initialize DepartureDisplay with shared resources
-  WeatherHalfDisplay::init(display, u8g2, screenWidth, screenHeight);
+  DepartureDisplay::init(display, u8g2, screenWidth, screenHeight);
 
   // Initialize TextUtils with shared resources
   TextUtils::init(display, u8g2);
