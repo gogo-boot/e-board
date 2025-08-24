@@ -16,8 +16,7 @@ int16_t DepartureDisplay::screenHeight = 0;
 
 void DepartureDisplay::init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>& displayRef,
                             U8G2_FOR_ADAFRUIT_GFX& u8g2Ref,
-                            int16_t screenW, int16_t screenH)
-{
+                            int16_t screenW, int16_t screenH) {
     display = &displayRef;
     u8g2 = &u8g2Ref;
     screenWidth = screenW;
@@ -27,10 +26,8 @@ void DepartureDisplay::init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7
 }
 
 void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
-                                                      int16_t h)
-{
-    if (!display || !u8g2)
-    {
+                                                      int16_t h) {
+    if (!display || !u8g2) {
         ESP_LOGE(TAG, "DepartureDisplay not initialized! Call init() first.");
         return;
     }
@@ -59,14 +56,12 @@ void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& depar
 }
 
 void DepartureDisplay::drawFullScreenDepartures(const DepartureData& departures, int16_t x,
-                                                int16_t y, int16_t w, int16_t h)
-{
+                                                int16_t y, int16_t w, int16_t h) {
     return;
 }
 
 void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures, int16_t leftMargin,
-                                                int16_t rightMargin, int16_t currentY, int16_t h)
-{
+                                                int16_t rightMargin, int16_t currentY, int16_t h) {
     // Half screen mode: Separate by direction flag
     ESP_LOGI(TAG, "Drawing departures separated by direction flag");
 
@@ -95,10 +90,8 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures,
 }
 
 void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> departure, int16_t x, int16_t y, int16_t w,
-                                         int16_t h, bool printLabel, int maxPerDirection)
-{
-    if (printLabel)
-    {
+                                         int16_t h, bool printLabel, int maxPerDirection) {
+    if (printLabel) {
         // Column headers with TRUE 12px margin from current position
         TextUtils::setFont10px_margin12px(); // Small font for column headers
         TextUtils::printTextAtTopMargin(x, y, "Soll    Ist      Linie     Ziel");
@@ -111,14 +104,12 @@ void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> depar
     }
 
     // Direction 1 departures
-    for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++)
-    {
+    for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++) {
         const auto& dep = *departure[i];
         drawSingleDeparture(dep, x, w, y); // false = not full screen
         y += 42;
 
-        if (y > screenHeight)
-        {
+        if (y > screenHeight) {
             ESP_LOGW(TAG, "Reached end of section height while drawing departures");
             break; // Stop if we exceed the section height
         }
@@ -127,25 +118,19 @@ void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> depar
 
 void DepartureDisplay::getSeparatedDepatureDirection(const DepartureData& departures,
                                                      std::vector<const DepartureInfo*>& direction1Departures,
-                                                     std::vector<const DepartureInfo*>& direction2Departures)
-{
-    for (int i = 0; i < departures.departureCount; i++)
-    {
+                                                     std::vector<const DepartureInfo*>& direction2Departures) {
+    for (int i = 0; i < departures.departureCount; i++) {
         const auto& dep = departures.departures[i];
-        if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1)
-        {
+        if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1) {
             direction1Departures.push_back(&dep);
-        }
-        else if (dep.directionFlag == "2" || dep.directionFlag.toInt() == 2)
-        {
+        } else if (dep.directionFlag == "2" || dep.directionFlag.toInt() == 2) {
             direction2Departures.push_back(&dep);
         }
     }
 }
 
 void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
-                                                      int16_t h)
-{
+                                                      int16_t h) {
     // Half screen mode: Separate by direction flag
     ESP_LOGI(TAG, "drawFullScreenDepartureSection at (%d, %d) with size %dx%d", x, y, w, h);
     int16_t currentY = y; // Start from actual top
@@ -194,8 +179,7 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& depar
 }
 
 void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
-                                           int16_t currentY)
-{
+                                           int16_t currentY) {
     if (!u8g2) return;
 
     // Log the departure position and size
@@ -220,8 +204,7 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
     String sollTime = dep.time.substring(0, 5);
     String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
 
-    if (!timesAreDifferent)
-    {
+    if (!timesAreDifferent) {
         istTime = "  +00"; // Use "00" to indicate on-time
     }
 
@@ -237,8 +220,7 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
     currentY += 3; // Add spacing after departure entry
 
     // Check if we have disruption information to display
-    if (dep.lead.length() > 0 || dep.text.length() > 0)
-    {
+    if (dep.lead.length() > 0 || dep.text.length() > 0) {
         // Use the lead text if available, otherwise use text
         String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
 
@@ -252,10 +234,8 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
     }
 }
 
-void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h)
-{
-    if (!display || !u8g2)
-    {
+void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h) {
+    if (!display || !u8g2) {
         ESP_LOGE(TAG, "WeatherDisplay not initialized! Call init() first.");
         return;
     }
@@ -265,22 +245,16 @@ void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h)
     int16_t footerX = x + 10;
 
     String footerText = "";
-    if (TimeManager::isTimeSet())
-    {
+    if (TimeManager::isTimeSet()) {
         struct tm timeinfo;
-        if (TimeManager::getCurrentLocalTime(timeinfo))
-        {
+        if (TimeManager::getCurrentLocalTime(timeinfo)) {
             char timeStr[20];
             strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
             footerText += String(timeStr);
-        }
-        else
-        {
+        } else {
             footerText += "Zeit nicht verfügbar";
         }
-    }
-    else
-    {
+    } else {
         footerText += "Zeit nicht synchronisiert";
     }
     TextUtils::printTextAtWithMargin(footerX, footerY, footerText);
@@ -289,18 +263,15 @@ void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h)
     display->drawInvertedBitmap(footerX + timeStrWidth + 5, y, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
 }
 
-String DepartureDisplay::getStopName(RTCConfigData& config)
-{
+String DepartureDisplay::getStopName(RTCConfigData& config) {
     String stopName = config.selectedStopId;
 
     // Extract stop name from stopId format: "@O=StopName@"
     int startIndex = stopName.indexOf("@O=");
-    if (startIndex != -1)
-    {
+    if (startIndex != -1) {
         startIndex += 3; // Move past "@O="
         int endIndex = stopName.indexOf("@", startIndex);
-        if (endIndex != -1)
-        {
+        if (endIndex != -1) {
             stopName = stopName.substring(startIndex, endIndex);
             return stopName;
         }

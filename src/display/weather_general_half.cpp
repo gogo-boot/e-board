@@ -28,6 +28,8 @@ void WeatherHalfDisplay::init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075
 void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
                                                      int16_t leftMargin, int16_t rightMargin,
                                                      int16_t y, int16_t h) {
+    ESP_LOGI(TAG, "drawHalfScreenWeatherLayout called with margins (%d,%d) and area (%d,%d)", leftMargin, rightMargin,
+             y, h);
     int16_t currentY = y; // Start from top edge
 
     // City/Town Name with proper margin

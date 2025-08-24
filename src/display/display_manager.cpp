@@ -180,8 +180,11 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate,
     // Use setPartialWindow(x, y, w, h) for partial updates instead.
     display.setPartialWindow(x, y, w, h);
   }
+
+  int16_t leftMargin = x + 10;
+  int16_t rightMargin = x + w - 10;
   // Use partial window for faster update
-  WeatherHalfDisplay::drawHalfScreenWeatherLayout(weather, x + 10, contentY, w - 10, contentHeight);
+  WeatherHalfDisplay::drawHalfScreenWeatherLayout(weather, leftMargin, rightMargin, y, contentHeight);
   WeatherHalfDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
 }
 
@@ -197,6 +200,7 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,
     // // Use partial window for faster update
     display.setPartialWindow(halfWidth, contentY, halfWidth, contentHeight);
   }
+
   DepartureDisplay::drawHalfScreenDepartureSection(
     departures, halfWidth, contentY, halfWidth, contentHeight - footerHeight);
   DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight,
