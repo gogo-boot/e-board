@@ -7,9 +7,6 @@
 
 class WeatherFullDisplay {
 public:
-    // Initialize with display references and screen dimensions
-    static void init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>& displayRef,
-                     U8G2_FOR_ADAFRUIT_GFX& u8g2Ref, int16_t screenW, int16_t screenH);
     // Weather layout helpers
     static void drawFullScreenWeatherLayout(const WeatherInfo& weather, int16_t leftMargin, int16_t rightMargin,
                                             int16_t y, int16_t h);

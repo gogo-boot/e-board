@@ -9,6 +9,7 @@
 #include "display/weather_general_half.h"
 #include "display/weather_general_full.h"
 #include "display/weather_graph.h"
+#include "display/display_shared.h"
 #include "util/time_manager.h"
 
 // Include e-paper display libraries
@@ -60,11 +61,8 @@ void DisplayManager::init(DisplayOrientation orientation) {
   screenWidth = display.width();
   screenHeight = display.height();
 
-  // Initialize WeatherDisplay with shared resources
-  WeatherHalfDisplay::init(display, u8g2, screenWidth, screenHeight);
-
-  // Initialize DepartureDisplay with shared resources
-  DepartureDisplay::init(display, u8g2, screenWidth, screenHeight);
+  // Initialize shared display resources once for all display components
+  DisplayShared::init(display, u8g2, screenWidth, screenHeight);
 
   // Initialize TextUtils with shared resources
   TextUtils::init(display, u8g2);

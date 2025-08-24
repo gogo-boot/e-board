@@ -5,25 +5,9 @@
 #include <esp_log.h>
 #include <icons.h>
 #include "config/config_manager.h"
+#include "display/display_shared.h"
 
 static const char* TAG = "WEATHER_DISPLAY";
-
-// Static member initialization
-GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>* WeatherHalfDisplay::display = nullptr;
-U8G2_FOR_ADAFRUIT_GFX* WeatherHalfDisplay::u8g2 = nullptr;
-int16_t WeatherHalfDisplay::screenWidth = 0;
-int16_t WeatherHalfDisplay::screenHeight = 0;
-
-void WeatherHalfDisplay::init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>& displayRef,
-                              U8G2_FOR_ADAFRUIT_GFX& u8g2Ref,
-                              int16_t screenW, int16_t screenH) {
-    display = &displayRef;
-    u8g2 = &u8g2Ref;
-    screenWidth = screenW;
-    screenHeight = screenH;
-
-    ESP_LOGI(TAG, "WeatherDisplay initialized with screen size %dx%d", screenW, screenH);
-}
 
 void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
                                                      int16_t leftMargin, int16_t rightMargin,
@@ -139,6 +123,8 @@ void WeatherHalfDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t da
     int8_t padding = 30;
     currentX += padding; // Add padding to the left
     TextUtils::setFont10px_margin12px(); // Small font for weather info
+
+    auto* display = DisplayShared::getDisplay();
     display->drawInvertedBitmap(currentX, dayWeatherInfoY + 27, getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
 
@@ -147,8 +133,11 @@ void WeatherHalfDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t da
 }
 
 void WeatherHalfDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
+    auto* display = DisplayShared::getDisplay();
+    auto* u8g2 = DisplayShared::getU8G2();
+
     if (!display || !u8g2) {
-        ESP_LOGE(TAG, "WeatherDisplay not initialized! Call init() first.");
+        ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
         return;
     }
     TextUtils::setFont10px_margin12px(); // Small font for footer

@@ -2,33 +2,19 @@
 #include "display/text_utils.h"
 #include "util/util.h"
 #include "util/time_manager.h"
+#include "display/display_shared.h"
 #include <esp_log.h>
 #include <vector>
 #include <icons.h>
 
 static const char* TAG = "DEPARTURE_DISPLAY";
 
-// Static member initialization
-GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>* DepartureDisplay::display = nullptr;
-U8G2_FOR_ADAFRUIT_GFX* DepartureDisplay::u8g2 = nullptr;
-int16_t DepartureDisplay::screenWidth = 0;
-int16_t DepartureDisplay::screenHeight = 0;
-
-void DepartureDisplay::init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>& displayRef,
-                            U8G2_FOR_ADAFRUIT_GFX& u8g2Ref,
-                            int16_t screenW, int16_t screenH) {
-    display = &displayRef;
-    u8g2 = &u8g2Ref;
-    screenWidth = screenW;
-    screenHeight = screenH;
-
-    ESP_LOGI(TAG, "DepartureDisplay initialized with screen size %dx%d", screenW, screenH);
-}
-
 void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
                                                       int16_t h) {
+    auto* display = DisplayShared::getDisplay();
+    auto* u8g2 = DisplayShared::getU8G2();
     if (!display || !u8g2) {
-        ESP_LOGE(TAG, "DepartureDisplay not initialized! Call init() first.");
+        ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
         return;
     }
     ESP_LOGI(TAG, "Drawing departure section at (%d, %d) with size %dx%d", x, y, w, h);
@@ -74,13 +60,13 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures,
 
     // Draw separator line between directions
     int16_t halfHeightY = currentY + h / 2;
-    //log the position of the separator line, and y
     ESP_LOGI(TAG, "Drawing separator line at Y=%d", halfHeightY);
+    auto* display = DisplayShared::getDisplay();
     display->drawLine(leftMargin, halfHeightY, rightMargin, halfHeightY, GxEPD_BLACK);
 
     constexpr int maxPerDirection = 5;
 
-    const int16_t halfWidth = screenWidth / 2 - 1;
+    const int16_t halfWidth = DisplayShared::getScreenWidth() / 2 - 1;
     drawDepartureList(direction1Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       true, maxPerDirection);
 
@@ -100,6 +86,7 @@ void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> depar
         y += 5;
 
         // Underline
+        auto* display = DisplayShared::getDisplay();
         display->drawLine(x, y, x + w, y, GxEPD_BLACK);
     }
 
@@ -109,7 +96,7 @@ void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> depar
         drawSingleDeparture(dep, x, w, y); // false = not full screen
         y += 42;
 
-        if (y > screenHeight) {
+        if (y > DisplayShared::getScreenHeight()) {
             ESP_LOGW(TAG, "Reached end of section height while drawing departures");
             break; // Stop if we exceed the section height
         }
@@ -156,6 +143,7 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& depar
     int16_t refreshIconWidth = 16; // Width of the refresh icon
     TextUtils::printTextAtTopMargin(rightMargin - dateTimeWidth - refreshIconWidth - 10, currentY, dateTime);
 
+    auto* display = DisplayShared::getDisplay();
     display->drawInvertedBitmap(rightMargin - refreshIconWidth, currentY, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
 
     currentY += 17; // Space for station name
@@ -171,7 +159,7 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& depar
     // Draw first 4 departures from direction 1
     constexpr int maxPerDirection = 10;
 
-    const int16_t halfWidth = screenWidth / 2 - 1;
+    const int16_t halfWidth = DisplayShared::getScreenWidth() / 2 - 1;
     drawDepartureList(direction1Departures, x + padding, currentY, halfWidth - padding, h - currentY, true,
                       maxPerDirection);
     drawDepartureList(direction2Departures, halfWidth + padding, currentY, halfWidth - padding, h - currentY,
@@ -180,6 +168,7 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& depar
 
 void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
                                            int16_t currentY) {
+    auto* u8g2 = DisplayShared::getU8G2();
     if (!u8g2) return;
 
     // Log the departure position and size
@@ -235,8 +224,10 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
 }
 
 void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h) {
+    auto* display = DisplayShared::getDisplay();
+    auto* u8g2 = DisplayShared::getU8G2();
     if (!display || !u8g2) {
-        ESP_LOGE(TAG, "WeatherDisplay not initialized! Call init() first.");
+        ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
         return;
     }
     TextUtils::setFont10px_margin12px(); // Small font for footer
