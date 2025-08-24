@@ -80,7 +80,8 @@ void setup() {
 
   // Determine device mode based on saved configuration
   if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
-    DeviceModeManager::runOperationalMode();
+    // DeviceModeManager::showWeatherDeparture();
+    DeviceModeManager::showGeneralWeather();
   } else {
     DeviceModeManager::runConfigurationMode();
   }
