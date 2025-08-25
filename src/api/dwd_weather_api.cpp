@@ -162,7 +162,7 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
 
                     weather.dailyForecast[count].uvIndex = String(uv_index[i].as<float>(), 1);
                     weather.dailyForecast[count].sunshineDuration = String(sunshine[i].as<float>(), 2);
-                    weather.dailyForecast[count].precipitation = String(precipitation[i].as<float>(), 1);
+                    weather.dailyForecast[count].precipitationSum = String(precipitation[i].as<float>(), 1);
 
                     weather.dailyForecast[count].weatherCode = String(wcode[i].as<int>());
                     weather.dailyForecast[count].tempMax = String(temp_max[i].as<float>(), 1);

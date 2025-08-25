@@ -19,7 +19,6 @@ struct WeatherDailyForecast {
     String tempMax;
     String tempMin;
     String uvIndex;
-    String precipitation;
     String precipitationSum;
     String precipitationHours;
     String sunshineDuration;

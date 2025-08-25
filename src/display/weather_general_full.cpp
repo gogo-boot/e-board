@@ -72,13 +72,13 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     currentY += 50; // Move down after first row of weather info
     // Wind speed m/s, Wind Gust m/s
     String windSpeedText = "Wind: " + String(weather.dailyForecast[0].windSpeedMax);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Wind");
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, windSpeedText);
     String windGustText = "Wind Böen: " + String(weather.dailyForecast[0].windGustsMax);
-    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, "Wind Böen");
+    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, windGustText);
     currentY += 50; // Move down after first row of weather info
     // Wind Direction Arrow
     String windDirectionText = "Wind Richtung: " + String(weather.dailyForecast[0].windDirection);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Wind Richtung");
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, windDirectionText);
 
     // -----------------------------------
     // Right Side for daily forecast and weather graph
