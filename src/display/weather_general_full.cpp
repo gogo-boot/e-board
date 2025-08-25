@@ -36,7 +36,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     ESP_LOGI(TAG, "Draw Left Section");
     // Current Weather Icon
-    TextUtils::printTextAtWithMargin(leftMargin, colY, "Weather Icon " + weather.weatherCode);
+    TextUtils::printTextAtWithMargin(leftMargin, colY, "Weather Code" + weather.weatherCode);
     // Current Weather Temperature
     TextUtils::printTextAtWithMargin(leftMargin, colY + 50, "Current Temp." + weather.temperature + "°C");
     // Temperature low high
@@ -44,10 +44,10 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     String tempRange = weather.dailyForecast[0].tempMin + " | " + weather.dailyForecast[0].tempMax + "°C";
     TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth * 2, colY, tempRange);
     // Feels like temperature low high
-    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth, colY + 50, "Gefühlte Temp.");
-    // Todo Add feels like temperature support
-    String feelTempRange = weather.dailyForecast[0].tempMin + " | " + weather.dailyForecast[0].tempMax + "°C";
-    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth * 2, colY + 30, feelTempRange);
+    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth, colY + 50, "Gefühlte");
+    String feelTempRange = weather.dailyForecast[0].apparentTempMin + " | " + weather.dailyForecast[0].apparentTempMax +
+        "°C";
+    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth * 2, colY + 50, feelTempRange);
     currentY += 100; // Move down after first row of weather info
     // Sunrise Sunset
     String sunriseText = "Sunrise: " + String(weather.dailyForecast[0].sunrise);
@@ -56,20 +56,28 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, sunsetText);
     currentY += 50; // Move down after first row of weather info
     // Sun-shine UN-Index
-    // Todo Add sunshine support
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Sun-shine");
+    // Todo convert sunshine second to hour minutes
+    String sunschineText = "Sun-shine: " + String(weather.dailyForecast[0].sunshineDuration);
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, sunschineText);
+    // Todo apply UV Index Grade
+    // UV Index Low (1-2), Moderate (3-5), High (6-7), Very High (8-10), and Extreme (11+)
     String uvText = "UV Index: " + String(weather.dailyForecast[0].uvIndex);
     TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, uvText);
     currentY += 50; // Move down after first row of weather info
     // precipitation mm, precipitation hours
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Regen mm");
-    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, "Regen Std.");
+    String precipitationText = "Regen mm: " + String(weather.dailyForecast[0].precipitationSum);
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, precipitationText);
+    String precipitationHoursText = "Regen Std: " + String(weather.dailyForecast[0].precipitationHours);
+    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, precipitationHoursText);
     currentY += 50; // Move down after first row of weather info
     // Wind speed m/s, Wind Gust m/s
+    String windSpeedText = "Wind: " + String(weather.dailyForecast[0].windSpeedMax);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, "Wind");
+    String windGustText = "Wind Böen: " + String(weather.dailyForecast[0].windGustsMax);
     TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, "Wind Böen");
     currentY += 50; // Move down after first row of weather info
     // Wind Direction Arrow
+    String windDirectionText = "Wind Richtung: " + String(weather.dailyForecast[0].windDirection);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, "Wind Richtung");
 
     // -----------------------------------

@@ -182,17 +182,16 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
 }
 
 bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
-    // https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41
-    // &daily=sunset,sunrise,uv_index_max,sunshine_duration,precipitation_sum,precipitation_hours,weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_min,apparent_temperature_max,wind_speed_10m_max,wind_gusts_10m_max
+    // https://api.open-meteo.com/v1/forecast?latitude=50.125599&longitude=8.604095
+    // &daily=sunset,sunrise,uv_index_max,sunshine_duration,precipitation_sum,precipitation_hours,weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_min,apparent_temperature_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant
     // &hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m
-    // &current=temperature_2m,weather_code
+    // &current=temperature_2m,precipitation,weather_code
     // &timezone=auto&past_hours=0&forecast_hours=13
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
         "&longitude=" + String(lon, 6) +
-        "&daily=sunset,sunrise,uv_index_max,sunshine_duration,precipitation_sum,precipitation_hours,weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_min,apparent_temperature_max,wind_speed_10m_max,wind_gusts_10m_max"
+        "&daily=sunset,sunrise,uv_index_max,sunshine_duration,precipitation_sum,precipitation_hours,weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_min,apparent_temperature_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant"
         +
         "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" +
-        // Add relative_humidity_2m
         "&current=temperature_2m,precipitation,weather_code" +
         "&timezone=auto&past_hours=0&forecast_hours=13";
     Serial.printf("Fetching weather from: %s\n", url.c_str());
@@ -259,6 +258,7 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
                 JsonArray apparent_temp_max = daily["apparent_temperature_max"];
                 JsonArray wind_speed_10m_max = daily["wind_speed_10m_max"];
                 JsonArray wind_gusts_10m_max = daily["wind_gusts_10m_max"];
+                JsonArray windDirection = daily["wind_direction_10m_dominant"];
 
                 // Extract time from ISO format (e.g., "2025-07-13T04:59") to "04:59"
                 auto extractTimeFromISO = [](const String& isoDateTime) -> String {
@@ -274,20 +274,21 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
                     weather.dailyForecast[count].time = times[i].as<String>();
                     weather.dailyForecast[count].sunset = extractTimeFromISO(String(sunset[i].as<String>()));
                     weather.dailyForecast[count].sunrise = extractTimeFromISO(String(sunrise[i].as<String>()));
-
                     weather.dailyForecast[count].uvIndex = String(uv_index[i].as<float>(), 1);
+
                     weather.dailyForecast[count].sunshineDuration = String(sunshine[i].as<float>(), 2);
                     weather.dailyForecast[count].precipitationSum = String(precipitation_sum[i].as<int>());
                     weather.dailyForecast[count].precipitationHours = String(precipitation_hours[i].as<int>());
-
                     weather.dailyForecast[count].weatherCode = String(wcode[i].as<int>());
+
                     weather.dailyForecast[count].tempMax = String(temp_max[i].as<float>(), 1);
                     weather.dailyForecast[count].tempMin = String(temp_min[i].as<float>(), 1);
-
                     weather.dailyForecast[count].apparentTempMin = String(apparent_temp_min[i].as<float>(), 1);
                     weather.dailyForecast[count].apparentTempMax = String(apparent_temp_max[i].as<float>(), 1);
                     weather.dailyForecast[count].windSpeedMax = String(wind_speed_10m_max[i].as<float>(), 1);
+
                     weather.dailyForecast[count].windGustsMax = String(wind_gusts_10m_max[i].as<float>(), 1);
+                    weather.dailyForecast[count].windDirection = String(windDirection[i].as<int>());
 
                     count++;
                 }

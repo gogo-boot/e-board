@@ -12,6 +12,7 @@ struct WeatherHoulyForecast {
 
 struct WeatherDailyForecast {
     String time;
+    String windDirection;
     String weatherCode;
     String sunrise;
     String sunset;
