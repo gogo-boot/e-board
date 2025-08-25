@@ -12,91 +12,81 @@ static const char* TAG = "WEATHER_DISPLAY";
 void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
                                                      int16_t leftMargin, int16_t rightMargin,
                                                      int16_t y, int16_t h) {
+    // [WEATHER_DISPLAY] drawFullScreenWeatherLayout called with margins (10,790) and area (0,480)
     ESP_LOGI(TAG, "drawFullScreenWeatherLayout called with margins (%d,%d) and area (%d,%d)", leftMargin, rightMargin,
              y, h);
 
     int16_t currentY = y; // Start from top edge
-    // City/Town Name with proper margin
-    TextUtils::setFont24px_margin28px();
+    int16_t screenWidth = DisplayShared::getScreenWidth();
+    // int16_t screenWidth = 400;
+    int16_t screenHalfWidth = screenWidth / 2;
+    int16_t screenQuaterWidth = screenWidth / 4;
+    int16_t screenTenthWidth = screenWidth / 4;
 
-    // Calculate available width and fit city name
-    RTCConfigData& config = ConfigManager::getConfig();
-    int cityMaxWidth = rightMargin - leftMargin;
-    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
-    currentY += 28 + 10; // Space after city name
-
-    // Day weather Info section
-    // Calculate column widths
-    int columnWidth = (rightMargin - leftMargin) / 3;
-    int firstColX = leftMargin;
-    int secondColX = leftMargin + columnWidth;
-    int thirdColX = leftMargin + (2 * columnWidth);
+    int16_t screenThirdHalfWidth = screenHalfWidth / 3;
 
     // First Column - Weather Icon and Current Temperature
     int colY = currentY; // All columns start at same Y position
 
-    // Day Weather Icon
-    TextUtils::setFont18px_margin22px(); // Large font for weather display
-    colY += 22; // Apply margin
-    TextUtils::printTextAtWithMargin(firstColX, colY - 22, weather.weatherCode);
-    colY += 15; // Space after weather code
-
-    // Current Temperature
-    TextUtils::setFont18px_margin22px(); // Large font for temperature
-    colY += 22; // Apply margin
-    String tempText = weather.temperature + "°C";
-    TextUtils::printTextAtWithMargin(firstColX, colY - 22, tempText);
-
-    // Second Column - Today's temps, UV, Pollen
-    colY = currentY + 22; // Reset to baseline Y for second column with margin
-
-    // Today low/high temp
+    //-----------------------------------
+    // Left Side for current weather info
+    //-----------------------------------
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
+    ESP_LOGI(TAG, "Draw Left Section");
+    // Current Weather Icon
+    TextUtils::printTextAtWithMargin(leftMargin, colY, "Current Weather Icon " + weather.weatherCode);
+    // Current Weather Temperature
+    TextUtils::printTextAtWithMargin(leftMargin, colY + 50, "Current Temp." + weather.temperature + "°C");
+    // Temperature low high
+    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth, colY, "Temp.");
     String tempRange = weather.dailyForecast[0].tempMin + " | " + weather.dailyForecast[0].tempMax + "°C";
-    TextUtils::printTextAtWithMargin(secondColX, colY - 15, tempRange);
-    colY += 27; // Space for next item
-
-    // UV Index info
-    TextUtils::setFont10px_margin12px(); // Small font for UV info
-    String uvText = "UV Index: " + String(weather.dailyForecast[0].uvIndex);
-    TextUtils::printTextAtWithMargin(secondColX, colY - 12, uvText);
-    colY += 20;
-
-    // Third Column - Date, Sunrise, Sunset
-    colY = currentY; // Reset to baseline Y for third column
-
-    // Date Info: 27px
-    TextUtils::setFont12px_margin15px(); // Medium font for date info
-    String todayText = "Today";
-    TextUtils::printTextAtWithMargin(thirdColX, colY, todayText);
-    colY += 13;
-    String dateText = "Juli 13"; // Placeholder - should use actual date
-    TextUtils::printTextAtWithMargin(thirdColX, colY, dateText);
-    colY += 14; // Total 27px
-
-    // Sunrise: 20px
-    TextUtils::setFont10px_margin12px(); // Small font for sunrise/sunset
+    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth * 2, colY, tempRange);
+    // Feels like temperature low high
+    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth, colY + 50, "Gefühlte Temp.");
+    // Todo Add feels like temperature support
+    String feelTempRange = weather.dailyForecast[0].tempMin + " | " + weather.dailyForecast[0].tempMax + "°C";
+    TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth * 2, colY + 30, feelTempRange);
+    currentY += 100; // Move down after first row of weather info
+    // Sunrise Sunset
     String sunriseText = "Sunrise: " + String(weather.dailyForecast[0].sunrise);
-    TextUtils::printTextAtWithMargin(thirdColX, colY, sunriseText);
-    colY += 20;
-
-    // Sunset: 20px
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, sunriseText);
     String sunsetText = "Sunset: " + String(weather.dailyForecast[0].sunset);
-    TextUtils::printTextAtWithMargin(thirdColX, colY, sunsetText);
+    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, sunsetText);
+    currentY += 50; // Move down after first row of weather info
+    // Sun-shine UN-Index
+    // Todo Add sunshine support
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Sun-shine");
+    String uvText = "UV Index: " + String(weather.dailyForecast[0].uvIndex);
+    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, uvText);
+    currentY += 50; // Move down after first row of weather info
+    // precipitation mm, precipitation hours
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Regen mm");
+    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, "Regen Std.");
+    currentY += 50; // Move down after first row of weather info
+    // Wind speed m/s, Wind Gust m/s
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Wind");
+    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, "Wind Böen");
+    currentY += 50; // Move down after first row of weather info
+    // Wind Direction Arrow
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Wind Richtung");
 
-    currentY += 67; // Move past the day weather info section
+    // -----------------------------------
+    // Right Side for daily forecast and weather graph
+    //-----------------------------------
+    ESP_LOGI(TAG, "Draw Right Section");
+    currentY = 0; // Reset Y for right side
+    // City/Town Name with proper margin
+    TextUtils::setFont24px_margin28px();
+    // Calculate available width and fit city name
+    RTCConfigData& config = ConfigManager::getConfig();
+    int cityMaxWidth = rightMargin - screenHalfWidth;
+    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
+    TextUtils::printTextAtWithMargin(screenHalfWidth, currentY, fittedCityName); // Use helper function
+    currentY += 28 + 10; // Space after city name
 
-    // Weather Graphic section: 333px
-    int graphicY = currentY;
-    int graphicHeight = 333;
-
+    ESP_LOGI(TAG, "Draw Weather Graph");
     // Draw the actual weather graph
-    WeatherGraph::drawTemperatureAndRainGraph(weather,
-                                              leftMargin, graphicY,
-                                              rightMargin - leftMargin, graphicHeight);
-
-    currentY += graphicHeight; // Move past the graphic section
+    WeatherGraph::drawTemperatureAndRainGraph(weather, screenHalfWidth, currentY, screenHalfWidth, 333);
 }
 
 void WeatherFullDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY,
