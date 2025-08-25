@@ -89,11 +89,12 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
 
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     // Day 1 - 5 Forecast
-    TextUtils::printTextAtWithMargin(screenHalfWidth, currentY, "Day1");
-    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 1, currentY, "Day2");
-    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 2, currentY, "Day3");
-    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 3, currentY, "Day4");
-    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 4, currentY, "Day5");
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 4, currentY, "Day2");
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 5, currentY, "Day3");
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 6, currentY, "Day4");
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 7, currentY, "Day5");
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 8, currentY, "Day6");
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 9, currentY, "Day7");
     currentY += 100; // Space after day labels
 
     TextUtils::setFont12px_margin15px(); // Medium font for graph headers
