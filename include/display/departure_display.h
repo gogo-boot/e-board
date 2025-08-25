@@ -17,18 +17,13 @@
 class DepartureDisplay {
 public:
     /**
-     * @brief Initialize DepartureDisplay with display references
-     */
-    static void init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> &displayRef, 
-                     U8G2_FOR_ADAFRUIT_GFX &u8g2Ref, 
-                     int16_t screenW, int16_t screenH);
-
-    /**
      * @brief Draw the complete departure section
      */
-    static void drawHalfScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawHalfScreenDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
+                                               int16_t h);
 
-    static void drawFullScreenDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawFullScreenDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
+                                               int16_t h);
 
     /**
      * @brief Draw the departure footer with timestamp
@@ -38,26 +33,20 @@ public:
     /**
      * @brief Extract stop name from config format
      */
-    static String getStopName(RTCConfigData &config);
+    static String getStopName(RTCConfigData& config);
 
 private:
-    // Static display references
-    static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> *display;
-    static U8G2_FOR_ADAFRUIT_GFX *u8g2;
-    static int16_t screenWidth;
-    static int16_t screenHeight;
-
     /**
      * @brief Draw departures in full screen mode
      */
-    static void drawFullScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
-                                       int16_t rightMargin, int16_t currentY, int16_t h);
+    static void drawFullScreenDepartures(const DepartureData& departures, int16_t leftMargin,
+                                         int16_t rightMargin, int16_t currentY, int16_t h);
 
     /**
      * @brief Draw departures in half screen mode (separated by direction)
      */
-    static void drawHalfScreenDepartures(const DepartureData &departures, int16_t leftMargin, 
-                                       int16_t rightMargin, int16_t currentY, int16_t h);
+    static void drawHalfScreenDepartures(const DepartureData& departures, int16_t leftMargin,
+                                         int16_t rightMargin, int16_t currentY, int16_t h);
     static void drawDepartureList(std::vector<const DepartureInfo*> departure, int16_t x,
                                   int16_t y, int16_t w, int16_t h, bool printLabel, int maxPerDirection);
     static void getSeparatedDepatureDirection(const DepartureData& departures,
@@ -67,8 +56,8 @@ private:
     /**
      * @brief Draw a single departure entry
      */
-    static void drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, 
-                                  int16_t currentY);
+    static void drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
+                                    int16_t currentY);
 };
 
 #endif // DEPARTURE_DISPLAY_H

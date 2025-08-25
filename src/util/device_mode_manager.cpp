@@ -58,8 +58,7 @@ bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
   if (hasValidConfig) {
     ESP_LOGI(TAG, "Valid configuration found in NVS");
     return true;
-  }
-  else {
+  } else {
     ESP_LOGI(TAG, "Incomplete configuration in NVS, missing critical fields");
     return false;
   }
@@ -99,8 +98,7 @@ void DeviceModeManager::runConfigurationMode() {
       g_webConfigPageData.cityName = "Unknown City";
     }
     ESP_LOGI(TAG, "City name set: %s", g_webConfigPageData.cityName);
-  }
-  else {
+  } else {
     ESP_LOGI(TAG, "Using saved location: %s (%f, %f)",
              g_webConfigPageData.cityName, g_webConfigPageData.latitude,
              g_webConfigPageData.longitude);
@@ -117,7 +115,7 @@ void DeviceModeManager::runConfigurationMode() {
            g_webConfigPageData.ipAddress);
 }
 
-void DeviceModeManager::runOperationalMode() {
+void DeviceModeManager::showWeatherDeparture() {
   ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
 
   ConfigManager& configMgr = ConfigManager::getInstance();
@@ -166,8 +164,7 @@ void DeviceModeManager::runOperationalMode() {
     if (!TimeManager::isTimeSet()) {
       ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
       TimeManager::setupNTPTime();
-    }
-    else {
+    } else {
       ESP_LOGI(TAG, "Time already synchronized");
       TimeManager::printCurrentTime();
     }
@@ -188,24 +185,21 @@ void DeviceModeManager::runOperationalMode() {
       if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
         printDepartInfo(depart);
         if (depart.departureCount > 0) hasTransport = true;
-      }
-      else {
+      } else {
         ESP_LOGE(TAG, "Failed to get departure information from RMV.");
       }
-    }
-    else {
+    } else {
       ESP_LOGW(TAG, "No stop configured.");
     }
 
     // Fetch weather data
     ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
              g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-    if (getWeatherFromDWD(g_webConfigPageData.latitude,
-                          g_webConfigPageData.longitude, weather)) {
+    if (getGeneralWeatherHalf(g_webConfigPageData.latitude,
+                              g_webConfigPageData.longitude, weather)) {
       printWeatherInfo(weather);
       hasWeather = true;
-    }
-    else {
+    } else {
       ESP_LOGE(TAG, "Failed to get weather information from DWD.");
     }
 
@@ -213,13 +207,10 @@ void DeviceModeManager::runOperationalMode() {
     if (hasWeather || hasTransport) {
       ESP_LOGI(TAG, "Displaying both weather and transport data");
       DisplayManager::displayHalfAndHalf(&weather, &depart);
-    }
-
-    else {
+    } else {
       ESP_LOGW(TAG, "No data to display");
     }
-  }
-  else {
+  } else {
     ESP_LOGW(TAG, "WiFi not connected - cannot fetch data");
   }
 
@@ -232,3 +223,96 @@ void DeviceModeManager::runOperationalMode() {
   ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTime);
   enterDeepSleep(sleepTime);
 }
+
+void DeviceModeManager::showGeneralWeather() {
+  ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
+
+  ConfigManager& configMgr = ConfigManager::getInstance();
+
+  // Set operational mode flag
+  ConfigManager::setConfigMode(false);
+
+  // Load complete configuration from NVS
+  if (!configMgr.loadFromNVS()) {
+    ESP_LOGE(TAG, "Failed to load configuration in operational mode!");
+    ESP_LOGI(TAG, "Switching to configuration mode...");
+    runConfigurationMode();
+    return;
+  }
+
+  // Set coordinates from saved config
+  RTCConfigData& config = ConfigManager::getConfig();
+  g_webConfigPageData.latitude = config.latitude;
+  g_webConfigPageData.longitude = config.longitude;
+  ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", config.cityName,
+           g_webConfigPageData.latitude, g_webConfigPageData.longitude);
+
+  // Check if this is a deep sleep wake-up for fast path
+  if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
+    ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
+    extern unsigned long loopCount;
+    loopCount++;
+
+    // Print wakeup reason and current time
+    printWakeupReason();
+    ESP_LOGI(TAG, "Loop count: %lu", loopCount);
+
+    TimeManager::printCurrentTime();
+  }
+
+  // Initialize display manager (can be configured via config later)
+  DisplayManager::init(DisplayOrientation::LANDSCAPE);
+  DisplayManager::setMode(DisplayMode::WEATHER_ONLY,
+                          DisplayOrientation::LANDSCAPE);
+
+  // Connect to WiFi in station mode
+  MyWiFiManager::reconnectWiFi();
+
+  if (MyWiFiManager::isConnected()) {
+    // Setup time synchronization after WiFi connection
+    if (!TimeManager::isTimeSet()) {
+      ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
+      TimeManager::setupNTPTime();
+    } else {
+      ESP_LOGI(TAG, "Time already synchronized");
+      TimeManager::printCurrentTime();
+    }
+
+    WeatherInfo weather;
+    bool hasWeather = false;
+
+    // Fetch weather data
+    ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
+             g_webConfigPageData.latitude, g_webConfigPageData.longitude);
+    if (getGeneralWeatherFull(g_webConfigPageData.latitude,
+                              g_webConfigPageData.longitude, weather)) {
+      printWeatherInfo(weather);
+      hasWeather = true;
+    } else {
+      ESP_LOGE(TAG, "Failed to get weather information from DWD.");
+    }
+
+    // Display using new display manager
+    if (hasWeather) {
+      ESP_LOGI(TAG, "Displaying both weather and transport data");
+      DisplayManager::displayWeatherFull(weather);
+    } else {
+      ESP_LOGW(TAG, "No data to display");
+    }
+  } else {
+    ESP_LOGW(TAG, "WiFi not connected - cannot fetch data");
+  }
+
+  // Hibernate display to save power
+  DisplayManager::hibernate();
+
+  // Calculate sleep time and enter deep sleep
+  // uint64_t sleepTime = calculateSleepTime(config.transportInterval);
+  uint64_t sleepTime = calculateSleepTime(1);
+  ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTime);
+  enterDeepSleep(sleepTime);
+}
+
+void DeviceModeManager::showMarineWeather() {}
+
+void DeviceModeManager::showDaparture() {}

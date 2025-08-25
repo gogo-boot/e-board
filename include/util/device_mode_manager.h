@@ -3,7 +3,10 @@
 
 class DeviceModeManager {
 public:
-    static bool hasValidConfiguration(bool &hasValidConfig);
+    static bool hasValidConfiguration(bool& hasValidConfig);
     static void runConfigurationMode();
-    static void runOperationalMode();
+    static void showWeatherDeparture();
+    static void showGeneralWeather();
+    static void showMarineWeather();
+    static void showDaparture();
 };

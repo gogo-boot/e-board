@@ -4,10 +4,12 @@
 #include <esp_log.h>
 
 #include "config/config_manager.h"
-#include "display/departure_display.h"
 #include "display/text_utils.h"
-#include "display/weather_display.h"
+#include "display/departure_display.h"
+#include "display/weather_general_half.h"
+#include "display/weather_general_full.h"
 #include "display/weather_graph.h"
+#include "display/display_shared.h"
 #include "util/time_manager.h"
 
 // Include e-paper display libraries
@@ -59,11 +61,8 @@ void DisplayManager::init(DisplayOrientation orientation) {
   screenWidth = display.width();
   screenHeight = display.height();
 
-  // Initialize WeatherDisplay with shared resources
-  WeatherDisplay::init(display, u8g2, screenWidth, screenHeight);
-
-  // Initialize DepartureDisplay with shared resources
-  DepartureDisplay::init(display, u8g2, screenWidth, screenHeight);
+  // Initialize shared display resources once for all display components
+  DisplayShared::init(display, u8g2, screenWidth, screenHeight);
 
   // Initialize TextUtils with shared resources
   TextUtils::init(display, u8g2);
@@ -141,18 +140,14 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
 
       // Draw vertical divider
       displayVerticalLine(contentY);
-    }
-    while (display.nextPage());
-  }
-  else if (weather->hourlyForecastCount > 0) {
+    } while (display.nextPage());
+  } else if (weather->hourlyForecastCount > 0) {
     display.firstPage();
     // Partial update - weather half only
     do {
       updateWeatherHalf(false, *weather);
-    }
-    while (display.nextPage());
-  }
-  else if (departures->departureCount > 0) {
+    } while (display.nextPage());
+  } else if (departures->departureCount > 0) {
     display.firstPage();
     do {
       // Partial update - departure half only
@@ -160,8 +155,7 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
       display.setPartialWindow(halfWidth + 1, contentHeight, halfWidth - 1,
                                contentHeight);
       updateDepartureHalf(false, *departures);
-    }
-    while (display.nextPage());
+    } while (display.nextPage());
   }
 }
 
@@ -184,9 +178,12 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate,
     // Use setPartialWindow(x, y, w, h) for partial updates instead.
     display.setPartialWindow(x, y, w, h);
   }
+
+  int16_t leftMargin = x + 10;
+  int16_t rightMargin = x + w - 10;
   // Use partial window for faster update
-  WeatherDisplay::drawWeatherSection(weather, x, contentY, w, contentHeight);
-  WeatherDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
+  WeatherHalfDisplay::drawHalfScreenWeatherLayout(weather, leftMargin, rightMargin, y, contentHeight);
+  WeatherHalfDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
 }
 
 void DisplayManager::updateDepartureHalf(bool isFullUpate,
@@ -201,6 +198,7 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,
     // // Use partial window for faster update
     display.setPartialWindow(halfWidth, contentY, halfWidth, contentHeight);
   }
+
   DepartureDisplay::drawHalfScreenDepartureSection(
     departures, halfWidth, contentY, halfWidth, contentHeight - footerHeight);
   DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight,
@@ -215,10 +213,9 @@ void DisplayManager::displayWeatherFull(const WeatherInfo& weather) {
 
   do {
     display.fillScreen(GxEPD_WHITE);
-    WeatherDisplay::drawWeatherSection(weather, 0, 0, screenWidth,
-                                       screenHeight);
-  }
-  while (display.nextPage());
+    // Fix: Pass correct parameters - leftMargin, rightMargin, y, h
+    WeatherFullDisplay::drawFullScreenWeatherLayout(weather, 10, screenWidth - 10, 0, screenHeight);
+  } while (display.nextPage());
 }
 
 void DisplayManager::displayDeparturesFull(const DepartureData& departures) {
@@ -231,8 +228,7 @@ void DisplayManager::displayDeparturesFull(const DepartureData& departures) {
     display.fillScreen(GxEPD_WHITE);
     DepartureDisplay::drawFullScreenDepartureSection(departures, 0, 0,
                                                      screenWidth, screenHeight);
-  }
-  while (display.nextPage());
+  } while (display.nextPage());
 }
 
 // Weather functions moved to WeatherDisplay class

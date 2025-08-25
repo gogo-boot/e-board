@@ -46,11 +46,7 @@
 #define EPD_HEIGHT  480
 #define EPD_ARRAY  EPD_WIDTH*EPD_HEIGHT/8
 #include <GxEPD2_BW.h>
-#include <GxEPD2_3C.h>
-#include <GxEPD2_4C.h>
-#include <GxEPD2_7C.h>
 #include <U8g2_for_Adafruit_GFX.h>
-#include <Fonts/FreeMonoBold9pt7b.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>  // Specific driver for GDEY075T7
 
 // Create display instance for GDEY075T7 (800x480 resolution)
@@ -80,19 +76,13 @@ void setup() {
   // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
   ESP_LOGI(TAG, "System starting...");
 
-  // Initialize pins for e-paper display
-  // pinMode(Pins::EPD_BUSY, INPUT);  //BUSY
-  // pinMode(Pins::EPD_RES, OUTPUT); //RES
-  // pinMode(Pins::EPD_DC, OUTPUT); //DC
-  // pinMode(Pins::EPD_CS, OUTPUT); //CS
-
   // TODO: Add any additional display initialization code here
 
   // Determine device mode based on saved configuration
   if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
-    DeviceModeManager::runOperationalMode();
-  }
-  else {
+    // DeviceModeManager::showWeatherDeparture();
+    DeviceModeManager::showGeneralWeather();
+  } else {
     DeviceModeManager::runConfigurationMode();
   }
 }
@@ -102,8 +92,7 @@ void loop() {
   if (ConfigManager::isConfigMode()) {
     server.handleClient();
     delay(10); // Small delay to prevent watchdog issues
-  }
-  else {
+  } else {
     // Normal operation happens in setup() and then device goes to sleep
     // This should never be reached in normal operation
     ESP_LOGW(TAG, "Unexpected: loop() called in normal operation mode");
