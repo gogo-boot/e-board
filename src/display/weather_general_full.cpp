@@ -21,20 +21,22 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // int16_t screenWidth = 400;
     int16_t screenHalfWidth = screenWidth / 2;
     int16_t screenQuaterWidth = screenWidth / 4;
-    int16_t screenTenthWidth = screenWidth / 4;
-
+    int16_t screenTenthWidth = screenWidth / 10;
     int16_t screenThirdHalfWidth = screenHalfWidth / 3;
-
-    // First Column - Weather Icon and Current Temperature
-    int colY = currentY; // All columns start at same Y position
 
     //-----------------------------------
     // Left Side for current weather info
     //-----------------------------------
+    TextUtils::setFont24px_margin28px();
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Date");
+    currentY += 28 + 10; // Space after city name
+
+    // First Column - Weather Icon and Current Temperature
+    int colY = currentY; // All columns start at same Y position
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     ESP_LOGI(TAG, "Draw Left Section");
     // Current Weather Icon
-    TextUtils::printTextAtWithMargin(leftMargin, colY, "Current Weather Icon " + weather.weatherCode);
+    TextUtils::printTextAtWithMargin(leftMargin, colY, "Weather Icon " + weather.weatherCode);
     // Current Weather Temperature
     TextUtils::printTextAtWithMargin(leftMargin, colY + 50, "Current Temp." + weather.temperature + "°C");
     // Temperature low high
@@ -75,6 +77,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     //-----------------------------------
     ESP_LOGI(TAG, "Draw Right Section");
     currentY = 0; // Reset Y for right side
+
     // City/Town Name with proper margin
     TextUtils::setFont24px_margin28px();
     // Calculate available width and fit city name
@@ -84,9 +87,23 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::printTextAtWithMargin(screenHalfWidth, currentY, fittedCityName); // Use helper function
     currentY += 28 + 10; // Space after city name
 
+    TextUtils::setFont12px_margin15px(); // Medium font for temp range
+    // Day 1 - 5 Forecast
+    TextUtils::printTextAtWithMargin(screenHalfWidth, currentY, "Day1");
+    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 1, currentY, "Day2");
+    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 2, currentY, "Day3");
+    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 3, currentY, "Day4");
+    TextUtils::printTextAtWithMargin(screenHalfWidth + screenTenthWidth * 4, currentY, "Day5");
+    currentY += 100; // Space after day labels
+
+    TextUtils::setFont12px_margin15px(); // Medium font for graph headers
+    TextUtils::printTextAtWithMargin(screenHalfWidth, currentY, "Nächste 12 Stunden");
+    currentY += 15; // Nächste 12 Stunden
+    currentY += 25; // Space after
     ESP_LOGI(TAG, "Draw Weather Graph");
     // Draw the actual weather graph
-    WeatherGraph::drawTemperatureAndRainGraph(weather, screenHalfWidth, currentY, screenHalfWidth, 333);
+    WeatherGraph::drawTemperatureAndRainGraph(weather, screenTenthWidth * 4, currentY,
+                                              screenTenthWidth * 6, DisplayShared::getScreenHeight() - currentY);
 }
 
 void WeatherFullDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY,
