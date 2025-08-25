@@ -195,8 +195,8 @@ void DeviceModeManager::showWeatherDeparture() {
     // Fetch weather data
     ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
              g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-    if (getWeatherFromDWD(g_webConfigPageData.latitude,
-                          g_webConfigPageData.longitude, weather)) {
+    if (getGeneralWeatherHalf(g_webConfigPageData.latitude,
+                              g_webConfigPageData.longitude, weather)) {
       printWeatherInfo(weather);
       hasWeather = true;
     } else {
@@ -284,8 +284,8 @@ void DeviceModeManager::showGeneralWeather() {
     // Fetch weather data
     ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
              g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-    if (getWeatherFromDWD(g_webConfigPageData.latitude,
-                          g_webConfigPageData.longitude, weather)) {
+    if (getGeneralWeatherFull(g_webConfigPageData.latitude,
+                              g_webConfigPageData.longitude, weather)) {
       printWeatherInfo(weather);
       hasWeather = true;
     } else {
