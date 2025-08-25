@@ -1,0 +1,277 @@
+{
+  "latitude": 50.12,
+  "longitude": 8.6,
+  "generationtime_ms": 0.351667404174805,
+  "utc_offset_seconds": 7200,
+  "timezone": "Europe/Berlin",
+  "timezone_abbreviation": "GMT+2",
+  "elevation": 107,
+  "current_units": {
+    "time": "iso8601",
+    "interval": "seconds",
+    "temperature_2m": "°C",
+    "precipitation": "mm",
+    "weather_code": "wmo code"
+  },
+  "current": {
+    "time": "2025-08-25T22:15",
+    "interval": 900,
+    "temperature_2m": 17.1,
+    "precipitation": 0,
+    "weather_code": 0
+  },
+  "hourly_units": {
+    "time": "iso8601",
+    "temperature_2m": "°C",
+    "weather_code": "wmo code",
+    "precipitation_probability": "%",
+    "precipitation": "mm",
+    "relative_humidity_2m": "%"
+  },
+  "hourly": {
+    "time": [
+      "2025-08-25T22:00",
+      "2025-08-25T23:00",
+      "2025-08-26T00:00",
+      "2025-08-26T01:00",
+      "2025-08-26T02:00",
+      "2025-08-26T03:00",
+      "2025-08-26T04:00",
+      "2025-08-26T05:00",
+      "2025-08-26T06:00",
+      "2025-08-26T07:00",
+      "2025-08-26T08:00",
+      "2025-08-26T09:00",
+      "2025-08-26T10:00"
+    ],
+    "temperature_2m": [
+      17.7,
+      16.2,
+      15,
+      14.1,
+      13.6,
+      12.8,
+      12,
+      11.3,
+      10.9,
+      10.5,
+      11.2,
+      13.4,
+      16.5
+    ],
+    "weather_code": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      3,
+      3,
+      1,
+      0,
+      0,
+      3
+    ],
+    "precipitation_probability": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "precipitation": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "relative_humidity_2m": [
+      46,
+      49,
+      53,
+      56,
+      57,
+      61,
+      65,
+      69,
+      71,
+      74,
+      71,
+      63,
+      47
+    ]
+  },
+  "daily_units": {
+    "time": "iso8601",
+    "sunset": "iso8601",
+    "sunrise": "iso8601",
+    "uv_index_max": "",
+    "sunshine_duration": "s",
+    "precipitation_sum": "mm",
+    "precipitation_hours": "h",
+    "weather_code": "wmo code",
+    "temperature_2m_max": "°C",
+    "temperature_2m_min": "°C",
+    "apparent_temperature_min": "°C",
+    "apparent_temperature_max": "°C",
+    "wind_speed_10m_max": "km/h",
+    "wind_gusts_10m_max": "km/h",
+    "wind_direction_10m_dominant": "°"
+  },
+  "daily": {
+    "time": [
+      "2025-08-25",
+      "2025-08-26",
+      "2025-08-27",
+      "2025-08-28",
+      "2025-08-29",
+      "2025-08-30",
+      "2025-08-31"
+    ],
+    "sunset": [
+      "2025-08-25T20:24",
+      "2025-08-26T20:22",
+      "2025-08-27T20:20",
+      "2025-08-28T20:18",
+      "2025-08-29T20:16",
+      "2025-08-30T20:14",
+      "2025-08-31T20:12"
+    ],
+    "sunrise": [
+      "2025-08-25T06:30",
+      "2025-08-26T06:32",
+      "2025-08-27T06:33",
+      "2025-08-28T06:35",
+      "2025-08-29T06:36",
+      "2025-08-30T06:38",
+      "2025-08-31T06:39"
+    ],
+    "uv_index_max": [
+      5.6,
+      5.3,
+      5,
+      2.5,
+      5.6,
+      4.4,
+      4.9
+    ],
+    "sunshine_duration": [
+      46165.49,
+      42966.43,
+      38394.68,
+      13803.39,
+      38662.32,
+      39985.49,
+      35208.76
+    ],
+    "precipitation_sum": [
+      0,
+      0,
+      0.2,
+      16.6,
+      1.5,
+      1.5,
+      0
+    ],
+    "precipitation_hours": [
+      0,
+      0,
+      1,
+      18,
+      6,
+      9,
+      0
+    ],
+    "weather_code": [
+      3,
+      3,
+      80,
+      80,
+      80,
+      3,
+      61
+    ],
+    "temperature_2m_max": [
+      24.2,
+      28.5,
+      27.6,
+      22.9,
+      22.4,
+      21.2,
+      24.1
+    ],
+    "temperature_2m_min": [
+      8.4,
+      10.5,
+      18.1,
+      18,
+      15.6,
+      14.5,
+      15.2
+    ],
+    "apparent_temperature_min": [
+      6.9,
+      9.1,
+      19.4,
+      19.8,
+      16,
+      14.5,
+      15.4
+    ],
+    "apparent_temperature_max": [
+      23.3,
+      27.1,
+      27.9,
+      24,
+      20,
+      19.4,
+      21.3
+    ],
+    "wind_speed_10m_max": [
+      5.2,
+      9.7,
+      24.9,
+      10.7,
+      16.3,
+      16.9,
+      24.5
+    ],
+    "wind_gusts_10m_max": [
+      12.2,
+      24.1,
+      55.8,
+      32.4,
+      42.5,
+      49,
+      56.5
+    ],
+    "wind_direction_10m_dominant": [
+      45,
+      183,
+      199,
+      216,
+      209,
+      224,
+      211
+    ]
+  }
+}
