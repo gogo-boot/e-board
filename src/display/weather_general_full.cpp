@@ -81,9 +81,28 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
         sunshineText += "N/A";
     }
     TextUtils::printTextAtWithMargin(leftMargin, currentY, sunshineText);
-    // Todo apply UV Index Grade
     // UV Index Low (1-2), Moderate (3-5), High (6-7), Very High (8-10), and Extreme (11+)
-    String uvText = "UV Index: " + String(weather.dailyForecast[0].uvIndex);
+    String uvText = "UV Index: ";
+    if (!weather.dailyForecast[0].uvIndex.isEmpty()) {
+        float uvValue = weather.dailyForecast[0].uvIndex.toFloat();
+        String uvGrade;
+
+        if (uvValue <= 2.0) {
+            uvGrade = "Low";
+        } else if (uvValue <= 5.0) {
+            uvGrade = "Moderate";
+        } else if (uvValue <= 7.0) {
+            uvGrade = "High";
+        } else if (uvValue <= 10.0) {
+            uvGrade = "Very High";
+        } else {
+            uvGrade = "Extreme";
+        }
+
+        uvText += uvGrade + " (" + weather.dailyForecast[0].uvIndex + ")";
+    } else {
+        uvText += "N/A";
+    }
     TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, uvText);
     currentY += 50; // Move down after first row of weather info
     // precipitation mm, precipitation hours
