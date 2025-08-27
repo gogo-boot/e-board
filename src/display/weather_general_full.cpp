@@ -67,9 +67,20 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, sunsetText);
     currentY += 50; // Move down after first row of weather info
     // Sun-shine UN-Index
-    // Todo convert sunshine second to hour minutes
-    String sunschineText = "Sun-shine: " + String(weather.dailyForecast[0].sunshineDuration);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, sunschineText);
+    // Convert sunshine duration from seconds to hh:mm format
+    String sunshineText = "Sun-shine: ";
+    if (!weather.dailyForecast[0].sunshineDuration.isEmpty()) {
+        float sunshineSeconds = weather.dailyForecast[0].sunshineDuration.toFloat();
+        int totalMinutes = (int)(sunshineSeconds / 60);
+        int hours = totalMinutes / 60;
+        int minutes = totalMinutes % 60;
+        char timeStr[10];
+        sprintf(timeStr, "%02d:%02d", hours, minutes);
+        sunshineText += String(timeStr);
+    } else {
+        sunshineText += "N/A";
+    }
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, sunshineText);
     // Todo apply UV Index Grade
     // UV Index Low (1-2), Moderate (3-5), High (6-7), Very High (8-10), and Extreme (11+)
     String uvText = "UV Index: " + String(weather.dailyForecast[0].uvIndex);
