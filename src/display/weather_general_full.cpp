@@ -28,8 +28,19 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Left Side for current weather info
     //-----------------------------------
     TextUtils::setFont24px_margin28px();
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Date");
-    currentY += 28 + 10; // Space after city name
+    // Display current date in DD.MM.YYYY Weekday format
+    String dateString = "";
+    if (TimeManager::isTimeSet()) {
+        struct tm timeinfo;
+        if (TimeManager::getCurrentLocalTime(timeinfo)) {
+            char dateStr[30];
+            // Format: DD.MM.YYYY Weekday (e.g., "27.08.2025 Tuesday")
+            strftime(dateStr, sizeof(dateStr), "%d.%m.%Y %A", &timeinfo);
+            dateString = String(dateStr);
+        }
+    }
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, dateString);
+    currentY += 28 + 10; // Space after date
 
     // First Column - Weather Icon and Current Temperature
     int colY = currentY; // All columns start at same Y position
@@ -53,7 +64,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     String sunriseText = "Sunrise: " + String(weather.dailyForecast[0].sunrise);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, sunriseText);
     String sunsetText = "Sunset: " + String(weather.dailyForecast[0].sunset);
-    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, sunsetText);
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, sunsetText);
     currentY += 50; // Move down after first row of weather info
     // Sun-shine UN-Index
     // Todo convert sunshine second to hour minutes
@@ -62,19 +73,19 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Todo apply UV Index Grade
     // UV Index Low (1-2), Moderate (3-5), High (6-7), Very High (8-10), and Extreme (11+)
     String uvText = "UV Index: " + String(weather.dailyForecast[0].uvIndex);
-    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, uvText);
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, uvText);
     currentY += 50; // Move down after first row of weather info
     // precipitation mm, precipitation hours
     String precipitationText = "Regen mm: " + String(weather.dailyForecast[0].precipitationSum);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, precipitationText);
     String precipitationHoursText = "Regen Std: " + String(weather.dailyForecast[0].precipitationHours);
-    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, precipitationHoursText);
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, precipitationHoursText);
     currentY += 50; // Move down after first row of weather info
     // Wind speed m/s, Wind Gust m/s
     String windSpeedText = "Wind: " + String(weather.dailyForecast[0].windSpeedMax);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, windSpeedText);
     String windGustText = "Wind Böen: " + String(weather.dailyForecast[0].windGustsMax);
-    TextUtils::printTextAtWithMargin(leftMargin + screenQuaterWidth, currentY, windGustText);
+    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, windGustText);
     currentY += 50; // Move down after first row of weather info
     // Wind Direction Arrow
     String windDirectionText = "Wind Richtung: " + String(weather.dailyForecast[0].windDirection);
