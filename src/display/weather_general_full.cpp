@@ -15,6 +15,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // [WEATHER_DISPLAY] drawFullScreenWeatherLayout called with margins (10,790) and area (0,480)
     ESP_LOGI(TAG, "drawFullScreenWeatherLayout called with margins (%d,%d) and area (%d,%d)", leftMargin, rightMargin,
              y, h);
+    auto* display = DisplayShared::getDisplay();
 
     int16_t currentY = y; // Start from top edge
     int16_t screenWidth = DisplayShared::getScreenWidth();
@@ -40,7 +41,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
         }
     }
     TextUtils::printTextAtWithMargin(leftMargin, currentY, dateString);
-    currentY += 28 + 10; // Space after date
+    currentY += 60; // Space after date
 
     // First Column - Weather Icon and Current Temperature
     int colY = currentY; // All columns start at same Y position
@@ -60,13 +61,17 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
         "°C";
     TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth * 2, colY + 50, feelTempRange);
     currentY += 100; // Move down after first row of weather info
+
     // Sunrise Sunset
+    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_sunrise, 64), 64, 64, GxEPD_BLACK);
     String sunriseText = "Sunrise: " + String(weather.dailyForecast[0].sunrise);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, sunriseText);
     String sunsetText = "Sunset: " + String(weather.dailyForecast[0].sunset);
     TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, sunsetText);
-    currentY += 50; // Move down after first row of weather info
+    currentY += 80; // Move down after first row of weather info
+
     // Sun-shine UN-Index
+    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
     // Convert sunshine duration from seconds to hh:mm format
     String sunshineText = "Sun-shine: ";
     if (!weather.dailyForecast[0].sunshineDuration.isEmpty()) {
@@ -104,19 +109,23 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
         uvText += "N/A";
     }
     TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, uvText);
-    currentY += 50; // Move down after first row of weather info
+    currentY += 80; // Move down after first row of weather info
+
     // precipitation mm, precipitation hours
+    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_61_rain, 64), 64, 64, GxEPD_BLACK);
     String precipitationText = "Regen mm: " + String(weather.dailyForecast[0].precipitationSum);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, precipitationText);
     String precipitationHoursText = "Regen Std: " + String(weather.dailyForecast[0].precipitationHours);
     TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, precipitationHoursText);
-    currentY += 50; // Move down after first row of weather info
-    // Wind speed m/s, Wind Gust m/s
+    currentY += 80; // Move down after first row of weather info
+
+    // Wind speed m/s, Wind Gust m/s, Wind Direction
+    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
     String windSpeedText = "Wind: " + String(weather.dailyForecast[0].windSpeedMax);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, windSpeedText);
     String windGustText = "Wind Böen: " + String(weather.dailyForecast[0].windGustsMax);
     TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, windGustText);
-    currentY += 50; // Move down after first row of weather info
+    currentY += 80; // Move down after first row of weather info
     // Wind Direction Arrow
     String windDirectionText = "Wind Richtung: " + String(weather.dailyForecast[0].windDirection);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, windDirectionText);
@@ -134,7 +143,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     int cityMaxWidth = rightMargin - screenHalfWidth;
     String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
     TextUtils::printTextAtWithMargin(screenHalfWidth, currentY, fittedCityName); // Use helper function
-    currentY += 28 + 10; // Space after city name
+    currentY += 60; // Space after city name
 
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     // Day 1 - 5 Forecast
@@ -156,49 +165,6 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Draw the actual weather graph
     WeatherGraph::drawTemperatureAndRainGraph(weather, screenTenthWidth * 4, currentY,
                                               screenTenthWidth * 6, DisplayShared::getScreenHeight() - currentY);
-}
-
-void WeatherFullDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t dayWeatherInfoY,
-                                                    const WeatherInfo& weather) {
-    TextUtils::setFont10px_margin12px(); // Small font for weather info
-
-    // Draw first Column - Current Temperature and Condition
-    // weather_code is missing
-    // TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY, weather.coded); // Uncomment if available
-    // Day weather Info section: 37px total
-    // Todo Add weather icon support
-
-    // Current temperature: 30px
-    String tempText = String(weather.temperature) + "°C  ";
-    TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);
-}
-
-void WeatherFullDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY,
-                                                     const WeatherInfo& weather) {
-    TextUtils::setFont12px_margin15px(); // Small font for weather info
-    String tempRange = String(weather.dailyForecast[0].tempMin) + "°C | " + String(weather.dailyForecast[0].tempMax) +
-        "°C";
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, tempRange);
-
-    TextUtils::setFont10px_margin12px(); // Small font for weather info
-    String uvText = "UV Index : " + String(weather.dailyForecast[0].uvIndex);
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, uvText);
-
-    String pollenText = "Pollen : N/A";
-    TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, pollenText);
-}
-
-void WeatherFullDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY,
-                                                    const WeatherInfo& weather) {
-    int8_t padding = 30;
-    currentX += padding; // Add padding to the left
-    TextUtils::setFont10px_margin12px(); // Small font for weather info
-    auto* display = DisplayShared::getDisplay();
-    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 27, getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
-    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
-
-    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 47, getBitmap(wi_sunset, 32), 32, 32, GxEPD_BLACK);
-    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 47, weather.dailyForecast[0].sunset);
 }
 
 void WeatherFullDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
