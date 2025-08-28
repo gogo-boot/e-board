@@ -112,13 +112,14 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     ESP_LOGI(TAG, "Draw Right Section");
     currentY = 0; // Reset Y for right side
 
-    // City/Town Name with proper margin
+    // City/Town Name with proper margin, right aligned
     TextUtils::setFont24px_margin28px();
-    // Calculate available width and fit city name
     RTCConfigData& config = ConfigManager::getConfig();
     int cityMaxWidth = rightMargin - screenHalfWidth;
     String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
-    TextUtils::printTextAtWithMargin(screenHalfWidth, currentY, fittedCityName); // Use helper function
+    int cityNameWidth = TextUtils::getTextWidth(fittedCityName);
+    int cityNameX = rightMargin - cityNameWidth;
+    TextUtils::printTextAtWithMargin(cityNameX, currentY, fittedCityName);
     currentY += 60; // Space after city name
 
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
