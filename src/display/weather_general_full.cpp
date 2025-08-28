@@ -90,8 +90,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
     // Use Util::degreeToCompass for wind direction
     String windDirectionText = Util::degreeToCompass(weather.dailyForecast[0].windDirection.toFloat());
-    String windText = weather.dailyForecast[0].windSpeedMax + " m/s - "
-        + weather.dailyForecast[0].windGustsMax + " m/s "
+    String windText = weather.dailyForecast[0].windSpeedMax + " m/s (Böe "
+        + weather.dailyForecast[0].windGustsMax + " m/s )"
         + windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Wind");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, windText);
@@ -111,19 +111,25 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     int cityNameWidth = TextUtils::getTextWidth(fittedCityName);
     int cityNameX = rightMargin - cityNameWidth;
     TextUtils::printTextAtWithMargin(cityNameX, currentY, fittedCityName);
-    currentY += 60; // Space after city name
+    currentY += 40; // Space after city name
 
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     // Day 1 - 5 Forecast
 
     for (int i = 1; i < weather.dailyForecastCount; i++) {
+        // YYYY-MM-DD to Day of week
+        String dayLabel = Util::getDayOfWeekFromDateString(weather.dailyForecast[i].time, 2);
+        TextUtils::printTextAtWithMargin(screenTenthWidth * (i + 3), currentY, dayLabel);
+
         // Draw WMO weather icon for each day using Util::getWeatherIcon
         icon_name icon = Util::getWeatherIcon(weather.dailyForecast[i].weatherCode);
-        display->drawInvertedBitmap(screenTenthWidth * (i + 3), currentY, getBitmap(icon, 64), 64, 64, GxEPD_BLACK);
+        display->drawInvertedBitmap(screenTenthWidth * (i + 3), currentY + 15, getBitmap(icon, 64), 64, 64,
+                                    GxEPD_BLACK);
+
         // Show low | high temp without floating point
         int tempMinInt = (int)weather.dailyForecast[i].tempMin.toFloat();
         int tempMaxInt = (int)weather.dailyForecast[i].tempMax.toFloat();
-        TextUtils::printTextAtWithMargin(screenTenthWidth * (i + 3), currentY + 65,
+        TextUtils::printTextAtWithMargin(screenTenthWidth * (i + 3), currentY + 75,
                                          String(tempMinInt) + " - " + String(tempMaxInt) + "°");
     }
     currentY += 100; // Space after day labels

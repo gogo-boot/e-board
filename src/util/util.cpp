@@ -4,6 +4,7 @@
 #include <set>
 #include <map>
 #include <icons.h>
+#include <time.h>
 
 void Util::printFreeHeap(const char* msg) {
     Serial.printf("%s Free heap: %u bytes\n", msg, ESP.getFreeHeap());
@@ -260,4 +261,32 @@ String Util::getCurrentDateString() {
         }
     }
     return "";
+}
+
+// Converts date string (YYYY-MM-DD or YYYY-MM-DDTHH:MM) to German day name (full, 2-char, or 3-char)
+String Util::getDayOfWeekFromDateString(const String& dateStr, int format) {
+    // Parse date string (YYYY-MM-DD or YYYY-MM-DDTHH:MM)
+    int year = 0, month = 0, day = 0;
+    if (dateStr.length() >= 10) {
+        year = dateStr.substring(0, 4).toInt();
+        month = dateStr.substring(5, 7).toInt();
+        day = dateStr.substring(8, 10).toInt();
+    } else {
+        return "";
+    }
+    struct tm timeinfo = {};
+    timeinfo.tm_year = year - 1900;
+    timeinfo.tm_mon = month - 1;
+    timeinfo.tm_mday = day;
+    mktime(&timeinfo); // Normalize and get tm_wday
+    static const char* dayNamesFull[] = {
+        "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
+    };
+    static const char* dayNames2[] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
+    static const char* dayNames3[] = {"Son", "Mon", "Die", "Mit", "Don", "Fre", "Sam"};
+    int wday = timeinfo.tm_wday;
+    if (wday < 0 || wday > 6) wday = 0;
+    if (format == 2) return String(dayNames2[wday]);
+    if (format == 3) return String(dayNames3[wday]);
+    return String(dayNamesFull[wday]);
 }
