@@ -174,3 +174,44 @@ icon_name Util::getWeatherIcon(const String& weatherCode) {
         return wi_0_day_sunny;
     }
 }
+
+// Converts wind direction in degrees to compass direction (N, NE, E, etc)
+String Util::degreeToCompass(float degree) {
+    static const char* directions[] = {
+        "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
+    };
+    int idx = (int)((degree + 11.25) / 22.5);
+    idx = idx % 16;
+    return String(directions[idx]);
+}
+
+// Converts UV index value to grade string
+// UV Index Low (1-2), Moderate (3-5), High (6-7), Very High (8-10), and Extreme (11+).
+String Util::uvIndexToGrade(const String& uvIndexStr) {
+    float uv = uvIndexStr.toFloat();
+    String grade;
+    if (uv < 3) grade = "Low";
+    else if (uv < 6) grade = "Moderate";
+    else if (uv < 8) grade = "High";
+    else if (uv < 11) grade = "Very High";
+    else grade = "Extreme";
+    return grade + " (" + uvIndexStr + ")";
+}
+
+// Converts sunshine duration in seconds to hh:mm format
+String Util::sunshineSecondsToHHMM(const String& secondsStr) {
+    long seconds = secondsStr.toFloat();
+    int hours = seconds / 3600;
+    int minutes = (seconds % 3600) / 60;
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%02d:%02d", hours, minutes);
+    return String(buf);
+}
+
+// Extracts date string (YYYY-MM-DD) from a datetime string
+String Util::getDateString(const String& dateStr) {
+    int tIdx = dateStr.indexOf('T');
+    if (tIdx > 0) return dateStr.substring(0, tIdx);
+    if (dateStr.length() >= 10) return dateStr.substring(0, 10);
+    return dateStr;
+}

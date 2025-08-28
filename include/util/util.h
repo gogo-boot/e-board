@@ -10,4 +10,8 @@ public:
     static String shortenDestination(String departure, String destination);
     static String urlDecode(const String& str);
     static icon_name getWeatherIcon(const String& weatherCode);
+    static String degreeToCompass(float degree);
+    static String uvIndexToGrade(const String& uvIndexStr);
+    static String sunshineSecondsToHHMM(const String& secondsStr);
+    static String getDateString(const String& dateStr);
 };

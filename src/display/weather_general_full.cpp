@@ -79,43 +79,12 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
 
     // Sun-shine UN-Index
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
-    // Convert sunshine duration from seconds to hh:mm format
-    String sunshineText = "";
-    if (!weather.dailyForecast[0].sunshineDuration.isEmpty()) {
-        float sunshineSeconds = weather.dailyForecast[0].sunshineDuration.toFloat();
-        int totalMinutes = (int)(sunshineSeconds / 60);
-        int hours = totalMinutes / 60;
-        int minutes = totalMinutes % 60;
-        char timeStr[10];
-        sprintf(timeStr, "%02d:%02d", hours, minutes);
-        sunshineText += String(timeStr);
-    } else {
-        sunshineText += "N/A";
-    }
+    // Use Util::sunshineSecondsToHHMM for sunshine duration
+    String sunshineText = Util::sunshineSecondsToHHMM(weather.dailyForecast[0].sunshineDuration);
     TextUtils::printTextAtWithMargin(secondColumn, currentY, "Sonnenstunden");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, sunshineText);
-    // UV Index Low (1-2), Moderate (3-5), High (6-7), Very High (8-10), and Extreme (11+)
-    String uvText = "";
-    if (!weather.dailyForecast[0].uvIndex.isEmpty()) {
-        float uvValue = weather.dailyForecast[0].uvIndex.toFloat();
-        String uvGrade;
-
-        if (uvValue <= 2.0) {
-            uvGrade = "Low";
-        } else if (uvValue <= 5.0) {
-            uvGrade = "Moderate";
-        } else if (uvValue <= 7.0) {
-            uvGrade = "High";
-        } else if (uvValue <= 10.0) {
-            uvGrade = "Very High";
-        } else {
-            uvGrade = "Extreme";
-        }
-
-        uvText += uvGrade + " (" + weather.dailyForecast[0].uvIndex + ")";
-    } else {
-        uvText += "N/A";
-    }
+    // Use Util::uvIndexToGrade for UV Index
+    String uvText = Util::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
     TextUtils::printTextAtWithMargin(thirdColumn, currentY, "UV Index");
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, uvText);
     currentY += 80; // Move down after first row of weather info
@@ -130,53 +99,11 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
 
     // Wind speed m/s, Wind Gust m/s, Wind Direction
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
-    // Convert wind direction degrees to compass direction
-    String windDirectionText = "";
-    if (!weather.dailyForecast[0].windDirection.isEmpty()) {
-        float windDegrees = weather.dailyForecast[0].windDirection.toFloat();
-
-        // Convert degrees to compass direction
-        if (windDegrees >= 348.75 || windDegrees < 11.25) {
-            windDirectionText = "N";
-        } else if (windDegrees >= 11.25 && windDegrees < 33.75) {
-            windDirectionText = "NNE";
-        } else if (windDegrees >= 33.75 && windDegrees < 56.25) {
-            windDirectionText = "NE";
-        } else if (windDegrees >= 56.25 && windDegrees < 78.75) {
-            windDirectionText = "ENE";
-        } else if (windDegrees >= 78.75 && windDegrees < 101.25) {
-            windDirectionText = "E";
-        } else if (windDegrees >= 101.25 && windDegrees < 123.75) {
-            windDirectionText = "ESE";
-        } else if (windDegrees >= 123.75 && windDegrees < 146.25) {
-            windDirectionText = "SE";
-        } else if (windDegrees >= 146.25 && windDegrees < 168.75) {
-            windDirectionText = "SSE";
-        } else if (windDegrees >= 168.75 && windDegrees < 191.25) {
-            windDirectionText = "S";
-        } else if (windDegrees >= 191.25 && windDegrees < 213.75) {
-            windDirectionText = "SSW";
-        } else if (windDegrees >= 213.75 && windDegrees < 236.25) {
-            windDirectionText = "SW";
-        } else if (windDegrees >= 236.25 && windDegrees < 258.75) {
-            windDirectionText = "WSW";
-        } else if (windDegrees >= 258.75 && windDegrees < 281.25) {
-            windDirectionText = "W";
-        } else if (windDegrees >= 281.25 && windDegrees < 303.75) {
-            windDirectionText = "WNW";
-        } else if (windDegrees >= 303.75 && windDegrees < 326.25) {
-            windDirectionText = "NW";
-        } else if (windDegrees >= 326.25 && windDegrees < 348.75) {
-            windDirectionText = "NNW";
-        }
-    } else {
-        windDirectionText = "N/A";
-    }
-
+    // Use Util::degreeToCompass for wind direction
+    String windDirectionText = Util::degreeToCompass(weather.dailyForecast[0].windDirection.toFloat());
     String windText = weather.dailyForecast[0].windSpeedMax + " m/s - "
         + weather.dailyForecast[0].windGustsMax + " m/s "
         + windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
-
     TextUtils::printTextAtWithMargin(secondColumn, currentY, "Wind");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, windText);
     currentY += 80; // Move down after first row of weather info
