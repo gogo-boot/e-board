@@ -6,6 +6,7 @@
 #include <icons.h>
 #include "config/config_manager.h"
 #include "display/display_shared.h"
+#include "util/util.h"
 
 static const char* TAG = "WEATHER_DISPLAY";
 
@@ -48,7 +49,10 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     ESP_LOGI(TAG, "Draw Left Section");
     // Current Weather Icon
-    TextUtils::printTextAtWithMargin(leftMargin, colY, "Weather Code" + weather.weatherCode);
+    // Get weather icon from weather code using the new utility function
+    icon_name currentWeatherIcon = Util::getWeatherIcon(weather.weatherCode);
+    display->drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, 64), 64, 64, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(leftMargin + 70, colY, "Weather: " + weather.weatherCode);
     // Current Weather Temperature
     TextUtils::printTextAtWithMargin(leftMargin, colY + 50, "Current Temp." + weather.temperature + "°C");
     // Temperature low high
