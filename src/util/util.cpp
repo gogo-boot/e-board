@@ -222,7 +222,7 @@ String Util::formatWindText(const String& windSpeed, const String& windGust) {
     return "Wind : " + windSpeed + " - " + windGust + " m/s";
 }
 
-// Format ISO date string (e.g., "2025-07-16T15:30") to "DD. Month" format
+// Format ISO date string (e.g., "2025-07-16T15:30") to "DD. Monat" format with German month names
 String Util::formatDateText(const String& isoTime) {
     int year = 0, month = 0, day = 0;
     if (isoTime.length() >= 10) {
@@ -231,24 +231,31 @@ String Util::formatDateText(const String& isoTime) {
         day = isoTime.substring(8, 10).toInt();
     }
     static const char* monthNames[] = {
-        "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-        "November", "December"
+        "", "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober",
+        "November", "Dezember"
     };
     if (month > 0 && month <= 12 && day > 0) {
-        char buf[20];
+        char buf[24];
         snprintf(buf, sizeof(buf), "%02d. %s", day, monthNames[month]);
         return String(buf);
     } else {
-        return "Date: N/A";
+        return "Datum: N/A";
     }
 }
 
+// Return current date in "DD.MM.YYYY Wochentag" format with German day names
 String Util::getCurrentDateString() {
     if (TimeManager::isTimeSet()) {
         struct tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
-            char dateStr[30];
-            strftime(dateStr, sizeof(dateStr), "%d.%m.%Y %A", &timeinfo);
+            static const char* dayNames[] = {
+                "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
+            };
+            char dateStr[40];
+            int wday = timeinfo.tm_wday; // 0 = Sonntag
+            if (wday < 0 || wday > 6) wday = 0;
+            snprintf(dateStr, sizeof(dateStr), "%02d.%02d.%04d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1,
+                     timeinfo.tm_year + 1900, dayNames[wday]);
             return String(dateStr);
         }
     }
