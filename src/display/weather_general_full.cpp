@@ -62,18 +62,21 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::printTextAtWithMargin(leftMargin + screenThirdHalfWidth * 2, colY + 50, feelTempRange);
     currentY += 100; // Move down after first row of weather info
 
+    int16_t firstColumn = 0;
+    int16_t secondColumn = 70;
+    int16_t thirdColumn = 195;
     // Sunrise Sunset
-    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_sunrise, 64), 64, 64, GxEPD_BLACK);
-    String sunriseText = "Sunrise: " + String(weather.dailyForecast[0].sunrise);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, sunriseText);
-    String sunsetText = "Sunset: " + String(weather.dailyForecast[0].sunset);
-    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, sunsetText);
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_sunrise, 64), 64, 64, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY, "Sonnenaufgang");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, weather.dailyForecast[0].sunrise);
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY, "Sonnenuntergang");
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, weather.dailyForecast[0].sunset);
     currentY += 80; // Move down after first row of weather info
 
     // Sun-shine UN-Index
-    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
     // Convert sunshine duration from seconds to hh:mm format
-    String sunshineText = "Sun-shine: ";
+    String sunshineText = "";
     if (!weather.dailyForecast[0].sunshineDuration.isEmpty()) {
         float sunshineSeconds = weather.dailyForecast[0].sunshineDuration.toFloat();
         int totalMinutes = (int)(sunshineSeconds / 60);
@@ -85,9 +88,10 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     } else {
         sunshineText += "N/A";
     }
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, sunshineText);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY, "Sonnenstunden");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, sunshineText);
     // UV Index Low (1-2), Moderate (3-5), High (6-7), Very High (8-10), and Extreme (11+)
-    String uvText = "UV Index: ";
+    String uvText = "";
     if (!weather.dailyForecast[0].uvIndex.isEmpty()) {
         float uvValue = weather.dailyForecast[0].uvIndex.toFloat();
         String uvGrade;
@@ -108,27 +112,70 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     } else {
         uvText += "N/A";
     }
-    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, uvText);
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY, "UV Index");
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, uvText);
     currentY += 80; // Move down after first row of weather info
 
     // precipitation mm, precipitation hours
-    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_61_rain, 64), 64, 64, GxEPD_BLACK);
-    String precipitationText = "Regen mm: " + String(weather.dailyForecast[0].precipitationSum);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, precipitationText);
-    String precipitationHoursText = "Regen Std: " + String(weather.dailyForecast[0].precipitationHours);
-    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, precipitationHoursText);
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_61_rain, 64), 64, 64, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY, "Niederschlag (mm)");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, weather.dailyForecast[0].precipitationSum);
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY, "Niederschlag Stunden");
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, weather.dailyForecast[0].precipitationHours);
     currentY += 80; // Move down after first row of weather info
 
     // Wind speed m/s, Wind Gust m/s, Wind Direction
-    display->drawInvertedBitmap(leftMargin, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
-    String windSpeedText = "Wind: " + String(weather.dailyForecast[0].windSpeedMax);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, windSpeedText);
-    String windGustText = "Wind Böen: " + String(weather.dailyForecast[0].windGustsMax);
-    TextUtils::printTextAtWithMargin(screenTenthWidth * 3, currentY, windGustText);
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
+    // Convert wind direction degrees to compass direction
+    String windDirectionText = "";
+    if (!weather.dailyForecast[0].windDirection.isEmpty()) {
+        float windDegrees = weather.dailyForecast[0].windDirection.toFloat();
+
+        // Convert degrees to compass direction
+        if (windDegrees >= 348.75 || windDegrees < 11.25) {
+            windDirectionText = "N";
+        } else if (windDegrees >= 11.25 && windDegrees < 33.75) {
+            windDirectionText = "NNE";
+        } else if (windDegrees >= 33.75 && windDegrees < 56.25) {
+            windDirectionText = "NE";
+        } else if (windDegrees >= 56.25 && windDegrees < 78.75) {
+            windDirectionText = "ENE";
+        } else if (windDegrees >= 78.75 && windDegrees < 101.25) {
+            windDirectionText = "E";
+        } else if (windDegrees >= 101.25 && windDegrees < 123.75) {
+            windDirectionText = "ESE";
+        } else if (windDegrees >= 123.75 && windDegrees < 146.25) {
+            windDirectionText = "SE";
+        } else if (windDegrees >= 146.25 && windDegrees < 168.75) {
+            windDirectionText = "SSE";
+        } else if (windDegrees >= 168.75 && windDegrees < 191.25) {
+            windDirectionText = "S";
+        } else if (windDegrees >= 191.25 && windDegrees < 213.75) {
+            windDirectionText = "SSW";
+        } else if (windDegrees >= 213.75 && windDegrees < 236.25) {
+            windDirectionText = "SW";
+        } else if (windDegrees >= 236.25 && windDegrees < 258.75) {
+            windDirectionText = "WSW";
+        } else if (windDegrees >= 258.75 && windDegrees < 281.25) {
+            windDirectionText = "W";
+        } else if (windDegrees >= 281.25 && windDegrees < 303.75) {
+            windDirectionText = "WNW";
+        } else if (windDegrees >= 303.75 && windDegrees < 326.25) {
+            windDirectionText = "NW";
+        } else if (windDegrees >= 326.25 && windDegrees < 348.75) {
+            windDirectionText = "NNW";
+        }
+    } else {
+        windDirectionText = "N/A";
+    }
+
+    String windText = weather.dailyForecast[0].windSpeedMax + " m/s - "
+        + weather.dailyForecast[0].windGustsMax + " m/s "
+        + windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
+
+    TextUtils::printTextAtWithMargin(secondColumn, currentY, "Wind");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, windText);
     currentY += 80; // Move down after first row of weather info
-    // Wind Direction Arrow
-    String windDirectionText = "Wind Richtung: " + String(weather.dailyForecast[0].windDirection);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, windDirectionText);
 
     // -----------------------------------
     // Right Side for daily forecast and weather graph
