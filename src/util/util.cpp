@@ -215,3 +215,29 @@ String Util::getDateString(const String& dateStr) {
     if (dateStr.length() >= 10) return dateStr.substring(0, 10);
     return dateStr;
 }
+
+// Format wind speed and gust as "min - max m/s"
+String Util::formatWindText(const String& windSpeed, const String& windGust) {
+    return "Wind : " + windSpeed + " - " + windGust + " m/s";
+}
+
+// Format ISO date string (e.g., "2025-07-16T15:30") to "DD. Month" format
+String Util::formatDateText(const String& isoTime) {
+    int year = 0, month = 0, day = 0;
+    if (isoTime.length() >= 10) {
+        year = isoTime.substring(0, 4).toInt();
+        month = isoTime.substring(5, 7).toInt();
+        day = isoTime.substring(8, 10).toInt();
+    }
+    static const char* monthNames[] = {
+        "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+        "November", "December"
+    };
+    if (month > 0 && month <= 12 && day > 0) {
+        char buf[20];
+        snprintf(buf, sizeof(buf), "%02d. %s", day, monthNames[month]);
+        return String(buf);
+    } else {
+        return "Date: N/A";
+    }
+}

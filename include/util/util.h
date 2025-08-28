@@ -14,4 +14,6 @@ public:
     static String uvIndexToGrade(const String& uvIndexStr);
     static String sunshineSecondsToHHMM(const String& secondsStr);
     static String getDateString(const String& dateStr);
+    static String formatWindText(const String& windSpeed, const String& windGust);
+    static String formatDateText(const String& isoTime);
 };
