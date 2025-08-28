@@ -38,17 +38,16 @@ void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
     currentY += 20; // Space after city name
 
     int16_t maxWidth = rightMargin - leftMargin;
-    int16_t columnWidth = maxWidth / 3;
 
     // Each Column has a fixed height of 67px
     drawWeatherInfoFirstColumn(leftMargin, currentY, weather);
 
     // Draw second Column - Today's temps, UV, Pollen
-    int16_t currentX = leftMargin + columnWidth;
+    int16_t currentX = leftMargin + 80;
     drawWeatherInfoSecondColumn(currentX, currentY, weather);
 
     // Draw third Column - Date, Sunrise, Sunset
-    currentX += columnWidth;
+    currentX += 170;
     drawWeatherInfoThirdColumn(currentX, currentY, weather);
 
     currentY += 80; // Day Weather Information section height
@@ -79,7 +78,7 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
     // Draw weather icon using Util::getWeatherIcon
     icon_name currentWeatherIcon = Util::getWeatherIcon(weather.weatherCode);
     auto* display = DisplayShared::getDisplay();
-    display->drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, 32), 32, 32, GxEPD_BLACK);
+    display->drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, 48), 48, 48, GxEPD_BLACK);
     // Current temperature: 30px
     String tempText = String(weather.temperature) + "°C  ";
     TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);
@@ -88,7 +87,7 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
 void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY,
                                                      const WeatherInfo& weather) {
     TextUtils::setFont12px_margin15px(); // Small font for weather info
-    String tempRange = String(weather.dailyForecast[0].tempMin) + "°C | " + String(weather.dailyForecast[0].tempMax) +
+    String tempRange = String(weather.dailyForecast[0].tempMin) + "°C - " + String(weather.dailyForecast[0].tempMax) +
         "°C";
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, tempRange);
 
@@ -98,8 +97,7 @@ void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t d
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, uvText);
 
     // Show wind speed in "min - max m/s" format using Util
-    String windText = Util::formatWindText(weather.dailyForecast[0].windSpeedMax,
-                                           weather.dailyForecast[0].windGustsMax);
+    String windText = "Wind : " + weather.dailyForecast[0].windSpeedMax + " m/s";
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, windText);
 }
 
@@ -110,11 +108,11 @@ void WeatherHalfDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t da
     TextUtils::setFont10px_margin12px(); // Small font for weather info
 
     auto* display = DisplayShared::getDisplay();
-    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 27, getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
-    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
+    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 15, getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(currentX + 40, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
 
-    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 47, getBitmap(wi_sunset, 32), 32, 32, GxEPD_BLACK);
-    TextUtils::printTextAtWithMargin(currentX + 32, dayWeatherInfoY + 47, weather.dailyForecast[0].sunset);
+    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 35, getBitmap(wi_sunset, 32), 32, 32, GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(currentX + 40, dayWeatherInfoY + 47, weather.dailyForecast[0].sunset);
 }
 
 void WeatherHalfDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
