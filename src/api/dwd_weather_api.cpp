@@ -79,7 +79,7 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
     //https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m&current=temperature_2m,precipitation,weather_code&timezone=auto&past_hours=1&forecast_hours=12
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
         "&longitude=" + String(lon, 6) +
-        "&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration"
+        "&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration,wind_speed_10m_max"
         +
         "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" +
         // Add relative_humidity_2m
@@ -91,7 +91,7 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
     int httpCode = http.GET();
     if (httpCode > 0) {
         String payload = http.getString();
-        DynamicJsonDocument doc(4096);
+        DynamicJsonDocument doc(8192);
         DeserializationError error = deserializeJson(doc, payload);
         if (!error) {
             // Parse current weather
@@ -143,7 +143,7 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
                 JsonArray wcode = daily["weather_code"];
                 JsonArray temp_max = daily["temperature_2m_max"];
                 JsonArray temp_min = daily["temperature_2m_min"];
-
+                JsonArray wind_speed_10m_max = daily["wind_speed_10m_max"];
 
                 // Extract time from ISO format (e.g., "2025-07-13T04:59") to "04:59"
                 auto extractTimeFromISO = [](const String& isoDateTime) -> String {
@@ -167,6 +167,7 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
                     weather.dailyForecast[count].weatherCode = String(wcode[i].as<int>());
                     weather.dailyForecast[count].tempMax = String(temp_max[i].as<float>(), 1);
                     weather.dailyForecast[count].tempMin = String(temp_min[i].as<float>(), 1);
+                    weather.dailyForecast[count].windSpeedMax = String(wind_speed_10m_max[i].as<float>(), 1);
 
                     count++;
                 }

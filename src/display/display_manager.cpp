@@ -214,7 +214,8 @@ void DisplayManager::displayWeatherFull(const WeatherInfo& weather) {
   do {
     display.fillScreen(GxEPD_WHITE);
     // Fix: Pass correct parameters - leftMargin, rightMargin, y, h
-    WeatherFullDisplay::drawFullScreenWeatherLayout(weather, 10, screenWidth - 10, 0, screenHeight);
+    WeatherFullDisplay::drawFullScreenWeatherLayout(weather, 10, screenWidth - 10, 0, screenHeight - 15);
+    WeatherFullDisplay::drawWeatherFooter(0, screenHeight - 15, 15);
   } while (display.nextPage());
 }
 
