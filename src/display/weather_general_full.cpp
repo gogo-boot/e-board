@@ -30,17 +30,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Left Side for current weather info
     //-----------------------------------
     TextUtils::setFont24px_margin28px();
-    // Display current date in DD.MM.YYYY Weekday format
-    String dateString = "";
-    if (TimeManager::isTimeSet()) {
-        struct tm timeinfo;
-        if (TimeManager::getCurrentLocalTime(timeinfo)) {
-            char dateStr[30];
-            // Format: DD.MM.YYYY Weekday (e.g., "27.08.2025 Tuesday")
-            strftime(dateStr, sizeof(dateStr), "%d.%m.%Y %A", &timeinfo);
-            dateString = String(dateStr);
-        }
-    }
+    // Display current date in DD.MM.YYYY Weekday format using Util
+    String dateString = Util::getCurrentDateString();
     TextUtils::printTextAtWithMargin(leftMargin, currentY, dateString);
     currentY += 60; // Space after date
 

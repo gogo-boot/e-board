@@ -1,4 +1,5 @@
 #include "util/util.h"
+#include "util/time_manager.h"
 #include <vector>
 #include <set>
 #include <map>
@@ -240,4 +241,16 @@ String Util::formatDateText(const String& isoTime) {
     } else {
         return "Date: N/A";
     }
+}
+
+String Util::getCurrentDateString() {
+    if (TimeManager::isTimeSet()) {
+        struct tm timeinfo;
+        if (TimeManager::getCurrentLocalTime(timeinfo)) {
+            char dateStr[30];
+            strftime(dateStr, sizeof(dateStr), "%d.%m.%Y %A", &timeinfo);
+            return String(dateStr);
+        }
+    }
+    return "";
 }
