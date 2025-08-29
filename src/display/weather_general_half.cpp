@@ -83,10 +83,6 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
     // Current temperature: 30px
     String tempText = String(weather.temperature) + "°C  ";
     TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);
-
-    // Draw date string using Util::getDateText
-    String dateText = DateUtil::formatDateText(weather.time); // Use WeatherUtil for weather-related utils
-    TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 65, dateText);
 }
 
 void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY,
