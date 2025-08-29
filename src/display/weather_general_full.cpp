@@ -1,12 +1,14 @@
 #include "display/weather_general_full.h"
 #include "display/text_utils.h"
-#include "util/time_manager.h"
 #include "display/weather_graph.h"
 #include <esp_log.h>
 #include <icons.h>
 #include "config/config_manager.h"
 #include "display/display_shared.h"
 #include "util/util.h"
+#include "util/weather_util.h"
+#include "util/date_util.h"
+#include "display/common_footer.h"
 
 static const char* TAG = "WEATHER_DISPLAY";
 
@@ -30,8 +32,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Left Side for current weather info
     //-----------------------------------
     TextUtils::setFont24px_margin28px();
-    // Display current date in DD.MM.YYYY Weekday format using Util
-    String dateString = Util::getCurrentDateString();
+    // Display current date in DD.MM.YYYY Weekday format using DateUtil
+    String dateString = DateUtil::getCurrentDateString(); // or use another field if needed
     TextUtils::printTextAtWithMargin(leftMargin, currentY, dateString);
     currentY += 60; // Space after date
 
@@ -41,11 +43,13 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     ESP_LOGI(TAG, "Draw Left Section");
     // Current Weather Icon
     // Get weather icon from weather code using the new utility function
-    icon_name currentWeatherIcon = Util::getWeatherIcon(weather.weatherCode);
+    icon_name currentWeatherIcon = WeatherUtil::getWeatherIcon(weather.weatherCode);
     display->drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, 64), 64, 64, GxEPD_BLACK);
     // Current Weather Temperature
+    TextUtils::setFont14px_margin17px();
     TextUtils::printTextAtWithMargin(leftMargin, colY + 70, weather.temperature + "°C");
     // Temperature low high
+    TextUtils::setFont12px_margin15px(); // Medium font for temp range
     TextUtils::printTextAtWithMargin(100, colY + 20, "Temp.");
     String tempRange = weather.dailyForecast[0].tempMin + " - " + weather.dailyForecast[0].tempMax + "°C";
     TextUtils::printTextAtWithMargin(screenQuaterWidth, colY + 20, tempRange);
@@ -69,11 +73,11 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Sun-shine UN-Index
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
     // Use Util::sunshineSecondsToHHMM for sunshine duration
-    String sunshineText = Util::sunshineSecondsToHHMM(weather.dailyForecast[0].sunshineDuration);
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenstunden");
+    String sunshineText = WeatherUtil::sunshineSecondsToHHMM(weather.dailyForecast[0].sunshineDuration);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenstd.");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, sunshineText);
     // Use Util::uvIndexToGrade for UV Index
-    String uvText = Util::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
+    String uvText = WeatherUtil::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, "UV Index");
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40, uvText);
     currentY += 80; // Move down after first row of weather info
@@ -89,11 +93,11 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Wind speed m/s, Wind Gust m/s, Wind Direction
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
     // Use Util::degreeToCompass for wind direction
-    String windDirectionText = Util::degreeToCompass(weather.dailyForecast[0].windDirection.toFloat());
+    String windDirectionText = WeatherUtil::degreeToCompass(weather.dailyForecast[0].windDirection.toFloat());
     String windText = weather.dailyForecast[0].windSpeedMax + " m/s (Böe "
-        + weather.dailyForecast[0].windGustsMax + " m/s )"
-        + windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Wind");
+        + weather.dailyForecast[0].windGustsMax + " m/s )";
+    String windText2 = windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Wind " + windText2);
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, windText);
     currentY += 80; // Move down after first row of weather info
 
@@ -118,11 +122,11 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
 
     for (int i = 1; i < weather.dailyForecastCount; i++) {
         // YYYY-MM-DD to Day of week
-        String dayLabel = Util::getDayOfWeekFromDateString(weather.dailyForecast[i].time, 2);
+        String dayLabel = WeatherUtil::getDayOfWeekFromDateString(weather.dailyForecast[i].time, 2);
         TextUtils::printTextAtWithMargin(screenTenthWidth * (i + 3), currentY, dayLabel);
 
         // Draw WMO weather icon for each day using Util::getWeatherIcon
-        icon_name icon = Util::getWeatherIcon(weather.dailyForecast[i].weatherCode);
+        icon_name icon = WeatherUtil::getWeatherIcon(weather.dailyForecast[i].weatherCode);
         display->drawInvertedBitmap(screenTenthWidth * (i + 3), currentY + 15, getBitmap(icon, 64), 64, 64,
                                     GxEPD_BLACK);
 
@@ -145,32 +149,6 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
 }
 
 void WeatherFullDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
-    auto* display = DisplayShared::getDisplay();
-    auto* u8g2 = DisplayShared::getU8G2();
-    if (!display || !u8g2) {
-        ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
-        return;
-    }
-    TextUtils::setFont10px_margin12px(); // Small font for footer
-
-    int16_t footerY = y + h - 14; // Correct: bottom of section
-    int16_t footerX = x + 10;
-
-    String footerText = "";
-    if (TimeManager::isTimeSet()) {
-        struct tm timeinfo;
-        if (TimeManager::getCurrentLocalTime(timeinfo)) {
-            char timeStr[20];
-            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
-            footerText += String(timeStr);
-        } else {
-            footerText += "Zeit nicht verfügbar";
-        }
-    } else {
-        footerText += "Zeit nicht synchronisiert";
-    }
-    TextUtils::printTextAtWithMargin(footerX, footerY, footerText);
-
-    int16_t timeStrWidth = TextUtils::getTextWidth(footerText);
-    display->drawInvertedBitmap(footerX + timeStrWidth + 5, y, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+    // Use common footer with time and refresh icon
+    CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH);
 }
