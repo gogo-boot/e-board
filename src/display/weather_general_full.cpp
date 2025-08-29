@@ -150,5 +150,5 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
 
 void WeatherFullDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
     // Use common footer with time and refresh icon
-    CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH);
+    CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH | FOOTER_WIFI);
 }
