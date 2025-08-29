@@ -45,8 +45,10 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     icon_name currentWeatherIcon = WeatherUtil::getWeatherIcon(weather.weatherCode);
     display->drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, 64), 64, 64, GxEPD_BLACK);
     // Current Weather Temperature
+    TextUtils::setFont14px_margin17px();
     TextUtils::printTextAtWithMargin(leftMargin, colY + 70, weather.temperature + "°C");
     // Temperature low high
+    TextUtils::setFont12px_margin15px(); // Medium font for temp range
     TextUtils::printTextAtWithMargin(100, colY + 20, "Temp.");
     String tempRange = weather.dailyForecast[0].tempMin + " - " + weather.dailyForecast[0].tempMax + "°C";
     TextUtils::printTextAtWithMargin(screenQuaterWidth, colY + 20, tempRange);
@@ -71,7 +73,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
     // Use Util::sunshineSecondsToHHMM for sunshine duration
     String sunshineText = WeatherUtil::sunshineSecondsToHHMM(weather.dailyForecast[0].sunshineDuration);
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenstunden");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenstd.");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, sunshineText);
     // Use Util::uvIndexToGrade for UV Index
     String uvText = WeatherUtil::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
@@ -92,9 +94,9 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     // Use Util::degreeToCompass for wind direction
     String windDirectionText = WeatherUtil::degreeToCompass(weather.dailyForecast[0].windDirection.toFloat());
     String windText = weather.dailyForecast[0].windSpeedMax + " m/s (Böe "
-        + weather.dailyForecast[0].windGustsMax + " m/s )"
-        + windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Wind");
+        + weather.dailyForecast[0].windGustsMax + " m/s )";
+    String windText2 = windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Wind " + windText2);
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, windText);
     currentY += 80; // Move down after first row of weather info
 
