@@ -6,7 +6,8 @@
 #include <icons.h>
 #include "config/config_manager.h"
 #include "display/display_shared.h"
-#include "util/util.h"
+#include "util/date_util.h"
+#include "util/weather_util.h"
 
 static const char* TAG = "WEATHER_DISPLAY";
 
@@ -21,7 +22,7 @@ void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::setFont14px_margin17px();
 
     // Use Util::formatDateText to get the formatted date text
-    String dateText = Util::formatDateText(weather.time);
+    String dateText = WeatherUtil::formatDateText(weather.time);
     int16_t dateTextWidth = TextUtils::getTextWidth(dateText); // Ensure the text is measured
     TextUtils::printTextAtWithMargin(rightMargin - dateTextWidth, currentY, dateText);
 
@@ -76,12 +77,16 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
 
     // Draw first Column - Current Temperature and Condition
     // Draw weather icon using Util::getWeatherIcon
-    icon_name currentWeatherIcon = Util::getWeatherIcon(weather.weatherCode);
+    icon_name currentWeatherIcon = WeatherUtil::getWeatherIcon(weather.weatherCode);
     auto* display = DisplayShared::getDisplay();
     display->drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, 48), 48, 48, GxEPD_BLACK);
     // Current temperature: 30px
     String tempText = String(weather.temperature) + "°C  ";
     TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);
+
+    // Draw date string using Util::getDateText
+    String dateText = DateUtil::formatDateText(weather.time); // Use WeatherUtil for weather-related utils
+    TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 65, dateText);
 }
 
 void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY,
@@ -93,7 +98,7 @@ void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t d
 
     // apply UV index to grade conversion
     TextUtils::setFont10px_margin12px(); // Small font for weather info
-    String uvText = "UV Index : " + Util::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
+    String uvText = "UV Index : " + WeatherUtil::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, uvText);
 
     // Show wind speed in "min - max m/s" format using Util
