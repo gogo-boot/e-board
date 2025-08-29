@@ -32,7 +32,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
     //-----------------------------------
     TextUtils::setFont24px_margin28px();
     // Display current date in DD.MM.YYYY Weekday format using DateUtil
-    String dateString = DateUtil::getCurrentDateString(weather.time); // or use another field if needed
+    String dateString = DateUtil::getCurrentDateString(); // or use another field if needed
     TextUtils::printTextAtWithMargin(leftMargin, currentY, dateString);
     currentY += 60; // Space after date
 
