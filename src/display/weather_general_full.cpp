@@ -5,7 +5,6 @@
 #include <icons.h>
 #include "config/config_manager.h"
 #include "display/display_shared.h"
-#include "util/util.h"
 #include "util/weather_util.h"
 #include "util/date_util.h"
 #include "display/common_footer.h"
