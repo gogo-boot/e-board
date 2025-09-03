@@ -10,7 +10,7 @@
 
 /**
  * @brief Departure Display Functions
- * 
+ *
  * Handles all departure-related drawing functionality for the e-paper display.
  * Separated from DisplayManager to maintain clean code organization.
  */

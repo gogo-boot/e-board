@@ -9,22 +9,21 @@ RTCConfigData& config = ConfigManager::getConfig();
 void printWeatherInfo(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "--- WeatherInfo ---");
     ESP_LOGI(TAG, "City: %s", config.cityName);
-    ESP_LOGI(TAG, "Current: %s°C, %s mm, Weather Code: %s", weather.temperature.c_str(),
-             weather.precipitation.c_str(),
-             weather.weatherCode.c_str());
+    ESP_LOGI(TAG, "Current: %.1f°C, %.1f mm, Weather Code: %d", weather.temperature,
+             weather.precipitation, weather.weatherCode);
 
     ESP_LOGI(TAG, "Hourly forecast count: %d", weather.hourlyForecastCount);
     if (weather.hourlyForecastCount > 0) {
         for (int i = 0; i < weather.hourlyForecastCount; i++) {
             const auto& hour = weather.hourlyForecast[i];
-            ESP_LOGI(TAG, "Hour %d: %s | %s°C | Code: %s | Rain: %s%% (%s mm) | Humidity: %s%%",
+            ESP_LOGI(TAG, "Hour %d: %s | %.1f°C | Code: %d | Rain: %d%% (%.2f mm) | Humidity: %d%%",
                      i + 1,
                      hour.time.c_str(),
-                     hour.temperature.c_str(),
-                     hour.weatherCode.c_str(),
-                     hour.rainChance.c_str(),
-                     hour.rainfall.c_str(),
-                     hour.humidity.c_str());
+                     hour.temperature,
+                     hour.weatherCode,
+                     hour.rainChance,
+                     hour.rainfall,
+                     hour.humidity);
         }
     } else {
         ESP_LOGI(TAG, "No hourly forecast data available");
@@ -37,17 +36,17 @@ void printWeatherInfo(const WeatherInfo& weather) {
             const auto& day = weather.dailyForecast[i];
             ESP_LOGI(
                 TAG,
-                "Day %d: %s | Code: %s | Sun: %s-%s | Temp: %s°-%s°C | UV: %s | Apparent: %s°-%s°C | Sunshine: %ss | Rain: %smm, %sh | Wind: %s° %skm/h (gust %skm/h)",
-                i + 1, day.time.c_str(), day.weatherCode.c_str(),
+                "Day %d: %s | Code: %d | Sun: %s-%s | Temp: %.1f°-%.1f°C | UV: %.1f | Apparent: %.1f°-%.1f°C | Sunshine: %.0fs | Rain: %.1fmm, %dh | Wind: %d° %.1fkm/h (gust %.1fkm/h)",
+                i + 1, day.time.c_str(), day.weatherCode,
                 day.sunrise.c_str(), day.sunset.c_str(),
-                day.tempMin.c_str(), day.tempMax.c_str(), day.uvIndex.c_str(),
-                day.apparentTempMin.c_str(), day.apparentTempMax.c_str(),
-                day.sunshineDuration.c_str(),
-                day.precipitationSum.c_str(),
-                day.precipitationHours.c_str(),
-                day.windDirection.c_str(),
-                day.windSpeedMax.c_str(),
-                day.windGustsMax.c_str());
+                day.tempMin, day.tempMax, day.uvIndex,
+                day.apparentTempMin, day.apparentTempMax,
+                day.sunshineDuration,
+                day.precipitationSum,
+                day.precipitationHours,
+                day.windDirection,
+                day.windSpeedMax,
+                day.windGustsMax);
         }
     } else {
         ESP_LOGI(TAG, "No daily forecast data available");

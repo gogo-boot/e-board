@@ -3,6 +3,7 @@
 #include "util/util.h"
 #include "util/time_manager.h"
 #include "display/display_shared.h"
+#include "display/common_footer.h"
 #include <esp_log.h>
 #include <vector>
 #include <icons.h>
@@ -224,34 +225,8 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
 }
 
 void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h) {
-    auto* display = DisplayShared::getDisplay();
-    auto* u8g2 = DisplayShared::getU8G2();
-    if (!display || !u8g2) {
-        ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
-        return;
-    }
-    TextUtils::setFont10px_margin12px(); // Small font for footer
-
-    int16_t footerY = y + h - 14; // Correct: bottom of section
-    int16_t footerX = x + 10;
-
-    String footerText = "";
-    if (TimeManager::isTimeSet()) {
-        struct tm timeinfo;
-        if (TimeManager::getCurrentLocalTime(timeinfo)) {
-            char timeStr[20];
-            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
-            footerText += String(timeStr);
-        } else {
-            footerText += "Zeit nicht verfügbar";
-        }
-    } else {
-        footerText += "Zeit nicht synchronisiert";
-    }
-    TextUtils::printTextAtWithMargin(footerX, footerY, footerText);
-
-    int16_t timeStrWidth = TextUtils::getTextWidth(footerText);
-    display->drawInvertedBitmap(footerX + timeStrWidth + 5, y, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+    // Use common footer with time and refresh icon
+    CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH);
 }
 
 String DepartureDisplay::getStopName(RTCConfigData& config) {

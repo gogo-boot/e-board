@@ -76,13 +76,11 @@ static String weatherCodeToString(int code) {
 }
 
 bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
-    //https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m&current=temperature_2m,precipitation,weather_code&timezone=auto&past_hours=1&forecast_hours=12
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
         "&longitude=" + String(lon, 6) +
         "&daily=weather_code,sunrise,sunset,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,sunshine_duration,wind_speed_10m_max"
         +
         "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" +
-        // Add relative_humidity_2m
         "&current=temperature_2m,precipitation,weather_code" +
         "&timezone=auto&past_hours=0&forecast_hours=13";
     Serial.printf("Fetching weather from: %s\n", url.c_str());
@@ -98,8 +96,8 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
             if (doc.containsKey("current")) {
                 JsonObject current = doc["current"];
                 weather.time = current["time"].as<String>();
-                weather.temperature = String(current["temperature_2m"].as<float>(), 1);
-                weather.precipitation = String(current["precipitation"].as<float>(), 1);
+                weather.temperature = current["temperature_2m"].as<float>();
+                weather.precipitation = current["precipitation"].as<float>();
                 weather.weatherCode = current["weather_code"].as<int>();
             }
 
@@ -112,16 +110,16 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
                 JsonArray wcode = hourly["weather_code"];
                 JsonArray rainProb = hourly["precipitation_probability"];
                 JsonArray precipitation = hourly["precipitation"];
-                JsonArray humidity = hourly["relative_humidity_2m"]; // Add humidity array
+                JsonArray humidity = hourly["relative_humidity_2m"];
 
                 int count = 0;
                 for (size_t i = 0; i < times.size() && count < 13; ++i) {
                     weather.hourlyForecast[count].time = times[i].as<String>();
-                    weather.hourlyForecast[count].temperature = String(temps[i].as<float>(), 1);
-                    weather.hourlyForecast[count].weatherCode = String(wcode[i].as<int>());
-                    weather.hourlyForecast[count].rainChance = String(rainProb[i].as<int>());
-                    weather.hourlyForecast[count].rainfall = String(precipitation[i].as<float>(), 2);
-                    weather.hourlyForecast[count].humidity = String(humidity[i].as<int>()); // Parse humidity
+                    weather.hourlyForecast[count].temperature = temps[i].as<float>();
+                    weather.hourlyForecast[count].weatherCode = wcode[i].as<int>();
+                    weather.hourlyForecast[count].rainChance = rainProb[i].as<int>();
+                    weather.hourlyForecast[count].rainfall = precipitation[i].as<float>();
+                    weather.hourlyForecast[count].humidity = humidity[i].as<int>();
 
                     count++;
                 }
@@ -160,14 +158,14 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
                     weather.dailyForecast[count].sunset = extractTimeFromISO(String(sunset[i].as<String>()));
                     weather.dailyForecast[count].sunrise = extractTimeFromISO(String(sunrise[i].as<String>()));
 
-                    weather.dailyForecast[count].uvIndex = String(uv_index[i].as<float>(), 1);
-                    weather.dailyForecast[count].sunshineDuration = String(sunshine[i].as<float>(), 2);
-                    weather.dailyForecast[count].precipitationSum = String(precipitation[i].as<float>(), 1);
+                    weather.dailyForecast[count].uvIndex = uv_index[i].as<float>();
+                    weather.dailyForecast[count].sunshineDuration = sunshine[i].as<float>();
+                    weather.dailyForecast[count].precipitationSum = precipitation[i].as<float>();
 
-                    weather.dailyForecast[count].weatherCode = String(wcode[i].as<int>());
-                    weather.dailyForecast[count].tempMax = String(temp_max[i].as<float>(), 1);
-                    weather.dailyForecast[count].tempMin = String(temp_min[i].as<float>(), 1);
-                    weather.dailyForecast[count].windSpeedMax = String(wind_speed_10m_max[i].as<float>(), 1);
+                    weather.dailyForecast[count].weatherCode = wcode[i].as<int>();
+                    weather.dailyForecast[count].tempMax = temp_max[i].as<float>();
+                    weather.dailyForecast[count].tempMin = temp_min[i].as<float>();
+                    weather.dailyForecast[count].windSpeedMax = wind_speed_10m_max[i].as<float>();
 
                     count++;
                 }
@@ -183,11 +181,6 @@ bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather) {
 }
 
 bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
-    // https://api.open-meteo.com/v1/forecast?latitude=50.125599&longitude=8.604095
-    // &daily=sunset,sunrise,uv_index_max,sunshine_duration,precipitation_sum,precipitation_hours,weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_min,apparent_temperature_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant
-    // &hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m
-    // &current=temperature_2m,precipitation,weather_code
-    // &timezone=auto&past_hours=0&forecast_hours=13
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
         "&longitude=" + String(lon, 6) +
         "&daily=sunset,sunrise,uv_index_max,sunshine_duration,precipitation_sum,precipitation_hours,weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_min,apparent_temperature_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant"
@@ -208,8 +201,8 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
             if (doc.containsKey("current")) {
                 JsonObject current = doc["current"];
                 weather.time = current["time"].as<String>();
-                weather.temperature = String(current["temperature_2m"].as<float>(), 1);
-                weather.precipitation = String(current["precipitation"].as<float>(), 1);
+                weather.temperature = current["temperature_2m"].as<float>();
+                weather.precipitation = current["precipitation"].as<float>();
                 weather.weatherCode = current["weather_code"].as<int>();
             }
 
@@ -227,11 +220,11 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
                 int count = 0;
                 for (size_t i = 0; i < times.size() && count < 13; ++i) {
                     weather.hourlyForecast[count].time = times[i].as<String>();
-                    weather.hourlyForecast[count].temperature = String(temps[i].as<float>(), 1);
-                    weather.hourlyForecast[count].weatherCode = String(wcode[i].as<int>());
-                    weather.hourlyForecast[count].rainChance = String(rainProb[i].as<int>());
-                    weather.hourlyForecast[count].rainfall = String(precipitation[i].as<float>(), 2);
-                    weather.hourlyForecast[count].humidity = String(humidity[i].as<int>()); // Parse humidity
+                    weather.hourlyForecast[count].temperature = temps[i].as<float>();
+                    weather.hourlyForecast[count].weatherCode = wcode[i].as<int>();
+                    weather.hourlyForecast[count].rainChance = rainProb[i].as<int>();
+                    weather.hourlyForecast[count].rainfall = precipitation[i].as<float>();
+                    weather.hourlyForecast[count].humidity = humidity[i].as<int>();
 
                     count++;
                 }
@@ -275,21 +268,21 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
                     weather.dailyForecast[count].time = times[i].as<String>();
                     weather.dailyForecast[count].sunset = extractTimeFromISO(String(sunset[i].as<String>()));
                     weather.dailyForecast[count].sunrise = extractTimeFromISO(String(sunrise[i].as<String>()));
-                    weather.dailyForecast[count].uvIndex = String(uv_index[i].as<float>(), 1);
+                    weather.dailyForecast[count].uvIndex = uv_index[i].as<float>();
 
-                    weather.dailyForecast[count].sunshineDuration = String(sunshine[i].as<float>(), 2);
-                    weather.dailyForecast[count].precipitationSum = String(precipitation_sum[i].as<int>());
-                    weather.dailyForecast[count].precipitationHours = String(precipitation_hours[i].as<int>());
-                    weather.dailyForecast[count].weatherCode = String(wcode[i].as<int>());
+                    weather.dailyForecast[count].sunshineDuration = sunshine[i].as<float>();
+                    weather.dailyForecast[count].precipitationSum = precipitation_sum[i].as<float>();
+                    weather.dailyForecast[count].precipitationHours = precipitation_hours[i].as<int>();
+                    weather.dailyForecast[count].weatherCode = wcode[i].as<int>();
 
-                    weather.dailyForecast[count].tempMax = String(temp_max[i].as<float>(), 1);
-                    weather.dailyForecast[count].tempMin = String(temp_min[i].as<float>(), 1);
-                    weather.dailyForecast[count].apparentTempMin = String(apparent_temp_min[i].as<float>(), 1);
-                    weather.dailyForecast[count].apparentTempMax = String(apparent_temp_max[i].as<float>(), 1);
-                    weather.dailyForecast[count].windSpeedMax = String(wind_speed_10m_max[i].as<float>(), 1);
+                    weather.dailyForecast[count].tempMax = temp_max[i].as<float>();
+                    weather.dailyForecast[count].tempMin = temp_min[i].as<float>();
+                    weather.dailyForecast[count].apparentTempMin = apparent_temp_min[i].as<float>();
+                    weather.dailyForecast[count].apparentTempMax = apparent_temp_max[i].as<float>();
+                    weather.dailyForecast[count].windSpeedMax = wind_speed_10m_max[i].as<float>();
 
-                    weather.dailyForecast[count].windGustsMax = String(wind_gusts_10m_max[i].as<float>(), 1);
-                    weather.dailyForecast[count].windDirection = String(windDirection[i].as<int>());
+                    weather.dailyForecast[count].windGustsMax = wind_gusts_10m_max[i].as<float>();
+                    weather.dailyForecast[count].windDirection = windDirection[i].as<int>();
 
                     count++;
                 }

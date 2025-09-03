@@ -8,8 +8,7 @@
 class WeatherFullDisplay {
 public:
     // Weather layout helpers
-    static void drawFullScreenWeatherLayout(const WeatherInfo& weather, int16_t leftMargin, int16_t rightMargin,
-                                            int16_t y, int16_t h);
+    static void drawFullScreenWeatherLayout(const WeatherInfo& weather);
 
     static void drawWeatherFooter(int16_t x, int16_t y, int16_t h);
 

@@ -1,6 +1,6 @@
 /*
  * MyStation E-Board - ESP32-C3 Public Transport Departure Board
- * 
+ *
  * Boot Process Flow:
  * 1. System starts and calls DeviceModeManager::hasValidConfiguration()
  * 2. If no valid config -> DeviceModeManager::runConfigurationMode()
@@ -11,7 +11,7 @@
  *    - Connects to saved WiFi
  *    - Fetches transport and weather data
  *    - Updates display and enters deep sleep
- * 
+ *
  * Configuration persists in NVS (Non-Volatile Storage) across:
  * - Power loss/battery changes
  * - Firmware updates
@@ -51,7 +51,7 @@
 
 // Create display instance for GDEY075T7 (800x480 resolution)
 GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(
-  GxEPD2_750_GDEY075T7(Pins::EPD_CS, Pins::EPD_DC, Pins::EPD_RES, Pins::EPD_BUSY));
+    GxEPD2_750_GDEY075T7(Pins::EPD_CS, Pins::EPD_DC, Pins::EPD_RES, Pins::EPD_BUSY));
 
 // Create U8g2 instance for UTF-8 font support (for German umlauts)
 U8G2_FOR_ADAFRUIT_GFX u8g2;
@@ -69,33 +69,33 @@ RTC_DATA_ATTR bool hasValidConfig = false; // Flag to track if valid config exis
 ConfigOption g_webConfigPageData;
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  // Allow time for serial monitor to connect, only for local debugging, todo remove in production or activate by flag
+    Serial.begin(115200);
+    delay(1000);
+    // Allow time for serial monitor to connect, only for local debugging, todo remove in production or activate by flag
 
-  // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
-  ESP_LOGI(TAG, "System starting...");
+    // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
+    ESP_LOGI(TAG, "System starting...");
 
-  // TODO: Add any additional display initialization code here
+    // TODO: Add any additional display initialization code here
 
-  // Determine device mode based on saved configuration
-  if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
-    // DeviceModeManager::showWeatherDeparture();
-    DeviceModeManager::showGeneralWeather();
-  } else {
-    DeviceModeManager::runConfigurationMode();
-  }
+    // Determine device mode based on saved configuration
+    if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
+        // DeviceModeManager::showWeatherDeparture();
+        DeviceModeManager::showGeneralWeather();
+    } else {
+        DeviceModeManager::runConfigurationMode();
+    }
 }
 
 void loop() {
-  // Only handle web server in config mode
-  if (ConfigManager::isConfigMode()) {
-    server.handleClient();
-    delay(10); // Small delay to prevent watchdog issues
-  } else {
-    // Normal operation happens in setup() and then device goes to sleep
-    // This should never be reached in normal operation
-    ESP_LOGW(TAG, "Unexpected: loop() called in normal operation mode");
-    delay(5000);
-  }
+    // Only handle web server in config mode
+    if (ConfigManager::isConfigMode()) {
+        server.handleClient();
+        delay(10); // Small delay to prevent watchdog issues
+    } else {
+        // Normal operation happens in setup() and then device goes to sleep
+        // This should never be reached in normal operation
+        ESP_LOGW(TAG, "Unexpected: loop() called in normal operation mode");
+        delay(5000);
+    }
 }
