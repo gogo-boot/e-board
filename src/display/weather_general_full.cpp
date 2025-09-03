@@ -11,16 +11,16 @@
 
 static const char* TAG = "WEATHER_DISPLAY";
 
-void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather,
-                                                     int16_t leftMargin, int16_t rightMargin,
-                                                     int16_t y, int16_t h) {
+void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather) {
     // [WEATHER_DISPLAY] drawFullScreenWeatherLayout called with margins (10,790) and area (0,480)
-    ESP_LOGI(TAG, "drawFullScreenWeatherLayout called with margins (%d,%d) and area (%d,%d)", leftMargin, rightMargin,
-             y, h);
+    ESP_LOGI(TAG, "drawFullScreenWeatherLayout called");
     auto* display = DisplayShared::getDisplay();
 
-    int16_t currentY = y; // Start from top edge
+    int16_t currentY = 0; // Start from top edge
     int16_t screenWidth = DisplayShared::getScreenWidth();
+
+    int16_t leftMargin = 10;
+    int16_t rightMargin = screenWidth - 10;
     // int16_t screenWidth = 400;
     int16_t screenHalfWidth = screenWidth / 2;
     int16_t screenQuaterWidth = screenWidth / 4;
