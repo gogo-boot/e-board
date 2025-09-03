@@ -3,37 +3,37 @@
 
 struct WeatherHoulyForecast {
     String time;
-    String temperature;
-    String weatherCode;
-    String rainChance;
-    String rainfall;
-    String humidity; // Add this new field
+    float temperature;
+    int weatherCode;
+    int rainChance;
+    float rainfall;
+    int humidity;
 };
 
 struct WeatherDailyForecast {
     String time;
-    String windDirection;
-    String weatherCode;
+    int windDirection;
+    int weatherCode;
     String sunrise;
     String sunset;
-    String tempMax;
-    String tempMin;
-    String uvIndex;
-    String precipitationSum;
-    String precipitationHours;
-    String sunshineDuration;
-    String apparentTempMin;
-    String apparentTempMax;
-    String windSpeedMax;
-    String windGustsMax;
+    float tempMax;
+    float tempMin;
+    float uvIndex;
+    float precipitationSum;
+    int precipitationHours;
+    float sunshineDuration;
+    float apparentTempMin;
+    float apparentTempMax;
+    float windSpeedMax;
+    float windGustsMax;
 };
 
 struct WeatherInfo {
     // Current weather
     String time;
-    String temperature;
-    String precipitation;
-    String weatherCode;
+    float temperature;
+    float precipitation;
+    int weatherCode;
 
     // Hourly forecast
     WeatherHoulyForecast hourlyForecast[13]; // 1hour past and 12-hour forecast

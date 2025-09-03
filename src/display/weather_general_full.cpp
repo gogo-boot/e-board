@@ -21,7 +21,6 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
 
     int16_t leftMargin = 10;
     int16_t rightMargin = screenWidth - 10;
-    // int16_t screenWidth = 400;
     int16_t screenHalfWidth = screenWidth / 2;
     int16_t screenQuaterWidth = screenWidth / 4;
     int16_t screenTenthWidth = screenWidth / 10;
@@ -32,7 +31,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     //-----------------------------------
     TextUtils::setFont24px_margin28px();
     // Display current date in DD.MM.YYYY Weekday format using DateUtil
-    String dateString = DateUtil::getCurrentDateString(); // or use another field if needed
+    String dateString = DateUtil::getCurrentDateString();
     TextUtils::printTextAtWithMargin(leftMargin, currentY, dateString);
     currentY += 60; // Space after date
 
@@ -46,22 +45,24 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     display->drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, 64), 64, 64, GxEPD_BLACK);
     // Current Weather Temperature
     TextUtils::setFont14px_margin17px();
-    TextUtils::printTextAtWithMargin(leftMargin, colY + 70, weather.temperature + "°C");
+    TextUtils::printTextAtWithMargin(leftMargin, colY + 70, String(weather.temperature, 1) + "°C");
     // Temperature low high
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     TextUtils::printTextAtWithMargin(100, colY + 20, "Temp.");
-    String tempRange = weather.dailyForecast[0].tempMin + " - " + weather.dailyForecast[0].tempMax + "°C";
+    String tempRange = String(weather.dailyForecast[0].tempMin, 0) + " - " + String(weather.dailyForecast[0].tempMax, 0)
+        + "°C";
     TextUtils::printTextAtWithMargin(screenQuaterWidth, colY + 20, tempRange);
     // Feels like temperature low high
     TextUtils::printTextAtWithMargin(100, colY + 50, "Gefühlte");
-    String feelTempRange = weather.dailyForecast[0].apparentTempMin + " - " + weather.dailyForecast[0].apparentTempMax +
-        "°C";
+    String feelTempRange = String(weather.dailyForecast[0].apparentTempMin, 0) + " - " + String(
+        weather.dailyForecast[0].apparentTempMax, 0) + "°C";
     TextUtils::printTextAtWithMargin(screenQuaterWidth, colY + 50, feelTempRange);
     currentY += 100; // Move down after first row of weather info
 
     int16_t firstColumn = 0;
     int16_t secondColumn = 70;
     int16_t thirdColumn = 195;
+
     // Sunrise Sunset
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_sunrise, 64), 64, 64, GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenauf / untergang");
@@ -69,13 +70,13 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40, weather.dailyForecast[0].sunset);
     currentY += 80; // Move down after first row of weather info
 
+    // Use Util::sunshineSecondsToHHMM for sunshine duration
     // Sun-shine UN-Index
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
-    // Use Util::sunshineSecondsToHHMM for sunshine duration
     String sunshineText = WeatherUtil::sunshineSecondsToHHMM(weather.dailyForecast[0].sunshineDuration);
+    // Use Util::uvIndexToGrade for UV Index
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenstd.");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, sunshineText);
-    // Use Util::uvIndexToGrade for UV Index
     String uvText = WeatherUtil::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, "UV Index");
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40, uvText);
@@ -84,18 +85,19 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     // precipitation mm, precipitation hours
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_61_rain, 64), 64, 64, GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Niederschlag");
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, weather.dailyForecast[0].precipitationSum + " mm");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + 40,
+                                     String(weather.dailyForecast[0].precipitationSum, 1) + " mm");
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, "Dauer");
-    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40, weather.dailyForecast[0].precipitationHours + " Std");
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40,
+                                     String(weather.dailyForecast[0].precipitationHours) + " Std");
     currentY += 80; // Move down after first row of weather info
 
     // Wind speed m/s, Wind Gust m/s, Wind Direction
     display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
-    // Use Util::degreeToCompass for wind direction
-    String windDirectionText = WeatherUtil::degreeToCompass(weather.dailyForecast[0].windDirection.toFloat());
-    String windText = weather.dailyForecast[0].windSpeedMax + " m/s (Böe "
-        + weather.dailyForecast[0].windGustsMax + " m/s )";
-    String windText2 = windDirectionText + " (" + weather.dailyForecast[0].windDirection + "°)";
+    String windDirectionText = WeatherUtil::degreeToCompass(weather.dailyForecast[0].windDirection);
+    String windText = String(weather.dailyForecast[0].windSpeedMax, 1) + " m/s (Böe " + String(
+        weather.dailyForecast[0].windGustsMax, 1) + " m/s )";
+    String windText2 = windDirectionText + " (" + String(weather.dailyForecast[0].windDirection) + "°)";
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Wind " + windText2);
     TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, windText);
     currentY += 80; // Move down after first row of weather info
@@ -117,8 +119,6 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     currentY += 40; // Space after city name
 
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
-    // Day 1 - 5 Forecast
-
     for (int i = 1; i < weather.dailyForecastCount; i++) {
         // YYYY-MM-DD to Day of week
         String dayLabel = WeatherUtil::getDayOfWeekFromDateString(weather.dailyForecast[i].time, 2);
@@ -130,8 +130,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
                                     GxEPD_BLACK);
 
         // Show low | high temp without floating point
-        int tempMinInt = (int)weather.dailyForecast[i].tempMin.toFloat();
-        int tempMaxInt = (int)weather.dailyForecast[i].tempMax.toFloat();
+        int tempMinInt = (int)weather.dailyForecast[i].tempMin;
+        int tempMaxInt = (int)weather.dailyForecast[i].tempMax;
         TextUtils::printTextAtWithMargin(screenTenthWidth * (i + 3), currentY + 75,
                                          String(tempMinInt) + " - " + String(tempMaxInt) + "°");
     }
@@ -143,8 +143,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     currentY += 25; // Space after
     ESP_LOGI(TAG, "Draw Weather Graph");
     // Draw the actual weather graph
-    WeatherGraph::drawTemperatureAndRainGraph(weather, screenTenthWidth * 4, currentY,
-                                              screenTenthWidth * 6, DisplayShared::getScreenHeight() - currentY);
+    WeatherGraph::drawTemperatureAndRainGraph(weather, screenTenthWidth * 4, currentY, screenTenthWidth * 6,
+                                              DisplayShared::getScreenHeight() - currentY);
 }
 
 void WeatherFullDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {

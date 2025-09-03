@@ -4,10 +4,10 @@
 
 class WeatherUtil {
 public:
-    static icon_name getWeatherIcon(const String& weatherCode);
+    static icon_name getWeatherIcon(const int weatherCode);
     static String degreeToCompass(float degree);
-    static String uvIndexToGrade(const String& uvIndexStr);
-    static String sunshineSecondsToHHMM(const String& secondsStr);
+    static String uvIndexToGrade(const float& uvIndexStr);
+    static String sunshineSecondsToHHMM(const float& secondsStr);
     static String formatWindText(const String& windSpeed, const String& windGust);
     static String formatDateText(const String& isoTime);
     static String getCurrentDateString();

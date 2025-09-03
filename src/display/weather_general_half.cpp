@@ -97,7 +97,7 @@ void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t d
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, uvText);
 
     // Show wind speed in "min - max m/s" format using Util
-    String windText = "Wind : " + weather.dailyForecast[0].windSpeedMax + " m/s";
+    String windText = "Wind : " + String(weather.dailyForecast[0].windSpeedMax, 1) + " m/s";
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, windText);
 }
 

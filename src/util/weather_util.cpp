@@ -3,9 +3,8 @@
 #include <icons.h>
 #include <time.h>
 
-icon_name WeatherUtil::getWeatherIcon(const String& weatherCode) {
-    int code = weatherCode.toInt();
-    switch (code) {
+icon_name WeatherUtil::getWeatherIcon(const int weatherCode) {
+    switch (weatherCode) {
     case 0: return wi_0_day_sunny;
     case 1:
     case 2:
@@ -47,21 +46,20 @@ String WeatherUtil::degreeToCompass(float degree) {
     return String(directions[idx]);
 }
 
-String WeatherUtil::uvIndexToGrade(const String& uvIndexStr) {
-    float uv = uvIndexStr.toFloat();
+String WeatherUtil::uvIndexToGrade(const float& uv) {
     String grade;
     if (uv < 3) grade = "Low";
     else if (uv < 6) grade = "Moderate";
     else if (uv < 8) grade = "High";
     else if (uv < 11) grade = "Very High";
     else grade = "Extreme";
-    return grade + " (" + uvIndexStr + ")";
+    return grade + " (" + uv + ")";
 }
 
-String WeatherUtil::sunshineSecondsToHHMM(const String& secondsStr) {
-    long seconds = secondsStr.toFloat();
-    int hours = seconds / 3600;
-    int minutes = (seconds % 3600) / 60;
+String WeatherUtil::sunshineSecondsToHHMM(const float& seconds) {
+    long seconds_ = seconds;
+    int hours = seconds_ / 3600;
+    int minutes = (seconds_ % 3600) / 60;
     char buf[8];
     snprintf(buf, sizeof(buf), "%02d:%02d", hours, minutes);
     return String(buf);
