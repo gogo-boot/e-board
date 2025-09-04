@@ -87,7 +87,9 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
 void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY,
                                                      const WeatherInfo& weather) {
     TextUtils::setFont12px_margin15px(); // Small font for weather info
-    String tempRange = String(weather.dailyForecast[0].tempMin) + "°C - " + String(weather.dailyForecast[0].tempMax) +
+    String tempRange = String(weather.dailyForecast[0].tempMin, 0) + "°C - " + String(
+            weather.dailyForecast[0].tempMax, 0)
+        +
         "°C";
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY, tempRange);
 
@@ -97,7 +99,9 @@ void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t d
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 27, uvText);
 
     // Show wind speed in "min - max m/s" format using Util
-    String windText = "Wind : " + String(weather.dailyForecast[0].windSpeedMax, 1) + " m/s";
+    String windDirectionText = WeatherUtil::degreeToCompass(weather.dailyForecast[0].windDirection);
+    String windText = "Wind : Max " + String(weather.dailyForecast[0].windSpeedMax, 0) + " m/s ( " + windDirectionText +
+        " )";
     TextUtils::printTextAtWithMargin(currentX, dayWeatherInfoY + 47, windText);
 }
 
