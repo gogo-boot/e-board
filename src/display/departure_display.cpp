@@ -200,7 +200,7 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
 
     // get max width for each column
     int8_t timeWidth = TextUtils::getTextWidth("88:88");
-    int8_t lindWidth = TextUtils::getTextWidth("M8888");
+    int8_t lineWidth = TextUtils::getTextWidth("M8888");
     int8_t padding = 10;
 
     int16_t currentX = x;
@@ -209,12 +209,12 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
     TextUtils::printTextAtTopMargin(currentX, currentY, istTime.c_str());
     currentX += padding + timeWidth;
     TextUtils::printTextAtTopMargin(currentX, currentY, dep.line.c_str());
-    currentX += padding + lindWidth;
+    currentX += padding + lineWidth;
     TextUtils::printTextAtTopMargin(currentX, currentY, dest.c_str());
 
     // Draw track info right-aligned
     int8_t trackWidth = TextUtils::getTextWidth(dep.track.c_str());
-    currentX = x + width - trackWidth - 10; // 10px padding from right
+    currentX = x + width - trackWidth - 15; // 10px padding from right
     TextUtils::printTextAtTopMargin(currentX, currentY, dep.track.c_str());
 
     currentY += 17; // per entry height
