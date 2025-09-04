@@ -56,7 +56,7 @@ private:
     /**
      * @brief Draw a single departure entry
      */
-    static void drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
+    static void drawSingleDeparture(const DepartureInfo& dep, int16_t x, int16_t width,
                                     int16_t currentY);
 };
 

@@ -94,7 +94,7 @@ void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> depar
     // Direction 1 departures
     for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++) {
         const auto& dep = *departure[i];
-        drawSingleDeparture(dep, x, w, y); // false = not full screen
+        drawSingleDeparture(dep, x, w, y);
         y += 42;
 
         if (y > DisplayShared::getScreenHeight()) {
@@ -167,7 +167,7 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& depar
                       true, maxPerDirection);
 }
 
-void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
+void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, int16_t width,
                                            int16_t currentY) {
     auto* u8g2 = DisplayShared::getU8G2();
     if (!u8g2) return;
@@ -180,7 +180,7 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
     TextUtils::setFont10px_margin12px(); // Small font for departure entries
 
     // Calculate available space
-    int totalWidth = rightMargin - leftMargin;
+    int totalWidth = width - x;
 
     // Check if times are different for highlighting
     bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
@@ -198,14 +198,25 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
         istTime = "  +00"; // Use "00" to indicate on-time
     }
 
-    char buf[64];
-    //Hauputbahnhof/Fernbusterminal
-    snprintf(buf, sizeof(buf), "%5s %5s %6s %-30s %4s",
-             sollTime.c_str(), istTime.c_str(), dep.line.c_str(), dest.c_str(), dep.track.c_str());
-    String singleDeparture = String(buf);
+    // get max width for each column
+    int8_t timeWidth = TextUtils::getTextWidth("88:88");
+    int8_t lindWidth = TextUtils::getTextWidth("M8888");
+    int8_t padding = 10;
 
-    // String singleDeparture = sollTime + " " + istTime + " " + dep.line + " " + dest + " " + dep.track;
-    TextUtils::printTextAtTopMargin(leftMargin, currentY, singleDeparture);
+    int16_t currentX = x;
+    TextUtils::printTextAtTopMargin(currentX, currentY, sollTime.c_str());
+    currentX += padding + timeWidth;
+    TextUtils::printTextAtTopMargin(currentX, currentY, istTime.c_str());
+    currentX += padding + timeWidth;
+    TextUtils::printTextAtTopMargin(currentX, currentY, dep.line.c_str());
+    currentX += padding + lindWidth;
+    TextUtils::printTextAtTopMargin(currentX, currentY, dest.c_str());
+
+    // Draw track info right-aligned
+    int8_t trackWidth = TextUtils::getTextWidth(dep.track.c_str());
+    currentX = x + width - trackWidth - 10; // 10px padding from right
+    TextUtils::printTextAtTopMargin(currentX, currentY, dep.track.c_str());
+
     currentY += 17; // per entry height
     currentY += 3; // Add spacing after departure entry
 
@@ -215,12 +226,12 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t lef
         String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
 
         // Fit disruption text to available width with some indent
-        int disruptionMaxWidth = rightMargin - leftMargin - 20; // 20px indent
+        int disruptionMaxWidth = width - x - 20; // 20px indent
         String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
 
         // Display disruption information with proper positioning
         TextUtils::setFont10px_margin12px(); // Small font for disruption info
-        TextUtils::printTextAtTopMargin(leftMargin + 20, currentY, fittedDisruption);
+        TextUtils::printTextAtTopMargin(x + 20, currentY, fittedDisruption);
     }
 }
 
