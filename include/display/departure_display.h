@@ -2,9 +2,6 @@
 #define DEPARTURE_DISPLAY_H
 
 #include <Arduino.h>
-#include <U8g2_for_Adafruit_GFX.h>
-#include <GxEPD2_BW.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
 #include "config/config_manager.h"
 #include "api/rmv_api.h"
 
@@ -56,7 +53,7 @@ private:
     /**
      * @brief Draw a single departure entry
      */
-    static void drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
+    static void drawSingleDeparture(const DepartureInfo& dep, int16_t x, int16_t width,
                                     int16_t currentY);
 };
 

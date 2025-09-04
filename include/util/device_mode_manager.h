@@ -8,5 +8,5 @@ public:
     static void showWeatherDeparture();
     static void showGeneralWeather();
     static void showMarineWeather();
-    static void showDaparture();
+    static void showDeparture();
 };
