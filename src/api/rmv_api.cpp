@@ -16,41 +16,15 @@ namespace {
     StaticJsonDocument<256> departureFilter;
 
     void initDepartureFilter() {
-        departureFilter["Departure"][0]["name"] = true;
         departureFilter["Departure"][0]["time"] = true;
         departureFilter["Departure"][0]["track"] = true;
         departureFilter["Departure"][0]["rtTime"] = true;
         departureFilter["Departure"][0]["direction"] = true;
         departureFilter["Departure"][0]["directionFlag"] = true;
 
+        departureFilter["Departure"][0]["Product"][0]["line"] = true;
         departureFilter["Departure"][0]["Product"][0]["catOut"] = true;
         departureFilter["Departure"][0]["Messages"]["Message"][0]["head"] = true;
-        departureFilter["Departure"][0]["Messages"]["Message"][0]["lead"] = true;
-        departureFilter["Departure"][0]["Messages"]["Message"][0]["text"] = true;
-    }
-
-    void printDepartures(const String& payload) {
-        initDepartureFilter();
-        DynamicJsonDocument doc(20480);
-        DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(departureFilter));
-        if (!error) {
-            JsonArray departures = doc["Departure"];
-            for (JsonObject dep : departures) {
-                const char* name = dep["name"] | "";
-                const char* direction = dep["direction"] | "";
-                const char* time = dep["time"] | "";
-                const char* rtTime = dep["rtTime"] | "";
-                const char* track = dep["track"] | "";
-                const char* catOut = "";
-                if (dep.containsKey("Product") && dep["Product"].is<JsonArray>() && dep["Product"].size() > 0) {
-                    catOut = dep["Product"][0]["catOut"] | "";
-                }
-                ESP_LOGI(TAG, "Line: %s, Direction: %s, Time: %s, rtTime: %s, Track: %s, Category: %s",
-                         name, direction, time, rtTime, track, catOut);
-            }
-        } else {
-            ESP_LOGE(TAG, "Failed to parse RMV departureBoard JSON: %s", error.c_str());
-        }
     }
 } // end anonymous namespace
 
@@ -135,8 +109,30 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
     for (JsonVariantConst departureVariant : departures) {
         DepartureInfo depInfo;
 
+        /*
+        {
+          "Departure": [
+            {
+              "Product": [
+                {
+                  "line": "S6",
+                  "catOut": "Bus"
+                }
+              ],
+              "Messages": {
+                "Message": [
+                  {
+                    "head": "S3, S4, S5: nächtliche Teilausfälle mit Ersatzverkehr"
+                  }
+                ]
+              },
+              "time": "22:37:00",
+              "rtTime": "22:37:00",
+              "direction": "Frankfurt (Main) Hauptbahnhof Südseite",
+              "directionFlag": "1"
+            }
+        */
         // Extract basic departure information with safe string conversion
-        const char* name = departureVariant["name"];
         const char* direction = departureVariant["direction"];
         const char* directionFlag = departureVariant["directionFlag"];
         const char* time = departureVariant["time"];
@@ -144,7 +140,6 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
         const char* track = departureVariant["track"];
 
         // Safe string assignment with null checks
-        depInfo.line = name ? String(name) : "";
         depInfo.direction = direction ? String(direction) : "";
         depInfo.directionFlag = directionFlag ? String(directionFlag) : "";
         depInfo.time = time ? String(time) : "";
@@ -152,32 +147,20 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
         depInfo.track = track ? String(track) : "";
 
         // Extract category from Product array with safety checks
-        JsonArrayConst products = departureVariant["Product"];
-        if (products.size() > 0) {
-            JsonVariantConst productVariant = products[0];
-            if (productVariant.is<JsonObject>()) {
-                JsonObjectConst product = productVariant;
-                const char* catOut = product["catOut"];
-                depInfo.category = catOut ? String(catOut) : "";
-            }
+        if (departureVariant["Product"].size() > 0) {
+            // Direct path access
+            const char* catOut = departureVariant["Product"][0]["catOut"];
+            const char* line = departureVariant["Product"][0]["line"];
+
+            depInfo.category = catOut ? String(catOut) : "";
+            depInfo.line = line ? String(line) : "";
         }
 
-        // Extract message information with comprehensive safety checks
-        if (departureVariant["Messages"].is<JsonObject>()) {
-            JsonObjectConst messages = departureVariant["Messages"];
-            if (messages["Message"].is<JsonArray>()) {
-                JsonArrayConst messageArray = messages["Message"];
-                if (messageArray.size() > 0) {
-                    JsonVariantConst messageVariant = messageArray[0];
-                    if (messageVariant.is<JsonObject>()) {
-                        JsonObjectConst firstMessage = messageVariant;
-                        const char* head = firstMessage["head"];
-                        const char* lead = firstMessage["lead"];
-                        depInfo.text = head ? String(head) : "";
-                        depInfo.lead = lead ? String(lead) : "";
-                    }
-                }
-            }
+        // Extract category from Product array with safety checks
+        if (departureVariant["Messages"]["Message"].size() > 0) {
+            // Direct path access
+            const char* head = departureVariant["Messages"]["Message"][0]["head"];
+            depInfo.text = head ? String(head) : "";
         }
 
         // Add to departures vector

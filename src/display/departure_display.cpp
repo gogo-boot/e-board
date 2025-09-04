@@ -200,7 +200,7 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
 
     // get max width for each column
     int8_t timeWidth = TextUtils::getTextWidth("88:88");
-    int8_t lineWidth = TextUtils::getTextWidth("M8888");
+    int8_t lineWidth = TextUtils::getTextWidth("M888");
     int8_t padding = 10;
 
     int16_t currentX = x;
