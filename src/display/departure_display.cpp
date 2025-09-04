@@ -25,7 +25,6 @@ void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& depar
 
     // Station name with TRUE 15px margin from top
     TextUtils::setFont14px_margin17px(); // Medium font for station name
-    int16_t stationTextTop = currentY + 22; // 15px margin from top
     RTCConfigData& config = ConfigManager::getConfig();
     String stopName = getStopName(config);
 
@@ -61,13 +60,12 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures,
 
     // Draw separator line between directions
     int16_t halfHeightY = currentY + h / 2;
-    ESP_LOGI(TAG, "Drawing separator line at Y=%d", halfHeightY);
+    ESP_LOGI(TAG, "Drawing departure direction separator line at Y=%d", halfHeightY);
     auto* display = DisplayShared::getDisplay();
     display->drawLine(leftMargin, halfHeightY, rightMargin, halfHeightY, GxEPD_BLACK);
 
     constexpr int maxPerDirection = 5;
 
-    const int16_t halfWidth = DisplayShared::getScreenWidth() / 2 - 1;
     drawDepartureList(direction1Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       true, maxPerDirection);
 
@@ -225,13 +223,13 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
         // Use the lead text if available, otherwise use text
         String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
 
-        // Fit disruption text to available width with some indent
-        int disruptionMaxWidth = width - x - 20; // 20px indent
+        int8_t indent = 10;
+        // Fit disruption text to available width
+        int disruptionMaxWidth = width - indent;
         String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
 
         // Display disruption information with proper positioning
-        TextUtils::setFont10px_margin12px(); // Small font for disruption info
-        TextUtils::printTextAtTopMargin(x + 20, currentY, fittedDisruption);
+        TextUtils::printTextAtTopMargin(x + indent, currentY, fittedDisruption);
     }
 }
 
