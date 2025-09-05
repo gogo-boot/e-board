@@ -49,6 +49,9 @@
 #include <U8g2_for_Adafruit_GFX.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>  // Specific driver for GDEY075T7
 
+#include "ota/ota_updater.h"
+#include "util/wifi_manager.h"
+
 // Create display instance for GDEY075T7 (800x480 resolution)
 GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(
     GxEPD2_750_GDEY075T7(Pins::EPD_CS, Pins::EPD_DC, Pins::EPD_RES, Pins::EPD_BUSY));
@@ -68,6 +71,44 @@ RTC_DATA_ATTR bool hasValidConfig = false; // Flag to track if valid config exis
 // This will not be used to store configuration data in NVS
 ConfigOption g_webConfigPageData;
 
+void checkAndPerformOTA() {
+    MyWiFiManager::reconnectWiFi();
+
+    if (WiFi.status() != WL_CONNECTED) {
+        ESP_LOGW(TAG, "WiFi not connected, skipping OTA check");
+        return;
+    }
+
+    OTAUpdater::FirmwareInfo updateInfo;
+    if (OTAUpdater::checkForUpdate(updateInfo)) {
+        if (updateInfo.available) {
+            ESP_LOGI(TAG, "Firmware update available: %s", updateInfo.version.c_str());
+
+            // Show update message on display
+            display.setFullWindow();
+            display.firstPage();
+            do {
+                display.fillScreen(GxEPD_WHITE);
+                u8g2.setFont(u8g2_font_helvB12_tf);
+                u8g2.setCursor(100, 200);
+                u8g2.print("Updating firmware...");
+                u8g2.setCursor(100, 220);
+                u8g2.print("Version: " + updateInfo.version);
+            } while (display.nextPage());
+
+            // Perform the update
+            if (OTAUpdater::performUpdate(updateInfo.downloadUrl)) {
+                ESP_LOGI(TAG, "Update successful!");
+            } else {
+                ESP_LOGE(TAG, "Update failed!");
+            }
+        } else {
+            ESP_LOGI(TAG, "Firmware is up to date");
+        }
+    }
+}
+
+
 void setup() {
     Serial.begin(115200);
     delay(1000);
@@ -78,11 +119,13 @@ void setup() {
 
     // TODO: Add any additional display initialization code here
 
+    checkAndPerformOTA();
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
         // DeviceModeManager::showWeatherDeparture();
         // DeviceModeManager::showGeneralWeather();
-        DeviceModeManager::showDeparture();
+        // DeviceModeManager::showDeparture();
+        checkAndPerformOTA();
     } else {
         DeviceModeManager::runConfigurationMode();
     }
