@@ -1,4 +1,4 @@
 {
     "version": 0.2,
-    "file": "https://github.com/gogo-boot/e-board/raw/refs/heads/61-firmware-ota-update/test/ota/firmware.bin"
+    "file": "https://raw.githubusercontent.com/gogo-boot/e-board/refs/heads/61-firmware-ota-update/test/ota/firmware.bin"
 }
