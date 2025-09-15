@@ -153,7 +153,10 @@ void check_update_task(void* pvParameter) {
                             printf("downloading and installing new firmware (%s)...\n", file->valuestring);
                             esp_http_client_config_t ota_client_config = {
                                 .url = file->valuestring,
-                                // .cert_pem = server_cert_pem_start,
+                                .cert_pem = server_cert_pem_start,
+                                // .cert_len = server_cert_pem_end - server_cert_pem_start,
+                                // .timeout_ms = 15000,
+                                .event_handler = _http_event_handler,
                             };
                             esp_err_t ret = esp_https_ota(&ota_client_config);
                             if (ret == ESP_OK) {
@@ -196,8 +199,8 @@ void setup() {
         // DeviceModeManager::showGeneralWeather();
         // DeviceModeManager::showDeparture();
         // start the check update task
-        check_update_task(NULL);
-        // xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
+        // check_update_task(NULL);
+        xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
     } else {
         DeviceModeManager::runConfigurationMode();
     }
