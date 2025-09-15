@@ -4,85 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-blue.svg)](https://platformio.org/)
-[![E## 🔋 Power Management
-
-- **Active Mode**: ~100mA (during data fetch + display refresh)
--## 🔋 Power Management
-
-- **Active Mode**: ~100mA (during data fetch + display refresh)
-- **Deep Sleep**: <50μA (between updates)  
-- **Battery Life**: 65-125 days on 2500mAh (realistic estimates)
-- **Smart Scheduling**: Reduced updates during night hoursp Sleep**: <50μA (between updates)  
-- **Refresh Time**: 7-8 seconds (WiFi + API + e-paper update)
-- **Update Energy**: ~0.22mAh per refresh cycle (including display)
-- **Self-Discharge**: ~2-5% per month (lithium batteries)
-- **Smart Scheduling**: Reduced updates during night hours
-
-### Battery Life Examples
-
-| Battery Capacity | Update Interval | Battery Life | Total Refreshes | Notes |
-|------------------|-----------------|--------------|-----------------|-------|
-| **2500mAh** | 5 minutes | 65-70 days | 18,700-20,160 | Including self-discharge |
-| **2500mAh** | 10 minutes | 115-125 days | 16,560-18,000 | Including self-discharge |
-| **1000mAh** | 5 minutes | 25-28 days | 7,200-8,060 | Including self-discharge |
-| **1000mAh** | 10 minutes | 45-50 days | 6,480-7,200 | Including self-discharge |
-
-**Real-World Factors:**
-- **Refresh time**: 7-8 seconds (WiFi connection + API calls + e-paper update)
-- **Self-discharge**: 2-5% monthly capacity loss (lithium batteries)
-- **Temperature effects**: Cold weather reduces capacity by 10-20%
-- **WiFi signal strength**: Weak signals increase power consumption
-
-**Optimization Tips:**
-- Use partial updates (saves ~40% power)
-- Smart scheduling (fewer updates at night)
-- Weather-only mode for longer battery life
-- Strong WiFi signal placement reduces power consumption
-- Room temperature operation maximizes battery capacity
-
-**[📊 Detailed Battery Calculations](./docs/display-modes.md#battery-life-calculations)**
-
-### Battery Selection Rationale
-
-The project uses **CR123A lithium batteries** for optimal efficiency and simplicity.
-
-#### Battery Types Compared
-
-- **CR123/CR123A**: 3.0V non-rechargeable lithium battery, stable output, direct ESP32 connection
-- **16340 (Li-ion/LiFePO₄)**: Rechargeable, 3.2–3.7V nominal, requires voltage regulator
-- **AA (Alkaline/NiMH)**: 1.5V (alkaline) or 1.2V (NiMH) per cell; 3-4 cells need regulator
-- **Li-Po/Li-ion single cell**: 3.7V nominal, 4.2V fully charged; needs regulator or boost converter
-
-#### Why CR123A Was Chosen
-
-- **✅ No regulator needed**: 3V output connects directly to ESP32-C3's 3.3V input
-- **✅ Maximum efficiency**: No voltage regulation = no energy loss as heat
-- **✅ Stable voltage**: Consistent 3V throughout discharge cycle supports WiFi current demands
-- **✅ Sufficient capacity**: Typical 1500mAh provides 3-6 weeks of operation (depending on update frequency)
-- **⚠️ Drawback**: Less common than AA batteries, higher cost per unit
-
-#### CR123A Capacity Performance Examples
-
-**Single CR123A (1500mAh):**
-- **5-minute updates**: 38-42 days, ~11,000-12,100 refreshes
-- **10-minute updates**: 68-75 days, ~9,800-10,800 refreshes  
-- **Weather-only mode**: 85-95 days (longer intervals possible)
-
-**Dual CR123A (3000mAh total):**
-- **2-minute updates**: 32-36 days, ~23,000-26,000 refreshes
-- **5-minute updates**: 76-84 days, ~22,000-24,200 refreshes
-- **10-minute updates**: 136-150 days, ~19,600-21,600 refreshes
-
-> **Note**: Ranges account for self-discharge (2-5% monthly), temperature effects, and WiFi signal variations. Lower values represent challenging conditions, higher values represent optimal conditions.
-
-#### Why Not Other Batteries?
-
-- **AA batteries**: Require voltage regulator; voltage drops cause instability below 70% charge
-- **Li-ion/Li-Po/16340**: Voltage too high when full (4.2V), too low when empty (3.0V); need regulation, reducing efficiency
-
-**Result**: CR123A provides the simplest, most efficient power solution with direct ESP32 connection and stable operation throughout battery life.
-
-## 🌍 Coverage(https://img.shields.io/badge/ESP32--C3-Supported-green.svg)](https://www.espressif.com/en/products/socs/esp32-c3)
+[![ESP32-C3](https://img.shields.io/badge/ESP32--C3-Supported-green.svg)](https://www.espressif.com/en/products/socs/esp32-c3)
 
 ## ✨ Features
 
@@ -97,23 +19,27 @@ The project uses **CR123A lithium batteries** for optimal efficiency and simplic
 ### 🔄 Hardware Options
 
 **ESP32-C3 Super Mini (Current)**
+
 - ✅ Compact form factor, good performance
 - ✅ 65-125 days battery life (2500mAh battery)
 - ✅ Cost-effective solution
 
 **XIAO ESP32-C6 (Recommended Upgrade)**
+
 - ⭐ **13-14% better battery life** with improved power efficiency
 - ⭐ **WiFi 6 support** for better connectivity and faster updates
 - ⭐ **Enhanced performance** with more memory and processing power
 - ⭐ **74-143 days battery life** (2500mAh battery)
 
-> 💡 **Both boards use identical pinout and code** - upgrade is plug-and-play!  
+> 💡 **Both boards use identical pinout and code** - upgrade is plug-and-play!
 > **[📊 Detailed Comparison & Setup Guide](./docs/display-modes.md#hardware-requirements)**
 
 ## 🚀 Quick Start
 
 ### 1. Hardware Setup
+
 Connect ESP32-C3 Super Mini to e-paper display:
+
 ```
 ESP32-C3    →    E-Paper Display
 GPIO 2      →    BUSY
@@ -127,6 +53,7 @@ GND         →    GND
 ```
 
 ### 2. Software Setup
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -138,24 +65,114 @@ pio run --target uploadfs
 ```
 
 ### 3. Configuration
+
 1. Connect to `MyStation-XXXXXXXX` WiFi network
 2. Open browser to configure your location and transport stops
 3. Device automatically switches to operational mode
 
 **📖 [Complete Setup Guide](./docs/quick-start.md)**
 
+## 💾 Flash Memory Layout
+
+### Partition Table Configuration
+
+The project uses a custom partition table optimized for OTA updates and minimal storage requirements:
+
+```csv
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,  0x5000,
+otadata,  data, ota,     0xe000,  0x2000,
+app0,     app,  ota_0,   0x10000, 0x180000,
+app1,     app,  ota_1,   0x190000,0x180000,
+spiffs,   data, spiffs,  0x310000,0x5000,
+coredump, data, coredump,0x315000,0xEB000,
+```
+
+### Partition Details
+
+| Partition    | Size  | Purpose                                |
+|--------------|-------|----------------------------------------|
+| **NVS**      | 20KB  | Non-volatile storage for configuration |
+| **OTA Data** | 8KB   | OTA update metadata                    |
+| **App0**     | 1.5MB | Primary firmware partition             |
+| **App1**     | 1.5MB | Secondary firmware partition (OTA)     |
+| **SPIFFS**   | 20KB  | File system for web interface          |
+| **Coredump** | 963KB | Crash dump storage for debugging       |
+
+### OTA Configuration
+
+- **OTA Partition Size**: 1.5MB each (App0 + App1)
+- **Maximum Firmware Size**: ~1.3MB (with safety margin)
+- **Current Firmware Size**: ~1.3MB
+- **OTA Safety Margin**: 200KB for future growth
+- **Total Flash Usage**: 4MB (fits ESP32-C3's 4MB flash)
+
+### File System
+
+- **SPIFFS Size**: 20KB
+- **Web Interface Storage**: HTML, CSS, JavaScript files
+- **Configuration Files**: Minimal storage for settings backup
+
+### Reference
+
+Based on ESP32 Arduino Core partition schemes:
+
+- **More Partition Examples
+  **: [ESP32 Partition Configurations](https://github.com/espressif/arduino-esp32/tree/master/tools/partitions)
+- **Customized for**: 4MB flash, OTA support, minimal SPIFFS requirements
+- **Optimized for**: Battery-powered operation with crash debugging support
+
+### Memory Optimization
+
+The project implements memory-efficient JSON parsing techniques to work within ESP32-C3's limited RAM:
+
+#### JSON Parsing Optimization
+
+- **Static Memory Allocation**: Uses `StaticJsonDocument` where possible to avoid heap fragmentation
+- **Filtered Deserialization**: Parses only required fields to reduce memory usage
+- **Streaming Parsing**: For large weather API responses, uses selective field extraction
+- **Buffer Management**: Optimized buffer sizes for different API responses
+
+#### Implementation Examples
+
+```cpp
+// Weather API - Filtered parsing for large responses
+StaticJsonDocument<2048> filter;
+filter["daily"]["weather_code"] = true;
+filter["daily"]["temperature_2m_max"] = true;
+DeserializationError error = deserializeJson(doc, response,
+    DeserializationOption::Filter(filter));
+
+// OTA Updates - Minimal parsing for version check
+StaticJsonDocument<512> doc;  // Small buffer for simple JSON
+deserializeJson(doc, payload);
+```
+
+#### Memory Usage Guidelines
+
+- **Weather API**: 8KB document size with filtering
+- **Transport API**: 4KB document size with selective parsing
+- **OTA JSON**: 512B document size for version info
+- **Configuration**: 1KB document size for settings
+
+#### Reference
+
+- **Large JSON Handling
+  **: [ArduinoJson Large Document Guide](https://arduinojson.org/v7/how-to/deserialize-a-very-large-document/)
+- **Memory Optimization**: Uses filtering and streaming techniques for ESP32-C3's 400KB RAM limit
+
 ## 📚 Documentation
 
-| Topic | Description |
-|-------|-------------|
-| **[📖 Quick Start](./docs/quick-start.md)** | Get running in 5 minutes |
-| **[🔧 Hardware Setup](./docs/hardware-setup.md)** | Wiring and pin definitions |
-| **[💻 Software Setup](./docs/software-setup.md)** | Development environment |
-| **[🔑 API Keys](./docs/api-keys.md)** | Required API configuration |
-| **[📱 Display Modes](./docs/display-modes.md)** | Screen layouts and orientations |
+| Topic                                                      | Description                       |
+|------------------------------------------------------------|-----------------------------------|
+| **[📖 Quick Start](./docs/quick-start.md)**                | Get running in 5 minutes          |
+| **[🔧 Hardware Setup](./docs/hardware-setup.md)**          | Wiring and pin definitions        |
+| **[💻 Software Setup](./docs/software-setup.md)**          | Development environment           |
+| **[🔑 API Keys](./docs/api-keys.md)**                      | Required API configuration        |
+| **[📱 Display Modes](./docs/display-modes.md)**            | Screen layouts and orientations   |
 | **[📐 Display Layout](./docs/display-layout-overview.md)** | Pixel-level layout specifications |
-| **[⚙️ Configuration](./docs/configuration.md)** | Detailed options |
-| **[🛠️ Troubleshooting](./docs/troubleshooting.md)** | Common issues |
+| **[⚙️ Configuration](./docs/configuration.md)**            | Detailed options                  |
+| **[🛠️ Troubleshooting](./docs/troubleshooting.md)**       | Common issues                     |
 
 **[📚 Complete Documentation](./docs/)**
 
@@ -165,25 +182,28 @@ pio run --target uploadfs
 flowchart TD
     User((User)) -->|WiFi| ESP32[ESP32-C3 Device]
     ESP32 -->|Location| Google[Google Geolocation API]
-    ESP32 -->|Departures| RMV[RMV Transport API]  
+    ESP32 -->|Departures| RMV[RMV Transport API]
     ESP32 -->|Weather| DWD[DWD Weather API]
     ESP32 -->|Display| EPD[E-Paper Display]
 ```
 
 ### Key Components
+
 - **ESP32-C3 Super Mini**: Main controller with WiFi
-- **E-Paper Display**: Low-power outdoor-readable screen  
+- **E-Paper Display**: Low-power outdoor-readable screen
 - **APIs**: Google (location), RMV (transport), DWD (weather)
 - **Deep Sleep**: Battery-optimized operation
 - **Web Interface**: Configuration and status
 
 ## 📱 Display Modes & Orientations
 
-The e-board features a flexible display manager that supports multiple viewing modes and orientations optimized for different use cases.
+The e-board features a flexible display manager that supports multiple viewing modes and orientations optimized for
+different use cases.
 
 ### 🔄 Display Orientations
 
 #### Landscape Mode (Default)
+
 - **Resolution**: 800×480 pixels (native)
 - **Layout**: Left-right split
 - **Weather**: Left half (400×480px)
@@ -191,6 +211,7 @@ The e-board features a flexible display manager that supports multiple viewing m
 - **Best for**: Desk placement, wide viewing, natural reading
 
 #### Portrait Mode
+
 - **Resolution**: 480×800 pixels (rotated 90°)
 - **Layout**: Top-bottom split
 - **Weather**: Top half (480×400px)
@@ -200,9 +221,11 @@ The e-board features a flexible display manager that supports multiple viewing m
 ### 🎛️ Display Modes
 
 #### 1. Half-and-Half Mode (Default)
+
 Split screen showing both weather and transport information:
 
 **Landscape Layout (Default):**
+
 ```
 ┌─────────────┬─────────────┐
 │   Weather   │ Departures  │
@@ -216,6 +239,7 @@ Split screen showing both weather and transport information:
 ```
 
 **Portrait Layout:**
+
 ```
 ┌─────────────────────────────┐
 │        Weather Info         │
@@ -229,7 +253,9 @@ Split screen showing both weather and transport information:
 ```
 
 #### 2. Weather-Only Mode
+
 Full screen weather with detailed forecast:
+
 ```
 ┌─────────────────────────────┐
 │  🌤️ Weather Information     │
@@ -248,7 +274,9 @@ Full screen weather with detailed forecast:
 ```
 
 #### 3. Departures-Only Mode
+
 Full screen departure board with more details:
+
 ```
 ┌─────────────────────────────┐
 │    🚌 Departure Board       │
@@ -272,7 +300,7 @@ Full screen departure board with more details:
 The display manager supports efficient partial updates:
 
 - **Weather Half Only**: Updates weather without clearing departures
-- **Departure Half Only**: Updates departures without clearing weather  
+- **Departure Half Only**: Updates departures without clearing weather
 - **Smart Scheduling**: Weather updates every 10 minutes, departures every 2 minutes
 - **Power Efficient**: Partial updates are faster and use less power
 
@@ -281,12 +309,14 @@ The display manager supports efficient partial updates:
 Content automatically adapts based on available space:
 
 #### Half-Screen Mode
+
 - **Condensed layout** for essential information
 - **Shortened text** for station names and directions
 - **Prioritized data** (current temp, next departures)
 - **Compact fonts** for maximum readability
 
 #### Full-Screen Mode
+
 - **Detailed information** with full descriptions
 - **Extended forecast** (6-hour weather preview)
 - **More departures** (up to 15 entries)
@@ -324,28 +354,30 @@ DisplayManager::displayWeatherOnly(weather);
 DisplayManager::displayDeparturesOnly(departures);
 
 // Change orientation to portrait
-DisplayManager::setMode(DisplayMode::HALF_AND_HALF, 
+DisplayManager::setMode(DisplayMode::HALF_AND_HALF,
                        DisplayOrientation::PORTRAIT);
 ```
 
 **[📖 Display Manager Documentation](./docs/display-modes.md)**
 
-## � Boot Process & Device States
+## 🔋 Boot Process & Device States
 
 ### First Boot (Initial Setup)
+
 When the device is powered on for the first time:
 
 1. **Enters Configuration Mode** automatically
 2. **Creates WiFi Access Point** (`MyStation-XXXXXXXX`)
 3. **Waits for user setup** via web interface at `http://10.0.1.1`
 4. **User configures**:
-   - WiFi SSID and password
-   - Preferred transport stations and filters
-   - Update intervals and display preferences
+    - WiFi SSID and password
+    - Preferred transport stations and filters
+    - Update intervals and display preferences
 5. **Saves configuration permanently** to flash memory (NVS)
 6. **Switches to operational mode** and begins normal operation
 
 ### After Configuration (Normal Operation)
+
 Once configured, the device operates autonomously:
 
 1. **Connects to saved WiFi network** automatically
@@ -355,6 +387,7 @@ Once configured, the device operates autonomously:
 5. **Repeats cycle** based on configured intervals
 
 ### Power Loss and Restart
+
 When power is restored after battery change or power interruption:
 
 1. **Loads configuration from flash memory** (NVS - Non-Volatile Storage)
@@ -363,68 +396,147 @@ When power is restored after battery change or power interruption:
 4. **Continues with scheduled updates** as configured
 
 ### Reboot/Reset
+
 After manual reset or firmware update:
 
 1. **Detects previous configuration** in flash memory
 2. **Automatically resumes operational mode** if configured
 3. **Preserves all user settings** including:
-   - WiFi credentials
-   - Station preferences and filters
-   - Update intervals
-   - Location data
+    - WiFi credentials
+    - Station preferences and filters
+    - Update intervals
+    - Location data
 4. **Skips configuration mode** and starts normal operation immediately
 
-> **💡 Configuration Persistence**: All settings are permanently stored in flash memory and survive power loss, reboots, and firmware updates. The device only enters configuration mode on first boot or when explicitly requested.
+> **💡 Configuration Persistence**: All settings are permanently stored in flash memory and survive power loss, reboots,
+> and firmware updates. The device only enters configuration mode on first boot or when explicitly requested.
 
 ### Boot Process Flow
+
 ```mermaid
 flowchart TD
     Start([Power On / Reset]) --> CheckConfig{Configuration\nExists?}
     CheckConfig -->|No| ConfigMode[Configuration Mode]
     CheckConfig -->|Yes| LoadConfig[Load Saved Settings]
-    
+
     ConfigMode --> CreateAP[Create WiFi Hotspot\nMyStation-XXXXXXXX]
     CreateAP --> WebServer[Start Web Server\nhttp://10.0.1.1]
     WebServer --> UserConfig[User Configures\nWiFi & Preferences]
     UserConfig --> SaveConfig[Save to Flash Memory\n+ NVS Storage]
     SaveConfig --> Restart[Device Restarts]
     Restart --> LoadConfig
-    
+
     LoadConfig --> ConnectWiFi[Connect to\nSaved WiFi Network]
     ConnectWiFi --> FetchData[Fetch Transport\n+ Weather Data]
     FetchData --> UpdateDisplay[Update\nE-Paper Display]
     UpdateDisplay --> DeepSleep[Enter Deep Sleep\nUntil Next Interval]
     DeepSleep --> WakeUp[Wake Up Timer]
     WakeUp --> ConnectWiFi
-    
+
     style ConfigMode fill:#ff9999
     style LoadConfig fill:#99ff99
     style DeepSleep fill:#9999ff
 ```
 
-## �🔋 Power Management
+## 🔋 Power Management
 
-- **Active Mode**: ~100mA (during data fetch)
-- **Deep Sleep**: <50μA (between updates)  
-- **Battery Life**: 2-4 weeks on 2000mAh (5-min intervals)
+- **Active Mode**: ~100mA (during data fetch + display refresh)
+- **Deep Sleep**: <50μA (between updates)
+- **Battery Life**: 65-125 days on 2500mAh (realistic estimates)
 - **Smart Scheduling**: Reduced updates during night hours
+- **Refresh Time**: 7-8 seconds (WiFi + API + e-paper update)
+- **Update Energy**: ~0.22mAh per refresh cycle (including display)
+- **Self-Discharge**: ~2-5% per month (lithium batteries)
+
+### Battery Life Examples
+
+| Battery Capacity | Update Interval | Battery Life | Total Refreshes | Notes                    |
+|------------------|-----------------|--------------|-----------------|--------------------------|
+| **2500mAh**      | 5 minutes       | 65-70 days   | 18,700-20,160   | Including self-discharge |
+| **2500mAh**      | 10 minutes      | 115-125 days | 16,560-18,000   | Including self-discharge |
+| **1000mAh**      | 5 minutes       | 25-28 days   | 7,200-8,060     | Including self-discharge |
+| **1000mAh**      | 10 minutes      | 45-50 days   | 6,480-7,200     | Including self-discharge |
+
+**Real-World Factors:**
+
+- **Refresh time**: 7-8 seconds (WiFi connection + API calls + e-paper update)
+- **Self-discharge**: 2-5% monthly capacity loss (lithium batteries)
+- **Temperature effects**: Cold weather reduces capacity by 10-20%
+- **WiFi signal strength**: Weak signals increase power consumption
+
+**Optimization Tips:**
+
+- Use partial updates (saves ~40% power)
+- Smart scheduling (fewer updates at night)
+- Weather-only mode for longer battery life
+- Strong WiFi signal placement reduces power consumption
+- Room temperature operation maximizes battery capacity
+
+**[📊 Detailed Battery Calculations](./docs/display-modes.md#battery-life-calculations)**
+
+### Battery Selection Rationale
+
+The project uses **CR123A lithium batteries** for optimal efficiency and simplicity.
+
+#### Battery Types Compared
+
+- **CR123/CR123A**: 3.0V non-rechargeable lithium battery, stable output, direct ESP32 connection
+- **16340 (Li-ion/LiFePO₄)**: Rechargeable, 3.2–3.7V nominal, requires voltage regulator
+- **AA (Alkaline/NiMH)**: 1.5V (alkaline) or 1.2V (NiMH) per cell; 3-4 cells need regulator
+- **Li-Po/Li-ion single cell**: 3.7V nominal, 4.2V fully charged; needs regulator or boost converter
+
+#### Why CR123A Was Chosen
+
+- **✅ No regulator needed**: 3V output connects directly to ESP32-C3's 3.3V input
+- **✅ Maximum efficiency**: No voltage regulation = no energy loss as heat
+- **✅ Stable voltage**: Consistent 3V throughout discharge cycle supports WiFi current demands
+- **✅ Sufficient capacity**: Typical 1500mAh provides 3-6 weeks of operation (depending on update frequency)
+- **⚠️ Drawback**: Less common than AA batteries, higher cost per unit
+
+#### CR123A Capacity Performance Examples
+
+**Single CR123A (1500mAh):**
+
+- **5-minute updates**: 38-42 days, ~11,000-12,100 refreshes
+- **10-minute updates**: 68-75 days, ~9,800-10,800 refreshes
+- **Weather-only mode**: 85-95 days (longer intervals possible)
+
+**Dual CR123A (3000mAh total):**
+
+- **2-minute updates**: 32-36 days, ~23,000-26,000 refreshes
+- **5-minute updates**: 76-84 days, ~22,000-24,200 refreshes
+- **10-minute updates**: 136-150 days, ~19,600-21,600 refreshes
+
+> **Note**: Ranges account for self-discharge (2-5% monthly), temperature effects, and WiFi signal variations. Lower
+> values represent challenging conditions, higher values represent optimal conditions.
+
+#### Why Not Other Batteries?
+
+- **AA batteries**: Require voltage regulator; voltage drops cause instability below 70% charge
+- **Li-ion/Li-Po/16340**: Voltage too high when full (4.2V), too low when empty (3.0V); need regulation, reducing
+  efficiency
+
+**Result**: CR123A provides the simplest, most efficient power solution with direct ESP32 connection and stable
+operation throughout battery life.
 
 ## 🌍 Coverage
 
 - **Transport**: Hesse, Germany (RMV network)
-  - Frankfurt, Wiesbaden, Kassel, Darmstadt, etc.
-  - Trains, buses, trams, S-Bahn
+    - Frankfurt, Wiesbaden, Kassel, Darmstadt, etc.
+    - Trains, buses, trams, S-Bahn
 - **Weather**: Germany and surrounding areas (DWD)
 - **Extensible**: Adapt for other regions/APIs
 
 ## 🛠️ Development
 
 ### Prerequisites
+
 - PlatformIO IDE (VS Code recommended)
 - ESP32-C3 development board
 - API keys (Google, RMV)
 
 ### Project Structure
+
 ```
 ├── docs/                    # Documentation
 ├── include/                 # Header files (best practice)
@@ -452,6 +564,7 @@ flowchart TD
 ```
 
 ### Contributing
+
 1. Fork the repository
 2. Create feature branch
 3. Test thoroughly
@@ -465,5 +578,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**🚀 Ready to build your own departure board?**  
+**🚀 Ready to build your own departure board?**
 **[Start with the Quick Start Guide →](./docs/quick-start.md)**
