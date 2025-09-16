@@ -55,6 +55,7 @@ jobs:
             -   name: Build firmware
                 run: |
                     pio run -e ${{ matrix.environment }}
+                    pwd
 
             -   name: Create build info
                 run: |
@@ -71,20 +72,17 @@ jobs:
                 with:
                     name: firmware-${{ matrix.environment }}-${{ github.sha }}
                     path: |
-                        .pio/build/${{ matrix.environment }}/firmware.bin
+                        .pio/build/${{ matrix.environment }}/*.bin
                         .pio/build/${{ matrix.environment }}/firmware.elf
-                        .pio/build/${{ matrix.environment }}/partitions.bin
-                        .pio/build/${{ matrix.environment }}/bootloader.bin
                         build_info.txt
+                        pwd
                     retention-days: 30
 
             -   name: Upload filesystem artifacts
                 uses: actions/upload-artifact@v4
                 with:
                     name: filesystem-${{ matrix.environment }}-${{ github.sha }}
-                    path: |
-                        .pio/build/${{ matrix.environment }}/littlefs.bin
-                        data/
+                    path: data/
                     retention-days: 30
 
     release:
