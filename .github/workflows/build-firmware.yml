@@ -71,11 +71,11 @@ jobs:
                 with:
                     name: firmware-${{ matrix.environment }}-${{ github.sha }}
                     path: |
-                        e-board/.pio/build/${{ matrix.environment }}/firmware.bin
-                        e-board/.pio/build/${{ matrix.environment }}/firmware.elf
-                        e-board/.pio/build/${{ matrix.environment }}/partitions.bin
-                        e-board/.pio/build/${{ matrix.environment }}/bootloader.bin
-                        e-board/build_info.txt
+                        .pio/build/${{ matrix.environment }}/firmware.bin
+                        .pio/build/${{ matrix.environment }}/firmware.elf
+                        .pio/build/${{ matrix.environment }}/partitions.bin
+                        .pio/build/${{ matrix.environment }}/bootloader.bin
+                        build_info.txt
                     retention-days: 30
 
             -   name: Upload filesystem artifacts
@@ -83,8 +83,8 @@ jobs:
                 with:
                     name: filesystem-${{ matrix.environment }}-${{ github.sha }}
                     path: |
-                        e-board/.pio/build/${{ matrix.environment }}/littlefs.bin
-                        e-board/data/
+                        .pio/build/${{ matrix.environment }}/littlefs.bin
+                        data/
                     retention-days: 30
 
     release:
@@ -104,14 +104,14 @@ jobs:
                     mkdir -p release
 
                     # Copy firmware files
-                    cp firmware-esp32-c3-devkitc-02-${{ github.sha }}/firmware.bin release/
-                    cp firmware-esp32-c3-devkitc-02-${{ github.sha }}/firmware.elf release/
-                    cp firmware-esp32-c3-devkitc-02-${{ github.sha }}/partitions.bin release/
-                    cp firmware-esp32-c3-devkitc-02-${{ github.sha }}/bootloader.bin release/
-                    cp firmware-esp32-c3-devkitc-02-${{ github.sha }}/build_info.txt release/
+                    cp .pio/build/${{ matrix.environment }}/firmware.bin release/
+                    cp .pio/build/${{ matrix.environment }}/firmware.elf release/
+                    cp .pio/build/${{ matrix.environment }}/partitions.bin release/
+                    cp .pio/build/${{ matrix.environment }}/bootloader.bin release/
+                    cp .pio/build/${{ matrix.environment }}/build_info.txt release/
 
                     # Copy filesystem
-                    cp filesystem-esp32-c3-devkitc-02-${{ github.sha }}/littlefs.bin release/
+                    cp .pio/build/${{ matrix.environment }}/littlefs.bin release/
 
                     # Create flashing instructions
                     cat > release/FLASHING_INSTRUCTIONS.md << 'EOF'
