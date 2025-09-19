@@ -126,8 +126,7 @@ void DeviceModeManager::showWeatherDeparture() {
 
     // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
-        enterOperationalSleep();
-        return;
+        return; // Let main.cpp handle sleep
     }
 
     // Mode-specific data fetching and display
@@ -173,9 +172,6 @@ void DeviceModeManager::showWeatherDeparture() {
     } else {
         ESP_LOGW(TAG, "No data to display");
     }
-
-    // Use common sleep functionality
-    enterOperationalSleep();
 }
 
 void DeviceModeManager::showGeneralWeather() {
@@ -189,8 +185,7 @@ void DeviceModeManager::showGeneralWeather() {
 
     // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
-        enterOperationalSleep();
-        return;
+        return; // Let main.cpp handle sleep
     }
 
     // Mode-specific data fetching and display
@@ -215,9 +210,6 @@ void DeviceModeManager::showGeneralWeather() {
     } else {
         ESP_LOGW(TAG, "No data to display");
     }
-
-    // Use common sleep functionality
-    enterOperationalSleep();
 }
 
 void DeviceModeManager::showMarineWeather() {}
@@ -233,8 +225,7 @@ void DeviceModeManager::showDeparture() {
 
     // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
-        enterOperationalSleep();
-        return;
+        return; // Let main.cpp handle sleep
     }
 
     // Mode-specific data fetching and display
@@ -267,9 +258,6 @@ void DeviceModeManager::showDeparture() {
     } else {
         ESP_LOGW(TAG, "No data to display");
     }
-
-    // Use common sleep functionality
-    enterOperationalSleep();
 }
 
 // ===== COMMON OPERATIONAL MODE FUNCTIONS =====
