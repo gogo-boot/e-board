@@ -116,206 +116,165 @@ void DeviceModeManager::runConfigurationMode() {
 }
 
 void DeviceModeManager::showWeatherDeparture() {
-    ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
+    // Use common operational setup
+    if (!setupOperationalMode()) {
+        return; // setupOperationalMode already handles error case
+    }
 
-    ConfigManager& configMgr = ConfigManager::getInstance();
+    // Initialize display for half-and-half mode
+    initializeDisplay(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
 
-    // Set operational mode flag
-    ConfigManager::setConfigMode(false);
-
-    // Load complete configuration from NVS
-    if (!configMgr.loadFromNVS()) {
-        ESP_LOGE(TAG, "Failed to load configuration in operational mode!");
-        ESP_LOGI(TAG, "Switching to configuration mode...");
-        runConfigurationMode();
+    // Setup connectivity and time
+    if (!setupConnectivityAndTime()) {
+        enterOperationalSleep();
         return;
     }
 
-    // Set coordinates from saved config
+    // Mode-specific data fetching and display
     RTCConfigData& config = ConfigManager::getConfig();
-    g_webConfigPageData.latitude = config.latitude;
-    g_webConfigPageData.longitude = config.longitude;
-    ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", config.cityName,
-             g_webConfigPageData.latitude, g_webConfigPageData.longitude);
+    DepartureData depart;
+    WeatherInfo weather;
+    bool hasTransport = false;
+    bool hasWeather = false;
 
-    // Check if this is a deep sleep wake-up for fast path
-    if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
-        ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
-        extern unsigned long loopCount;
-        loopCount++;
+    // Fetch departure data
+    String stopIdToUse =
+        strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
 
-        // Print wakeup reason and current time
-        printWakeupReason();
-        ESP_LOGI(TAG, "Loop count: %lu", loopCount);
+    if (stopIdToUse.length() > 0) {
+        ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
+                 stopIdToUse.c_str(), config.selectedStopName);
 
-        TimeManager::printCurrentTime();
-    }
-
-    // Initialize display manager (can be configured via config later)
-    DisplayManager::init(DisplayOrientation::LANDSCAPE);
-    DisplayManager::setMode(DisplayMode::HALF_AND_HALF,
-                            DisplayOrientation::LANDSCAPE);
-
-    // Connect to WiFi in station mode
-    MyWiFiManager::reconnectWiFi();
-
-    if (MyWiFiManager::isConnected()) {
-        // Setup time synchronization after WiFi connection
-        if (!TimeManager::isTimeSet()) {
-            ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
-            TimeManager::setupNTPTime();
+        if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
+            printDepartInfo(depart);
+            if (depart.departureCount > 0) hasTransport = true;
         } else {
-            ESP_LOGI(TAG, "Time already synchronized");
-            TimeManager::printCurrentTime();
-        }
-
-        DepartureData depart;
-        WeatherInfo weather;
-        bool hasTransport = false;
-        bool hasWeather = false;
-
-        // Fetch departure data
-        String stopIdToUse =
-            strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
-
-        if (stopIdToUse.length() > 0) {
-            ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
-                     stopIdToUse.c_str(), config.selectedStopName);
-
-            if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
-                printDepartInfo(depart);
-                if (depart.departureCount > 0) hasTransport = true;
-            } else {
-                ESP_LOGE(TAG, "Failed to get departure information from RMV.");
-            }
-        } else {
-            ESP_LOGW(TAG, "No stop configured.");
-        }
-
-        // Fetch weather data
-        ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
-                 g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-        if (getGeneralWeatherHalf(g_webConfigPageData.latitude,
-                                  g_webConfigPageData.longitude, weather)) {
-            printWeatherInfo(weather);
-            hasWeather = true;
-        } else {
-            ESP_LOGE(TAG, "Failed to get weather information from DWD.");
-        }
-
-        // Display using new display manager
-        if (hasWeather || hasTransport) {
-            ESP_LOGI(TAG, "Displaying both weather and transport data");
-            DisplayManager::displayHalfAndHalf(&weather, &depart);
-        } else {
-            ESP_LOGW(TAG, "No data to display");
+            ESP_LOGE(TAG, "Failed to get departure information from RMV.");
         }
     } else {
-        ESP_LOGW(TAG, "WiFi not connected - cannot fetch data");
+        ESP_LOGW(TAG, "No stop configured.");
     }
 
-    // Hibernate display to save power
-    DisplayManager::hibernate();
+    // Fetch weather data
+    ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
+             g_webConfigPageData.latitude, g_webConfigPageData.longitude);
+    if (getGeneralWeatherHalf(g_webConfigPageData.latitude,
+                              g_webConfigPageData.longitude, weather)) {
+        printWeatherInfo(weather);
+        hasWeather = true;
+    } else {
+        ESP_LOGE(TAG, "Failed to get weather information from DWD.");
+    }
 
-    // Calculate sleep time and enter deep sleep
-    // uint64_t sleepTime = calculateSleepTime(config.transportInterval);
-    uint64_t sleepTime = calculateSleepTime(1);
-    ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTime);
-    enterDeepSleep(sleepTime);
+    // Display using new display manager
+    if (hasWeather || hasTransport) {
+        ESP_LOGI(TAG, "Displaying both weather and transport data");
+        DisplayManager::displayHalfAndHalf(&weather, &depart);
+    } else {
+        ESP_LOGW(TAG, "No data to display");
+    }
+
+    // Use common sleep functionality
+    enterOperationalSleep();
 }
 
 void DeviceModeManager::showGeneralWeather() {
-    ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
+    // Use common operational setup
+    if (!setupOperationalMode()) {
+        return; // setupOperationalMode already handles error case
+    }
 
-    ConfigManager& configMgr = ConfigManager::getInstance();
+    // Initialize display for weather-only mode
+    initializeDisplay(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
 
-    // Set operational mode flag
-    ConfigManager::setConfigMode(false);
-
-    // Load complete configuration from NVS
-    if (!configMgr.loadFromNVS()) {
-        ESP_LOGE(TAG, "Failed to load configuration in operational mode!");
-        ESP_LOGI(TAG, "Switching to configuration mode...");
-        runConfigurationMode();
+    // Setup connectivity and time
+    if (!setupConnectivityAndTime()) {
+        enterOperationalSleep();
         return;
     }
 
-    // Set coordinates from saved config
-    RTCConfigData& config = ConfigManager::getConfig();
-    g_webConfigPageData.latitude = config.latitude;
-    g_webConfigPageData.longitude = config.longitude;
-    ESP_LOGI(TAG, "Using saved location: %s (%f, %f)", config.cityName,
+    // Mode-specific data fetching and display
+    WeatherInfo weather;
+    bool hasWeather = false;
+
+    // Fetch weather data
+    ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
              g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-
-    // Check if this is a deep sleep wake-up for fast path
-    if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
-        ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
-        extern unsigned long loopCount;
-        loopCount++;
-
-        // Print wakeup reason and current time
-        printWakeupReason();
-        ESP_LOGI(TAG, "Loop count: %lu", loopCount);
-
-        TimeManager::printCurrentTime();
-    }
-
-    // Initialize display manager (can be configured via config later)
-    DisplayManager::init(DisplayOrientation::LANDSCAPE);
-    DisplayManager::setMode(DisplayMode::WEATHER_ONLY,
-                            DisplayOrientation::LANDSCAPE);
-
-    // Connect to WiFi in station mode
-    MyWiFiManager::reconnectWiFi();
-
-    if (MyWiFiManager::isConnected()) {
-        // Setup time synchronization after WiFi connection
-        if (!TimeManager::isTimeSet()) {
-            ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
-            TimeManager::setupNTPTime();
-        } else {
-            ESP_LOGI(TAG, "Time already synchronized");
-            TimeManager::printCurrentTime();
-        }
-
-        WeatherInfo weather;
-        bool hasWeather = false;
-
-        // Fetch weather data
-        ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
-                 g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-        if (getGeneralWeatherFull(g_webConfigPageData.latitude,
-                                  g_webConfigPageData.longitude, weather)) {
-            printWeatherInfo(weather);
-            hasWeather = true;
-        } else {
-            ESP_LOGE(TAG, "Failed to get weather information from DWD.");
-        }
-
-        // Display using new display manager
-        if (hasWeather) {
-            ESP_LOGI(TAG, "Displaying both weather and transport data");
-            DisplayManager::displayWeatherFull(weather);
-        } else {
-            ESP_LOGW(TAG, "No data to display");
-        }
+    if (getGeneralWeatherFull(g_webConfigPageData.latitude,
+                              g_webConfigPageData.longitude, weather)) {
+        printWeatherInfo(weather);
+        hasWeather = true;
     } else {
-        ESP_LOGW(TAG, "WiFi not connected - cannot fetch data");
+        ESP_LOGE(TAG, "Failed to get weather information from DWD.");
     }
 
-    // Hibernate display to save power
-    DisplayManager::hibernate();
+    // Display using new display manager
+    if (hasWeather) {
+        ESP_LOGI(TAG, "Displaying weather data");
+        DisplayManager::displayWeatherFull(weather);
+    } else {
+        ESP_LOGW(TAG, "No data to display");
+    }
 
-    // Calculate sleep time and enter deep sleep
-    // uint64_t sleepTime = calculateSleepTime(config.transportInterval);
-    uint64_t sleepTime = calculateSleepTime(1);
-    ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTime);
-    enterDeepSleep(sleepTime);
+    // Use common sleep functionality
+    enterOperationalSleep();
 }
 
 void DeviceModeManager::showMarineWeather() {}
 
 void DeviceModeManager::showDeparture() {
+    // Use common operational setup
+    if (!setupOperationalMode()) {
+        return; // setupOperationalMode already handles error case
+    }
+
+    // Initialize display for departure-only mode (using HALF_AND_HALF for full departures)
+    initializeDisplay(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
+    // Setup connectivity and time
+    if (!setupConnectivityAndTime()) {
+        enterOperationalSleep();
+        return;
+    }
+
+    // Mode-specific data fetching and display
+    RTCConfigData& config = ConfigManager::getConfig();
+    DepartureData depart;
+    bool hasTransport = false;
+
+    // Fetch departure data
+    String stopIdToUse =
+        strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
+
+    if (stopIdToUse.length() > 0) {
+        ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
+                 stopIdToUse.c_str(), config.selectedStopName);
+
+        if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
+            printDepartInfo(depart);
+            if (depart.departureCount > 0) hasTransport = true;
+        } else {
+            ESP_LOGE(TAG, "Failed to get departure information from RMV.");
+        }
+    } else {
+        ESP_LOGW(TAG, "No stop configured.");
+    }
+
+    // Display using new display manager
+    if (hasTransport) {
+        ESP_LOGI(TAG, "Displaying departure data");
+        DisplayManager::displayDeparturesFull(depart);
+    } else {
+        ESP_LOGW(TAG, "No data to display");
+    }
+
+    // Use common sleep functionality
+    enterOperationalSleep();
+}
+
+// ===== COMMON OPERATIONAL MODE FUNCTIONS =====
+
+bool DeviceModeManager::setupOperationalMode() {
     ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
 
     ConfigManager& configMgr = ConfigManager::getInstance();
@@ -328,7 +287,7 @@ void DeviceModeManager::showDeparture() {
         ESP_LOGE(TAG, "Failed to load configuration in operational mode!");
         ESP_LOGI(TAG, "Switching to configuration mode...");
         runConfigurationMode();
-        return;
+        return false;
     }
 
     // Set coordinates from saved config
@@ -351,11 +310,10 @@ void DeviceModeManager::showDeparture() {
         TimeManager::printCurrentTime();
     }
 
-    // Initialize display manager (can be configured via config later)
-    DisplayManager::init(DisplayOrientation::LANDSCAPE);
-    DisplayManager::setMode(DisplayMode::HALF_AND_HALF,
-                            DisplayOrientation::LANDSCAPE);
+    return true;
+}
 
+bool DeviceModeManager::setupConnectivityAndTime() {
     // Connect to WiFi in station mode
     MyWiFiManager::reconnectWiFi();
 
@@ -368,39 +326,20 @@ void DeviceModeManager::showDeparture() {
             ESP_LOGI(TAG, "Time already synchronized");
             TimeManager::printCurrentTime();
         }
-
-        DepartureData depart;
-        bool hasTransport = false;
-
-        // Fetch departure data
-        String stopIdToUse =
-            strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
-
-        if (stopIdToUse.length() > 0) {
-            ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
-                     stopIdToUse.c_str(), config.selectedStopName);
-
-            if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
-                printDepartInfo(depart);
-                if (depart.departureCount > 0) hasTransport = true;
-            } else {
-                ESP_LOGE(TAG, "Failed to get departure information from RMV.");
-            }
-        } else {
-            ESP_LOGW(TAG, "No stop configured.");
-        }
-
-        // Display using new display manager
-        if (hasTransport) {
-            ESP_LOGI(TAG, "Displaying both weather and transport data");
-            DisplayManager::displayDeparturesFull(depart);
-        } else {
-            ESP_LOGW(TAG, "No data to display");
-        }
+        return true;
     } else {
         ESP_LOGW(TAG, "WiFi not connected - cannot fetch data");
+        return false;
     }
+}
 
+void DeviceModeManager::initializeDisplay(DisplayMode mode, DisplayOrientation orientation) {
+    // Initialize display manager (can be configured via config later)
+    DisplayManager::init(orientation);
+    DisplayManager::setMode(mode, orientation);
+}
+
+void DeviceModeManager::enterOperationalSleep() {
     // Hibernate display to save power
     DisplayManager::hibernate();
 

@@ -197,10 +197,10 @@ void setup() {
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
         // DeviceModeManager::showWeatherDeparture();
         // DeviceModeManager::showGeneralWeather();
-        // DeviceModeManager::showDeparture();
+        DeviceModeManager::showDeparture();
         // start the check update task
         // check_update_task(NULL);
-        xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
+        // xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
     } else {
         DeviceModeManager::runConfigurationMode();
     }
