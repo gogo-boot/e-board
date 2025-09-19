@@ -191,8 +191,6 @@ void setup() {
     // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
     ESP_LOGI(TAG, "System starting...");
 
-    // TODO: Add any additional display initialization code here
-
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
         // Run operational mode - choose one of the following:
