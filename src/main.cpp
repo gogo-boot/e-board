@@ -191,16 +191,19 @@ void setup() {
     // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
     ESP_LOGI(TAG, "System starting...");
 
-    // TODO: Add any additional display initialization code here
-
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
-        // DeviceModeManager::showWeatherDeparture();
+        // Run operational mode - choose one of the following:
+        DeviceModeManager::showWeatherDeparture();
         // DeviceModeManager::showGeneralWeather();
         // DeviceModeManager::showDeparture();
+
+        // After operational mode completes, enter deep sleep
+        DeviceModeManager::enterOperationalSleep();
+
         // start the check update task
         // check_update_task(NULL);
-        xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
+        // xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
     } else {
         DeviceModeManager::runConfigurationMode();
     }
