@@ -42,7 +42,7 @@ private:
     // Utility functions
     static float calculateDynamicMinTemp(float actualMin);
     static float calculateDynamicMaxTemp(float actualMax);
-    static int16_t mapToPixel(float value, float minVal, float maxVal,                              int16_t minPixel, int16_t maxPixel);
+    static int16_t mapToPixel(float value, float minVal, float maxVal, int16_t minPixel, int16_t maxPixel);
     static String formatHourFromTime(const String& timeStr);
 
     // Constants

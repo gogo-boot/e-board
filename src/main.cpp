@@ -196,9 +196,9 @@ void setup() {
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
         // Run operational mode - choose one of the following:
-        // DeviceModeManager::showWeatherDeparture();
+        DeviceModeManager::showWeatherDeparture();
         // DeviceModeManager::showGeneralWeather();
-        DeviceModeManager::showDeparture();
+        // DeviceModeManager::showDeparture();
 
         // After operational mode completes, enter deep sleep
         DeviceModeManager::enterOperationalSleep();
