@@ -339,7 +339,7 @@ bool DeviceModeManager::setupConnectivityAndTime() {
             ESP_LOGI(TAG, "Time since last sync: %lu ms (%.1f hours)",
                      timeSinceSync, timeSinceSync / (1000.0 * 60.0 * 60.0));
         }
- // Always print current time for verification
+        // Always print current time for verification
         TimeManager::printCurrentTime();
         return true;
     } else {
@@ -355,6 +355,10 @@ void DeviceModeManager::initializeDisplay(DisplayMode mode, DisplayOrientation o
 }
 
 void DeviceModeManager::enterOperationalSleep() {
+    // Save WiFi state to RTC memory before hibernating for fast reconnect after deep sleep
+    if (MyWiFiManager::isConnected()) {
+        MyWiFiManager::saveWiFiStateToRTC();
+    }
     // Hibernate display to save power
     DisplayManager::hibernate();
 
