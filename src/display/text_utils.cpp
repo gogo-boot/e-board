@@ -127,7 +127,7 @@ void TextUtils::printStrikethroughTextAtTopMargin(int16_t x, int16_t topY, const
     // Calculate strikethrough line position (middle of text height)
     int16_t textWidth = getTextWidth(text);
     int16_t fontHeight = getCurrentFontHeight();
-    int16_t strikeY = topY + getCurrentFontAscent() - (fontHeight / 3); // Position line in upper-middle of text
+    int16_t strikeY = topY + (getCurrentFontAscent() / 2); // Position line in upper-middle of text
 
     // Draw strikethrough line
     display->drawLine(x, strikeY, x + textWidth, strikeY, GxEPD_BLACK);
