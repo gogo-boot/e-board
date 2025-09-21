@@ -3,6 +3,14 @@
 #include <vector>
 #include <map>
 
+// Shared replacements map for station name shortening
+static const std::map<String, String> stationReplacements = {
+    {"Bahnhof", "Bhf"},
+    {"(Taunus)", "Ts"},
+    {"(Main)", "a.M."},
+    {"(Hbf)", "Hbf"}, {"(Hauptbahnhof)", "Hbf"}
+};
+
 void Util::printFreeHeap(const char* msg) {
     Serial.printf("%s Free heap: %u bytes\n", msg, ESP.getFreeHeap());
 }
@@ -64,6 +72,23 @@ String Util::getUniqueSSID(const String& prefix) {
     return String(ssid);
 }
 
+// Shortens station names using replacement rules only
+// Example: "Frankfurt (Main) Hauptbahnhof" -> "Frankfurt M Hbf"
+String Util::shortenStationName(const String& stationName) {
+    String result = stationName;
+
+    // Apply replacements from the shared map
+    for (const auto& pair : stationReplacements) {
+        int idx = result.indexOf(pair.first);
+        while (idx != -1) {
+            result = result.substring(0, idx) + pair.second + result.substring(idx + pair.first.length());
+            idx = result.indexOf(pair.first, idx + pair.second.length());
+        }
+    }
+
+    return result;
+}
+
 // Shortens the destination name by removing common prefix tokens with the departure,
 // and replacing certain words with their shorter forms using a replacements map.
 //
@@ -105,13 +130,8 @@ String Util::shortenDestination(const String departure, const String destination
         result += destTokens[j];
     }
 
-    // Map for replacements
-    std::map<String, String> replacements = {
-        {"Bahnhof", "Bhf"}, {"(Taunus)", "Ts"}, {"(Main)", "M"}, {"(Hbf)", "Hbf"}, {"(Hauptbahnhof)", "Hbf"}
-    };
-
-    // Replace map-matched replacements in result
-    for (const auto& pair : replacements) {
+    // Apply replacements from the shared map
+    for (const auto& pair : stationReplacements) {
         int idx = result.indexOf(pair.first);
         while (idx != -1) {
             result = result.substring(0, idx) + pair.second + result.substring(idx + pair.first.length());
