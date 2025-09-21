@@ -232,7 +232,10 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
     currentY += 3; // Add spacing after departure entry
 
     // Check if we have disruption information to display
-    if (dep.lead.length() > 0 || dep.text.length() > 0) {
+    if (dep.cancelled) {
+        int8_t indent = 10;
+        TextUtils::printTextAtTopMargin(x + indent, currentY, "Fällt aus");
+    } else if (dep.lead.length() > 0 || dep.text.length() > 0) {
         // Use the lead text if available, otherwise use text
         String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
 
