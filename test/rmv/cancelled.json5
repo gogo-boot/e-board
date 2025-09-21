@@ -1,0 +1,240 @@
+/*
+Regionalverkehrszug 4
+S-Bahn 8
+U-Bahn 16
+Straßenbahn 32
+Bus 64
+Hochflurbus 128
+Fähre/Schiff 256
+Ast/Rufbus 512
+*/
+//https://www.rmv.de/hapi/departureBoard?accessId=&id=A=1@O=Frankfurt%20(Main)%20R%C3%B6delheim%20Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@&format=json&maxJourneys=20&products=8
+{
+  "JourneyDetailRef": {
+    "ref": "2|#VN#1#ST#1758217215#PI#0#ZI#168377#TA#14#DA#210925#1S#3004299#1T#1311#LS#3000912#LT#1347#PU#80#RT#1#CA#S42#ZE#S3#ZB#      S3#PC#3#FR#3004299#FT#1311#TO#3000912#TT#1347#"
+  },
+  "JourneyStatus": "P",
+  "ProductAtStop": {
+    "icon": {
+      "foregroundColor": {
+        "r": 255,
+        "g": 255,
+        "b": 255,
+        "hex": "#FFFFFF"
+      },
+      "backgroundColor": {
+        "r": 0,
+        "g": 151,
+        "b": 87,
+        "hex": "#009757"
+      },
+      "res": "prod_comm_t"
+    },
+    "operatorInfo": {
+      "name": "DB Regio AG S-Bahn Rhein-Main",
+      "nameS": "DBR",
+      "nameN": "DBRSBRM",
+      "nameL": "DB Regio AG S-Bahn Rhein-Main",
+      "id": "2251"
+    },
+    "name": "S3",
+    "internalName": "      S3",
+    "displayNumber": "S3",
+    "num": "3184",
+    "line": "S3",
+    "lineId": "de:rmv:00001316:",
+    "catOut": "S",
+    "catIn": "S42",
+    "catCode": "3",
+    "cls": "8",
+    "catOutS": "S42",
+    "catOutL": "S-Bahn",
+    "operatorCode": "DBR",
+    "operator": "DB Regio AG S-Bahn Rhein-Main",
+    "admin": "800528",
+    "matchId": "35339"
+  },
+  "Product": [
+    {
+      "icon": {
+        "foregroundColor": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "hex": "#FFFFFF"
+        },
+        "backgroundColor": {
+          "r": 0,
+          "g": 151,
+          "b": 87,
+          "hex": "#009757"
+        },
+        "res": "prod_comm_t"
+      },
+      "operatorInfo": {
+        "name": "DB Regio AG S-Bahn Rhein-Main",
+        "nameS": "DBR",
+        "nameN": "DBRSBRM",
+        "nameL": "DB Regio AG S-Bahn Rhein-Main",
+        "id": "2251"
+      },
+      "name": "S3",
+      "internalName": "      S3",
+      "displayNumber": "S3",
+      "num": "3184",
+      "line": "S3",
+      "lineId": "de:rmv:00001316:",
+      "catOut": "S",
+      "catIn": "S42",
+      "catCode": "3",
+      "cls": "8",
+      "catOutS": "S42",
+      "catOutL": "S-Bahn",
+      "operatorCode": "DBR",
+      "operator": "DB Regio AG S-Bahn Rhein-Main",
+      "admin": "800528",
+      "routeIdxFrom": 7,
+      "routeIdxTo": 17,
+      "matchId": "35339"
+    }
+  ],
+  "Notes": {
+    "Note": [
+      {
+        "value": "Fahrzeuggebundene Einstiegshilfe vorhanden",
+        "key": "EH",
+        "type": "A",
+        "priority": 560,
+        "routeIdxFrom": 7,
+        "routeIdxTo": 17,
+        "txtN": "Fahrzeuggebundene Einstiegshilfe vorhanden"
+      },
+      {
+        "value": "Klimaanlage",
+        "key": "KL",
+        "type": "A",
+        "priority": 610,
+        "routeIdxFrom": 7,
+        "routeIdxTo": 17,
+        "txtN": "Klimaanlage"
+      },
+      {
+        "value": "WLAN verfügbar",
+        "key": "WV",
+        "type": "A",
+        "priority": 710,
+        "routeIdxFrom": 7,
+        "routeIdxTo": 17,
+        "txtN": "WLAN verfügbar"
+      },
+      {
+        "value": "35339",
+        "key": "FD",
+        "type": "I",
+        "routeIdxFrom": 7,
+        "routeIdxTo": 17,
+        "txtN": "35339"
+      },
+      {
+        "value": "2. Klasse: Sehr hohe Belegung",
+        "key": "text.occup.jny.2nd.13",
+        "type": "A",
+        "txtN": "2. Klasse: Sehr hohe Belegung"
+      },
+      {
+        "value": "Sehr hohe Belegung",
+        "key": "text.occup.jny.max.13",
+        "type": "A",
+        "txtN": "Sehr hohe Belegung"
+      },
+      {
+        "value": "S3: Fällt aus",
+        "key": "text.realtime.journey.cancelled",
+        "type": "R",
+        "txtN": "S3: Fällt aus"
+      },
+      {
+        "key": "WS",
+        "type": "A"
+      },
+      {
+        "key": "V0",
+        "type": "A"
+      },
+      {
+        "key": "IS",
+        "type": "A"
+      },
+      {
+        "key": "HT",
+        "type": "A"
+      },
+      {
+        "key": "HE",
+        "type": "A"
+      },
+      {
+        "key": "HB",
+        "type": "A"
+      },
+      {
+        "value": "de:06412:1217",
+        "key": "IF",
+        "type": "I",
+        "txtN": "de:06412:1217"
+      },
+      {
+        "value": "06412000",
+        "key": "GK",
+        "type": "I",
+        "txtN": "06412000"
+      },
+      {
+        "value": "Halt entfällt",
+        "key": "text.realtime.stop.cancelled",
+        "type": "R",
+        "txtN": "Halt entfällt"
+      },
+      {
+        "value": "2. Klasse: Sehr hohe Belegung",
+        "key": "text.occup.loc.2nd.13",
+        "type": "A",
+        "txtN": "2. Klasse: Sehr hohe Belegung"
+      },
+      {
+        "value": "Sehr hohe Belegung",
+        "key": "text.occup.loc.max.13",
+        "type": "A",
+        "txtN": "Sehr hohe Belegung"
+      }
+    ]
+  },
+  "altId": [
+    "de:06412:1217"
+  ],
+  "Occupancy": [
+    {
+      "name": "SECOND",
+      "raw": 13
+    }
+  ],
+  "platform": {
+    "type": "PL",
+    "text": "3"
+  },
+  "name": "S3",
+  "type": "ST",
+  "stop": "Frankfurt (Main) Rödelheim Bahnhof",
+  "stopid": "A=1@O=Frankfurt (Main) Rödelheim Bahnhof@X=8606947@Y=50125164@U=80@L=3001217@",
+  "stopExtId": "3001217",
+  "lon": 8.606947,
+  "lat": 50.125164,
+  "time": "13:26:00",
+  "date": "2025-09-21",
+  "track": "3",
+  "cancelled": true,
+  "reachable": false,
+  "direction": "Frankfurt (Main) Südbahnhof",
+  "directionFlag": "1",
+  "rtCnclDataSourceType": "VDV"
+},

@@ -190,10 +190,19 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
 
     // Prepare times
     String sollTime = dep.time.substring(0, 5);
-    String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+    String istTime = "";
 
     if (!timesAreDifferent) {
         istTime = "  +00"; // Use "00" to indicate on-time
+    } else if (dep.rtTime.length() > 0) {
+        // Calculate minute difference between scheduled and real-time
+        int scheduledMinutes = dep.time.substring(3, 5).toInt() + dep.time.substring(0, 2).toInt() * 60;
+        int realTimeMinutes = dep.rtTime.substring(3, 5).toInt() + dep.rtTime.substring(0, 2).toInt() * 60;
+        int diffMinutes = realTimeMinutes - scheduledMinutes;
+
+        if (diffMinutes > 0) {
+            istTime = "  +" + String(diffMinutes);
+        }
     }
 
     // get max width for each column
@@ -202,9 +211,22 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
     int8_t padding = 10;
 
     int16_t currentX = x;
-    TextUtils::printTextAtTopMargin(currentX, currentY, sollTime.c_str());
+
+    // Print times with strikethrough if cancelled
+    if (dep.cancelled) {
+        TextUtils::printStrikethroughTextAtTopMargin(currentX, currentY, sollTime.c_str());
+    } else {
+        TextUtils::printTextAtTopMargin(currentX, currentY, sollTime.c_str());
+    }
+
     currentX += padding + timeWidth;
-    TextUtils::printTextAtTopMargin(currentX, currentY, istTime.c_str());
+
+    if (dep.cancelled) {
+        TextUtils::printStrikethroughTextAtTopMargin(currentX, currentY, istTime.c_str());
+    } else {
+        TextUtils::printTextAtTopMargin(currentX, currentY, istTime.c_str());
+    }
+
     currentX += padding + timeWidth;
     TextUtils::printTextAtTopMargin(currentX, currentY, dep.line.c_str());
     currentX += padding + lineWidth;
@@ -219,7 +241,10 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
     currentY += 3; // Add spacing after departure entry
 
     // Check if we have disruption information to display
-    if (dep.lead.length() > 0 || dep.text.length() > 0) {
+    if (dep.cancelled) {
+        int8_t indent = 10;
+        TextUtils::printTextAtTopMargin(x + indent, currentY, "Fällt aus");
+    } else if (dep.lead.length() > 0 || dep.text.length() > 0) {
         // Use the lead text if available, otherwise use text
         String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
 

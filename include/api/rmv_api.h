@@ -15,6 +15,7 @@ struct DepartureInfo {
     String directionFlag;
     String time;
     String rtTime;
+    bool cancelled;
     String track;
     String category;
     String lead; // Service disruption lead text
