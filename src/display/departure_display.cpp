@@ -190,10 +190,19 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
 
     // Prepare times
     String sollTime = dep.time.substring(0, 5);
-    String istTime = dep.rtTime.length() > 0 ? dep.rtTime.substring(0, 5) : dep.time.substring(0, 5);
+    String istTime = "";
 
     if (!timesAreDifferent) {
         istTime = "  +00"; // Use "00" to indicate on-time
+    } else if (dep.rtTime.length() > 0) {
+        // Calculate minute difference between scheduled and real-time
+        int scheduledMinutes = dep.time.substring(3, 5).toInt() + dep.time.substring(0, 2).toInt() * 60;
+        int realTimeMinutes = dep.rtTime.substring(3, 5).toInt() + dep.rtTime.substring(0, 2).toInt() * 60;
+        int diffMinutes = realTimeMinutes - scheduledMinutes;
+
+        if (diffMinutes > 0) {
+            istTime = "  +" + String(diffMinutes);
+        }
     }
 
     // get max width for each column
