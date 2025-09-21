@@ -44,6 +44,5 @@ struct WeatherInfo {
     int dailyForecastCount = 0;
 };
 
-bool getGeneralWeatherHalf(float lat, float lon, WeatherInfo& weather);
 bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather);
 String getCityFromLatLon(float lat, float lon);

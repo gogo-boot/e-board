@@ -76,13 +76,15 @@ String WeatherUtil::formatDateText(const String& isoTime) {
         month = isoTime.substring(5, 7).toInt();
         day = isoTime.substring(8, 10).toInt();
     }
-    static const char* monthNames[] = {
-        "", "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November",
-        "Dezember"
+
+    static const char* shortMonthNames[] = {
+        "", "Jan.", "Feb.", "Mär.", "Apr.", "Mai", "Jun.", "Jul.", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."
     };
+
     if (month > 0 && month <= 12 && day > 0) {
-        char buf[24];
-        snprintf(buf, sizeof(buf), "%02d. %s", day, monthNames[month]);
+        String dayOfWeek = getDayOfWeekFromDateString(isoTime, 2); // Get "Mo", "Di", etc.
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%s %02d. %s", dayOfWeek.c_str(), day, shortMonthNames[month]);
         return String(buf);
     } else {
         return "Datum: N/A";
@@ -132,4 +134,3 @@ String WeatherUtil::getDayOfWeekFromDateString(const String& dateStr, int format
     if (format == 3) return String(dayNames3[wday]);
     return String(dayNamesFull[wday]);
 }
-

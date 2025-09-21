@@ -7,5 +7,6 @@ public:
     static String urlEncode(const String& str);
     static String getUniqueSSID(const String& prefix);
     static String shortenDestination(String departure, String destination);
+    static String shortenStationName(const String& stationName);
     static String urlDecode(const String& str);
 };

@@ -28,6 +28,8 @@ void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& depar
     RTCConfigData& config = ConfigManager::getConfig();
     String stopName = getStopName(config);
 
+    stopName = Util::Util::shortenStationName(stopName);
+
     // Calculate available width and fit station name
     int stationMaxWidth = rightMargin - leftMargin;
     String fittedStopName = TextUtils::shortenTextToFit(stopName, stationMaxWidth);
@@ -61,15 +63,17 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures,
     // Draw separator line between directions
     int16_t halfHeightY = currentY + h / 2;
     ESP_LOGI(TAG, "Drawing departure direction separator line at Y=%d", halfHeightY);
+
+    int8_t padding = 9; // Padding above and below the line
     auto* display = DisplayShared::getDisplay();
-    display->drawLine(leftMargin, halfHeightY, rightMargin, halfHeightY, GxEPD_BLACK);
+    display->drawLine(leftMargin, halfHeightY + padding, rightMargin, halfHeightY + padding, GxEPD_BLACK);
 
     constexpr int maxPerDirection = 5;
 
     drawDepartureList(direction1Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       true, maxPerDirection);
 
-    currentY = halfHeightY + 1; // Reset currentY to halfHeightY for direction 2
+    currentY = halfHeightY + padding; // Reset currentY to halfHeightY for direction 2
     drawDepartureList(direction2Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       false, maxPerDirection);
 }

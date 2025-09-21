@@ -51,5 +51,6 @@ private:
     static const int16_t MARGIN_TOP = 15; // Top spacing
     static const int16_t MARGIN_BOTTOM = 20; // Space for time labels
     static const int16_t LEGEND_MARGIN = 35; // Space for legend labels
-    static const int HOURS_TO_SHOW = 13; // 13 hours as specified
+    static const int HOURS_TO_SHOW = 13; // 13 hours as specified, line graph needs start and end point
+    static const int HOURS_TO_SHOW_BAR = HOURS_TO_SHOW - 1; // Bar graph doesn't need end datapoint than line graph
 };
