@@ -305,14 +305,14 @@ void WeatherGraph::drawRainBars(const WeatherInfo& weather,
                                 int16_t graphX, int16_t graphY,
                                 int16_t graphW, int16_t graphH) {
     // Get the number of data points to draw (limited to HOURS_TO_SHOW = 12)
-    int dataPoints = min(HOURS_TO_SHOW - 1, weather.hourlyForecastCount);
-    int16_t barWidth = graphW / HOURS_TO_SHOW;
+    int dataPoints = min(HOURS_TO_SHOW_BAR, weather.hourlyForecastCount);
+    int16_t barWidth = graphW / HOURS_TO_SHOW_BAR;
 
     for (int i = 0; i < dataPoints; i++) {
         int rainChance = weather.hourlyForecast[i].rainChance;
 
         if (rainChance > 0) {
-            int16_t barX = graphX + (i * graphW) / HOURS_TO_SHOW;
+            int16_t barX = graphX + (i * graphW) / HOURS_TO_SHOW_BAR;
             int16_t barH = (graphH * rainChance) / 100;
             int16_t barY = graphY + graphH - barH;
 
