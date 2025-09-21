@@ -19,6 +19,7 @@ namespace {
         departureFilter["Departure"][0]["time"] = true;
         departureFilter["Departure"][0]["track"] = true;
         departureFilter["Departure"][0]["rtTime"] = true;
+        departureFilter["Departure"][0]["cancelled"] = true;
         departureFilter["Departure"][0]["direction"] = true;
         departureFilter["Departure"][0]["directionFlag"] = true;
 
@@ -128,6 +129,7 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
               },
               "time": "22:37:00",
               "rtTime": "22:37:00",
+              "cancelled": true,
               "direction": "Frankfurt (Main) Hauptbahnhof Südseite",
               "directionFlag": "1"
             }
@@ -137,13 +139,15 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
         const char* directionFlag = departureVariant["directionFlag"];
         const char* time = departureVariant["time"];
         const char* rtTime = departureVariant["rtTime"];
+        const bool cancelled = departureVariant["cancelled"].as<bool>();
         const char* track = departureVariant["track"];
 
         // Safe string assignment with null checks
         depInfo.direction = direction ? String(direction) : "";
         depInfo.directionFlag = directionFlag ? String(directionFlag) : "";
         depInfo.time = time ? String(time) : "";
-        depInfo.rtTime = rtTime ? String(rtTime) : (time ? String(time) : "");
+        depInfo.rtTime = rtTime ? String(rtTime) : "";
+        depInfo.cancelled = cancelled ? cancelled : false;
         depInfo.track = track ? String(track) : "";
 
         // Extract category from Product array with safety checks
@@ -187,7 +191,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     String encodedId = Util::urlEncode(String(stopId));
     String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
         "&id=" + encodedId +
-        "&format=json&maxJourneys=20";
+        "&format=json&maxJourneys=20&products=8";
 
     String urlForLog = url;
     int keyPos = urlForLog.indexOf("accessId=");

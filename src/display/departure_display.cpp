@@ -202,9 +202,22 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
     int8_t padding = 10;
 
     int16_t currentX = x;
-    TextUtils::printTextAtTopMargin(currentX, currentY, sollTime.c_str());
+
+    // Print times with strikethrough if cancelled
+    if (dep.cancelled) {
+        TextUtils::printStrikethroughTextAtTopMargin(currentX, currentY, sollTime.c_str());
+    } else {
+        TextUtils::printTextAtTopMargin(currentX, currentY, sollTime.c_str());
+    }
+
     currentX += padding + timeWidth;
-    TextUtils::printTextAtTopMargin(currentX, currentY, istTime.c_str());
+
+    if (dep.cancelled) {
+        TextUtils::printStrikethroughTextAtTopMargin(currentX, currentY, istTime.c_str());
+    } else {
+        TextUtils::printTextAtTopMargin(currentX, currentY, istTime.c_str());
+    }
+
     currentX += padding + timeWidth;
     TextUtils::printTextAtTopMargin(currentX, currentY, dep.line.c_str());
     currentX += padding + lineWidth;
