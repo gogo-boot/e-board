@@ -184,8 +184,15 @@ void check_update_task(void* pvParameter) {
 
 
 void setup() {
+#ifdef PRODUCTION
+    // Production: Only critical errors
+    esp_log_level_set("*", ESP_LOG_ERROR);
+#else
     Serial.begin(115200);
     delay(1000);
+    // Development: Full logging
+    esp_log_level_set("*", ESP_LOG_DEBUG);
+#endif
     // Allow time for serial monitor to connect, only for local debugging, todo remove in production or activate by flag
 
     // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
