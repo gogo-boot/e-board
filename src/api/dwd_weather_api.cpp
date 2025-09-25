@@ -4,6 +4,8 @@
 #include <ArduinoJson.h>
 #include <esp_log.h>
 
+static const char* TAG = "WEATHER_API";
+
 // Get city/location name from lat/lon using Nominatim (OpenStreetMap)
 String getCityFromLatLon(float lat, float lon) {
     String url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=" + String(lat, 6) + "&lon=" +
@@ -83,7 +85,7 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
         "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" +
         "&current=temperature_2m,precipitation,weather_code" +
         "&timezone=auto&past_hours=0&forecast_hours=13";
-    Serial.printf("Fetching weather from: %s\n", url.c_str());
+    ESP_LOGI(TAG, "Fetching weather from: %s\n", url.c_str());
     HTTPClient http;
     http.begin(url);
     int httpCode = http.GET();

@@ -41,13 +41,10 @@ jobs:
             -   name: Create secrets files from environment variables
                 run: |
                     mkdir -p src/secrets
-                    cat > src/secrets/google_secrets.h << EOF
+                    cat > src/secrets/general_secrets.h << EOF
                     #pragma once
                     #define GOOGLE_API_KEY "${{ secrets.GOOGLE_API_KEY }}"
-                    EOF
-
-                    cat > src/secrets/rmv_secrets.h << EOF
-                    #pragma once
+                    #define ENCRYPTION_KEY "${{ secrets.ENCRYPTION_KEY }}"
                     #define RMV_API_KEY "${{ secrets.RMV_API_KEY }}"
                     EOF
 

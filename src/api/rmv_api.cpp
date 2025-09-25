@@ -2,11 +2,11 @@
 #include <HTTPClient.h>
 #include <vector>
 #include <Arduino.h>
-#include "secrets/rmv_secrets.h"
 #include "util/util.h"
 #include <esp_log.h>
 #include <StreamUtils.h>
 #include "config/config_struct.h"
+#include "sec/aes_crypto.h"
 
 static const char* TAG = "RMV_API";
 // const size_t JSON_CAPACITY = 16384; // 16KB - safer for API responses
@@ -34,7 +34,11 @@ std::vector<Station> stations;
 void getNearbyStops(float lat, float lon) {
     Util::printFreeHeap("Before RMV request:");
     HTTPClient http;
-    String url = "https://www.rmv.de/hapi/location.nearbystops?accessId=" + String(RMV_API_KEY) +
+
+    // Use static utility method for secure API key decryption (no caching)
+    std::string decrypted = AESCrypto::getRMVAPIKey();
+
+    String url = "https://www.rmv.de/hapi/location.nearbystops?accessId=" + String(decrypted.c_str()) +
         "&originCoordLat=" + String(lat, 6) +
         "&originCoordLong=" + String(lon, 6) +
         "&format=json&maxNo=7";
@@ -187,9 +191,12 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     ESP_LOGI(TAG, "Fetching departure data for stop: %s", stopId);
 
+    // Use static utility method for secure API key decryption (no caching)
+    std::string decrypted = AESCrypto::getRMVAPIKey();
+
     HTTPClient http;
     String encodedId = Util::urlEncode(String(stopId));
-    String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(RMV_API_KEY) +
+    String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(decrypted.c_str()) +
         "&id=" + encodedId +
         "&format=json&maxJourneys=20&products=8";
 
