@@ -5,17 +5,9 @@
 #include "sec/aes_crypto.h"
 
 // Platform-specific includes
-#ifdef ARDUINO
 #include <mbedtls/aes.h>
 #include <mbedtls/md.h>
 #include <esp_system.h>
-#else
-#include <openssl/aes.h>
-#include <openssl/md5.h>
-#include <openssl/rand.h>
-#include <random>
-#endif
-
 // Constructor with user key
 AESCrypto::AESCrypto(const std::string& userKey) : m_key(AES_KEY_SIZE, 0), m_keySet(false) {
     setKey(userKey);

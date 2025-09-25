@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <cstdint>
 
 /**
  * Cross-platform AES-128-CBC encryption/decryption library
