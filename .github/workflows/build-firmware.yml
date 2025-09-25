@@ -15,7 +15,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                environment: [ esp32-c3-info ]
+                environment: [ esp32-c3-production ]
 
         steps:
             -   name: Checkout code
