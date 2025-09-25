@@ -7,4 +7,4 @@
 
 # Ignore all secret headers except example files
 include/secrets/*.h
-!include/secrets/*.h.example
+!include/secrets/*.example
