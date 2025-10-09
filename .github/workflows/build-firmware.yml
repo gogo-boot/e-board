@@ -100,9 +100,11 @@ jobs:
                     mkdir -p release
 
                     # Copy firmware files
-                    cp .pio/build/${{ matrix.environment }}/*.bin release/
+                    cp .pio/build/${{ matrix.environment }}/bootloader.bin release/
+                    cp .pio/build/${{ matrix.environment }}/firmware.bin release/
                     cp .pio/build/${{ matrix.environment }}/firmware.elf release/
-                    cp .pio/build/${{ matrix.environment }}/build_info.txt release/
+                    cp .pio/build/${{ matrix.environment }}/partitions.bin release/
+                    cp build_info.txt release/
 
                     # Create flashing instructions
                     cat > release/FLASHING_INSTRUCTIONS.md << 'EOF'
