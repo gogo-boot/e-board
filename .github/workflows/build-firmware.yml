@@ -2,7 +2,8 @@ name: Build and Release ESP32 Firmware
 
 on:
     push:
-        branches: [ main, develop ]
+        branches:
+            - '*'
         tags: [ 'v*' ]
     pull_request:
         branches: [ main ]
