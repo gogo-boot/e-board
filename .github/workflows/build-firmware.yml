@@ -86,12 +86,13 @@ jobs:
         strategy:
             matrix:
                 environment: [ esp32-c3-production ]
-        #if: startsWith(github.ref, 'refs/tags/v')
+        #if: github.ref_type == 'tag'
 
         steps:
             -   name: Download all artifacts
                 uses: actions/download-artifact@v5
                 with:
+                    path: artifacts
                     merge-multiple: true
 
             -   name: Create release package
@@ -100,11 +101,10 @@ jobs:
                     ls -al
 
                     # Copy firmware files
-                    cp .pio/build/${{ matrix.environment }}/bootloader.bin release/
-                    cp .pio/build/${{ matrix.environment }}/firmware.bin release/
-                    cp .pio/build/${{ matrix.environment }}/firmware.elf release/
-                    cp .pio/build/${{ matrix.environment }}/partitions.bin release/
-                    cp build_info.txt release/
+                    cp artifacts/.pio/build/${{ matrix.environment }}/*.bin release/
+                    cp artifacts/.pio/build/${{ matrix.environment }}/firmware.elf release/
+                    cp artifacts/build_info.txt release/
+                    cp artifacts/*.html release/
 
                     # Create flashing instructions
                     cat > release/FLASHING_INSTRUCTIONS.md << 'EOF'
@@ -169,16 +169,20 @@ jobs:
 
                     # Create ZIP package
                     cd release
-                    zip -r ../mystation-firmware-${{ github.ref_name }}.zip .
+                    zip -r ../mystation-firmware-${{ github.sha }}.zip .
                     cd ..
 
             -   name: Create Release
-                uses: softprops/action-gh-release@v1
+                uses: softprops/action-gh-release@v2
                 with:
                     files: |
-                        mystation-firmware-${{ github.ref_name }}.zip
+                        mystation-firmware-${{ github.sha }}.zip
                         release/firmware.bin
-                        release/littlefs.bin
+                        release/bootloader.bin
+                        release/firmware.elf
+                        release/partitions.bin
+                        release/build_info.txt
+                        release/config_my_station.html
                         release/FLASHING_INSTRUCTIONS.md
                         release/VERSION.txt
                     name: MyStation E-Board ${{ github.ref_name }}
