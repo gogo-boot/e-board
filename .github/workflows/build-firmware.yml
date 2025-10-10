@@ -2,11 +2,13 @@ name: Build and Release ESP32 Firmware
 
 on:
     push:
-        branches:
-            - '*'
+        # when pull request is created, 2 github actions are triggered, one for push and one for pull_request
+        # to avoid double builds, we only build on to pull_request
+        #        branches:
+        #            - '*'
         tags: [ 'v*' ]
-#    pull_request:
-#        branches: [ main ]
+    pull_request:
+        branches: [ main ]
 
 env:
     PLATFORMIO_CORE_VERSION: "6.1.18"
