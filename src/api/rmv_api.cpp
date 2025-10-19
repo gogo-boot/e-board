@@ -53,72 +53,21 @@ namespace {
         return "&products=" + String(productsBitmask);
     }
 
-    // Parse time string "HH:MM:SS" to minutes since midnight
-    int parseTimeToMinutes(const String& timeStr) {
-        if (timeStr.length() < 5) return -1; // Invalid format
-
-        int hours = timeStr.substring(0, 2).toInt();
-        int minutes = timeStr.substring(3, 5).toInt();
-
-        return hours * 60 + minutes;
-    }
-
-    // Get current time in minutes since midnight
-    int getCurrentMinutes() {
+    // Calculate departure time including walking time for RMV API time parameter
+    String calculateDepartureTime(int walkingTimeMinutes) {
         time_t now;
         time(&now);
+
+        // Add walking time to current time
+        now += (walkingTimeMinutes * 60);
+
         struct tm timeinfo;
         localtime_r(&now, &timeinfo);
 
-        return timeinfo.tm_hour * 60 + timeinfo.tm_min;
-    }
-
-    // Filter departures by walking time (remove departures that depart before walking time is up)
-    void applyWalkingTimeFilter(DepartureData& departData, int walkingTimeMinutes) {
-        if (walkingTimeMinutes <= 0) {
-            ESP_LOGI(TAG, "No walking time filter applied (walkingTime: %d)", walkingTimeMinutes);
-            return;
-        }
-
-        int currentMinutes = getCurrentMinutes();
-        int earliestDepartureMinutes = currentMinutes + walkingTimeMinutes;
-
-        ESP_LOGI(TAG, "Filtering departures - current: %02d:%02d, walking time: %d min, earliest: %02d:%02d",
-                 currentMinutes / 60, currentMinutes % 60, walkingTimeMinutes,
-                 earliestDepartureMinutes / 60, earliestDepartureMinutes % 60);
-
-        auto originalCount = departData.departures.size();
-
-        // Remove departures that are too soon
-        departData.departures.erase(
-            std::remove_if(departData.departures.begin(), departData.departures.end(),
-                           [earliestDepartureMinutes](const DepartureInfo& dep) {
-                               // Use real-time if available, otherwise scheduled time
-                               String timeToCheck = dep.rtTime.length() > 0 ? dep.rtTime : dep.time;
-                               int depMinutes = parseTimeToMinutes(timeToCheck);
-
-                               if (depMinutes == -1) return false; // Keep if time parsing failed
-
-                               // Handle day rollover (departure after midnight next day)
-                               if (depMinutes < earliestDepartureMinutes - 12 * 60) {
-                                   depMinutes += 24 * 60; // Add 24 hours
-                               }
-
-                               bool shouldRemove = depMinutes < earliestDepartureMinutes;
-                               if (shouldRemove) {
-                                   ESP_LOGD(TAG, "Filtered out: %s at %s (too soon)",
-                                            dep.line.c_str(), timeToCheck.c_str());
-                               }
-                               return shouldRemove;
-                           }),
-            departData.departures.end()
-        );
-
-        departData.departureCount = static_cast<int>(departData.departures.size());
-
-        ESP_LOGI(TAG, "Walking time filter: %d -> %d departures (removed %d too-soon departures)",
-                 (int)originalCount, departData.departureCount,
-                 (int)originalCount - departData.departureCount);
+        // Format as HH:MM for RMV API
+        char timeStr[6];
+        snprintf(timeStr, sizeof(timeStr), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+        return String(timeStr);
     }
 } // end anonymous namespace
 
@@ -297,9 +246,13 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     // Build products parameter based on active filters
     String productsParam = buildProductsFilter(config.filterFlags);
 
+    // Calculate departure time including walking time for API request
+    String departureTime = calculateDepartureTime(config.walkingTime);
+
     String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(decrypted.c_str()) +
         "&id=" + encodedId +
-        "&format=json&maxJourneys=20" + productsParam;
+        "&format=json&maxJourneys=20" + productsParam +
+        "&time=" + departureTime;
 
     String urlForLog = url;
     int keyPos = urlForLog.indexOf("accessId=");
@@ -310,7 +263,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     }
 
     ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
-    ESP_LOGI(TAG, "Active transport filters: %s", String(activeFilters.size()).c_str());
+    ESP_LOGI(TAG, "Walking time: %d minutes, departure time filter: %s", config.walkingTime, departureTime.c_str());
 
     http.begin(url);
 
@@ -368,9 +321,6 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
         ESP_LOGE(TAG, "Failed to populate departure data");
         return false;
     }
-
-    // Apply walking time filter to departures
-    applyWalkingTimeFilter(departData, config.walkingTime);
 
     return true;
 }
