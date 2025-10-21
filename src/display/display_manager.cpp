@@ -112,11 +112,16 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
     const int16_t contentY = 0; // Start from top instead of after header
     const int16_t contentHeight = screenHeight - footerHeight;
 
-    if (weather->hourlyForecastCount > 0 && departures->departureCount > 0) {
+    bool hasWeather = weather && weather->hourlyForecastCount > 0;
+    bool hasDepartures = departures && departures->departureCount > 0;
+
+    // Use combined state for switch
+    int displayState = (hasWeather ? 1 : 0) | (hasDepartures ? 2 : 0);
+
+    switch (displayState) {
+    case 3: // Both weather and departures (hasWeather=1, hasDepartures=2, combined=3)
         // Full update - both halves without header
         ESP_LOGI(TAG, "Updating both halves without header");
-
-        bool isFullUpdate = true; // Full update for both halves
 
         // Set the display update region to the entire screen.
         // This ensures all drawing operations affect the whole display.
@@ -127,19 +132,21 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
 
             // Remove header drawing
             // Landscape: left/right split (weather left, departures right)
-            updateWeatherHalf(isFullUpdate, *weather);
-            updateDepartureHalf(isFullUpdate, *departures);
+            updateWeatherHalf(true, *weather);
+            updateDepartureHalf(true, *departures);
 
             // Draw vertical divider
             displayVerticalLine(contentY);
         } while (display.nextPage());
-    } else if (weather->hourlyForecastCount > 0) {
+        break;
+    case 1:
         display.firstPage();
         // Partial update - weather half only
         do {
             updateWeatherHalf(false, *weather);
         } while (display.nextPage());
-    } else if (departures->departureCount > 0) {
+        break;
+    case 2:
         display.firstPage();
         do {
             // Partial update - departure half only
@@ -148,6 +155,10 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
                                      contentHeight);
             updateDepartureHalf(false, *departures);
         } while (display.nextPage());
+        break;
+    default:
+        ESP_LOGW(TAG, "No valid data to display");
+        break;
     }
 }
 
