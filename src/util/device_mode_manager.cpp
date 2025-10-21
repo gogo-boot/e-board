@@ -34,6 +34,9 @@ extern ConfigOption g_webConfigPageData;
 bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
     // Load configuration from NVS
     bool configExists = configMgr.loadFromNVS();
+#if PRODUCTIONP==0
+    ConfigManager::printConfiguration(false);
+#endif
 
     if (!configExists) {
         ESP_LOGI(TAG, "No configuration found in NVS");
