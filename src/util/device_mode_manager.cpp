@@ -125,13 +125,18 @@ void DeviceModeManager::showWeatherDeparture() {
         return; // setupOperationalMode already handles error case
     }
 
-    // Initialize display for half-and-half mode
-    initializeDisplay(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
         return; // Let main.cpp handle sleep
     }
+
+    // Check if transport is in active time
+    bool isTransportActiveTime = TimingManager::isTransportActiveTime();
+
+    // Determine display mode based on transport active time
+    DisplayMode displayMode = isTransportActiveTime ? DisplayMode::HALF_AND_HALF : DisplayMode::WEATHER_ONLY;
+
+    // Initialize display with appropriate mode
+    initializeDisplay(displayMode, DisplayOrientation::LANDSCAPE);
 
     // Determine what needs to be updated based on intervals
     UpdateType updateType = TimingManager::getRequiredUpdates();
@@ -145,8 +150,9 @@ void DeviceModeManager::showWeatherDeparture() {
     bool fetchedTransport = false;
     bool fetchedWeather = false;
 
-    // Fetch departure data only if needed
-    if (updateType == UpdateType::TRANSPORT_ONLY || updateType == UpdateType::BOTH) {
+    // Fetch departure data only if in active time and needed
+    if (isTransportActiveTime &&
+        (updateType == UpdateType::TRANSPORT_ONLY || updateType == UpdateType::BOTH)) {
         String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
 
         if (stopIdToUse.length() > 0) {
@@ -164,6 +170,8 @@ void DeviceModeManager::showWeatherDeparture() {
         } else {
             ESP_LOGW(TAG, "No stop configured.");
         }
+    } else if (!isTransportActiveTime) {
+        ESP_LOGI(TAG, "Outside transport active hours - showing weather only");
     } else {
         ESP_LOGI(TAG, "Skipping transport update - not due yet");
     }
@@ -185,14 +193,25 @@ void DeviceModeManager::showWeatherDeparture() {
         ESP_LOGI(TAG, "Skipping weather update - not due yet");
     }
 
-    // Display using new display manager
-    if (hasWeather || hasTransport) {
-        ESP_LOGI(TAG, "Displaying data - weather:%s transport:%s",
-                 hasWeather ? "YES" : "NO", hasTransport ? "YES" : "NO");
-        DisplayManager::displayHalfAndHalf(hasWeather ? &weather : nullptr,
-                                           hasTransport ? &depart : nullptr);
+    // Display based on active time and available data
+    if (isTransportActiveTime) {
+        // Normal half-and-half mode during transport hours
+        if (hasWeather || hasTransport) {
+            ESP_LOGI(TAG, "Displaying half-and-half - weather:%s transport:%s",
+                     hasWeather ? "YES" : "NO", hasTransport ? "YES" : "NO");
+            DisplayManager::displayHalfAndHalf(hasWeather ? &weather : nullptr,
+                                               hasTransport ? &depart : nullptr);
+        } else {
+            ESP_LOGW(TAG, "No data to display in half-and-half mode");
+        }
     } else {
-        ESP_LOGW(TAG, "No data to display");
+        // Full weather mode outside transport hours
+        if (hasWeather) {
+            ESP_LOGI(TAG, "Displaying full weather (outside transport hours)");
+            DisplayManager::displayWeatherFull(weather);
+        } else {
+            ESP_LOGW(TAG, "No weather data to display");
+        }
     }
 }
 
