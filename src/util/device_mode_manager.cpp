@@ -15,6 +15,7 @@
 #include "util/departure_print.h"
 #include "util/sleep_utils.h"
 #include "util/time_manager.h"
+#include "util/timing_manager.h"
 #include "util/weather_print.h"
 #include "util/wifi_manager.h"
 
@@ -33,6 +34,9 @@ extern ConfigOption g_webConfigPageData;
 bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
     // Load configuration from NVS
     bool configExists = configMgr.loadFromNVS();
+#if PRODUCTIONP==0
+    ConfigManager::printConfiguration(false);
+#endif
 
     if (!configExists) {
         ESP_LOGI(TAG, "No configuration found in NVS");
@@ -121,13 +125,21 @@ void DeviceModeManager::showWeatherDeparture() {
         return; // setupOperationalMode already handles error case
     }
 
-    // Initialize display for half-and-half mode
-    initializeDisplay(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
         return; // Let main.cpp handle sleep
     }
+
+    // Check if transport is in active time
+    bool isTransportActiveTime = TimingManager::isTransportActiveTime();
+
+    // Determine display mode based on transport active time
+    DisplayMode displayMode = isTransportActiveTime ? DisplayMode::HALF_AND_HALF : DisplayMode::WEATHER_ONLY;
+
+    // Initialize display with appropriate mode
+    initializeDisplay(displayMode, DisplayOrientation::LANDSCAPE);
+
+    // Determine what needs to be updated based on intervals
+    UpdateType updateType = TimingManager::getRequiredUpdates();
 
     // Mode-specific data fetching and display
     RTCConfigData& config = ConfigManager::getConfig();
@@ -135,42 +147,71 @@ void DeviceModeManager::showWeatherDeparture() {
     WeatherInfo weather;
     bool hasTransport = false;
     bool hasWeather = false;
+    bool fetchedTransport = false;
+    bool fetchedWeather = false;
 
-    // Fetch departure data
-    String stopIdToUse =
-        strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
+    // Fetch departure data only if in active time and needed
+    if (isTransportActiveTime &&
+        (updateType == UpdateType::TRANSPORT_ONLY || updateType == UpdateType::BOTH)) {
+        String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
 
-    if (stopIdToUse.length() > 0) {
-        ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
-                 stopIdToUse.c_str(), config.selectedStopName);
+        if (stopIdToUse.length() > 0) {
+            ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
+                     stopIdToUse.c_str(), config.selectedStopName);
 
-        if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
-            printDepartInfo(depart);
-            if (depart.departureCount > 0) hasTransport = true;
+            if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
+                printDepartInfo(depart);
+                if (depart.departureCount > 0) hasTransport = true;
+                fetchedTransport = true;
+                TimingManager::markTransportUpdated();
+            } else {
+                ESP_LOGE(TAG, "Failed to get departure information from RMV.");
+            }
         } else {
-            ESP_LOGE(TAG, "Failed to get departure information from RMV.");
+            ESP_LOGW(TAG, "No stop configured.");
+        }
+    } else if (!isTransportActiveTime) {
+        ESP_LOGI(TAG, "Outside transport active hours - showing weather only");
+    } else {
+        ESP_LOGI(TAG, "Skipping transport update - not due yet");
+    }
+
+    // Fetch weather data only if needed
+    if (updateType == UpdateType::WEATHER_ONLY || updateType == UpdateType::BOTH) {
+        ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
+                 g_webConfigPageData.latitude, g_webConfigPageData.longitude);
+        if (getGeneralWeatherFull(g_webConfigPageData.latitude,
+                                  g_webConfigPageData.longitude, weather)) {
+            printWeatherInfo(weather);
+            hasWeather = true;
+            fetchedWeather = true;
+            TimingManager::markWeatherUpdated();
+        } else {
+            ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
     } else {
-        ESP_LOGW(TAG, "No stop configured.");
+        ESP_LOGI(TAG, "Skipping weather update - not due yet");
     }
 
-    // Fetch weather data
-    ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
-             g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-    if (getGeneralWeatherFull(g_webConfigPageData.latitude,
-                              g_webConfigPageData.longitude, weather)) {
-        printWeatherInfo(weather);
-        hasWeather = true;
+    // Display based on active time and available data
+    if (isTransportActiveTime) {
+        // Normal half-and-half mode during transport hours
+        if (hasWeather || hasTransport) {
+            ESP_LOGI(TAG, "Displaying half-and-half - weather:%s transport:%s",
+                     hasWeather ? "YES" : "NO", hasTransport ? "YES" : "NO");
+            DisplayManager::displayHalfAndHalf(hasWeather ? &weather : nullptr,
+                                               hasTransport ? &depart : nullptr);
+        } else {
+            ESP_LOGW(TAG, "No data to display in half-and-half mode");
+        }
     } else {
-        ESP_LOGE(TAG, "Failed to get weather information from DWD.");
-    }
-
-    // Display using new display manager
-    if (hasWeather || hasTransport) {
-        ESP_LOGI(TAG, "Displaying both weather and transport data");
-        DisplayManager::displayHalfAndHalf(&weather, &depart);
-    } else {
-        ESP_LOGW(TAG, "No data to display");
+        // Full weather mode outside transport hours
+        if (hasWeather) {
+            ESP_LOGI(TAG, "Displaying full weather (outside transport hours)");
+            DisplayManager::displayWeatherFull(weather);
+        } else {
+            ESP_LOGW(TAG, "No weather data to display");
+        }
     }
 }
 
@@ -188,19 +229,27 @@ void DeviceModeManager::showGeneralWeather() {
         return; // Let main.cpp handle sleep
     }
 
+    // For weather-only mode, only check weather updates
+    bool needsWeatherUpdate = TimingManager::isTimeForWeatherUpdate();
+
     // Mode-specific data fetching and display
     WeatherInfo weather;
     bool hasWeather = false;
 
-    // Fetch weather data
-    ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
-             g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-    if (getGeneralWeatherFull(g_webConfigPageData.latitude,
-                              g_webConfigPageData.longitude, weather)) {
-        printWeatherInfo(weather);
-        hasWeather = true;
+    // Fetch weather data only if needed
+    if (needsWeatherUpdate) {
+        ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
+                 g_webConfigPageData.latitude, g_webConfigPageData.longitude);
+        if (getGeneralWeatherFull(g_webConfigPageData.latitude,
+                                  g_webConfigPageData.longitude, weather)) {
+            printWeatherInfo(weather);
+            hasWeather = true;
+            TimingManager::markWeatherUpdated();
+        } else {
+            ESP_LOGE(TAG, "Failed to get weather information from DWD.");
+        }
     } else {
-        ESP_LOGE(TAG, "Failed to get weather information from DWD.");
+        ESP_LOGI(TAG, "Skipping weather update - not due yet");
     }
 
     // Display using new display manager
@@ -228,27 +277,37 @@ void DeviceModeManager::showDeparture() {
         return; // Let main.cpp handle sleep
     }
 
+    // For departure-only mode, only check transport updates and active hours
+    bool needsTransportUpdate = TimingManager::isTimeForTransportUpdate();
+    bool isActiveTime = TimingManager::isTransportActiveTime();
+
     // Mode-specific data fetching and display
     RTCConfigData& config = ConfigManager::getConfig();
     DepartureData depart;
     bool hasTransport = false;
 
-    // Fetch departure data
-    String stopIdToUse =
-        strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
+    // Fetch departure data only if needed and in active hours
+    if (needsTransportUpdate && isActiveTime) {
+        String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
 
-    if (stopIdToUse.length() > 0) {
-        ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
-                 stopIdToUse.c_str(), config.selectedStopName);
+        if (stopIdToUse.length() > 0) {
+            ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
+                     stopIdToUse.c_str(), config.selectedStopName);
 
-        if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
-            printDepartInfo(depart);
-            if (depart.departureCount > 0) hasTransport = true;
+            if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
+                printDepartInfo(depart);
+                if (depart.departureCount > 0) hasTransport = true;
+                TimingManager::markTransportUpdated();
+            } else {
+                ESP_LOGE(TAG, "Failed to get departure information from RMV.");
+            }
         } else {
-            ESP_LOGE(TAG, "Failed to get departure information from RMV.");
+            ESP_LOGW(TAG, "No stop configured.");
         }
+    } else if (!isActiveTime) {
+        ESP_LOGI(TAG, "Outside transport active hours - skipping departure fetch");
     } else {
-        ESP_LOGW(TAG, "No stop configured.");
+        ESP_LOGI(TAG, "Skipping transport update - not due yet");
     }
 
     // Display using new display manager
@@ -362,9 +421,9 @@ void DeviceModeManager::enterOperationalSleep() {
     // Hibernate display to save power
     DisplayManager::hibernate();
 
-    // Calculate sleep time and enter deep sleep
-    // uint64_t sleepTime = calculateSleepTime(config.transportInterval);
-    uint64_t sleepTime = calculateSleepTime(1);
-    ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds", sleepTime);
+    // Calculate sleep time using TimingManager based on configured intervals
+    uint64_t sleepTime = TimingManager::getNextSleepDuration();
+    ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds (%.1f minutes)", sleepTime,
+             sleepTime / (60.0 * 1000000.0));
     enterDeepSleep(sleepTime);
 }

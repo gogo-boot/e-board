@@ -71,7 +71,7 @@ RTC_DATA_ATTR bool hasValidConfig = false; // Flag to track if valid config exis
 ConfigOption g_webConfigPageData;
 
 void setup() {
-#ifdef PRODUCTION
+#if PRODUCTION > 0
     // Production: Only critical errors
     esp_log_level_set("*", ESP_LOG_ERROR);
 #else

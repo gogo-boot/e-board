@@ -329,3 +329,64 @@ void ConfigManager::setDefaults() {
     rtcConfig.configMode = true;
     rtcConfig.lastUpdate = 0;
 }
+
+void ConfigManager::printConfiguration(bool fromNVS = false) {
+    if (fromNVS) {
+        ESP_LOGI(TAG, "=== CONFIGURATION FROM NVS (FLASH) ===");
+        // Temporarily load from NVS for comparison
+        Preferences tempPrefs;
+        if (!tempPrefs.begin("mystation", true)) {
+            ESP_LOGE(TAG, "Failed to open NVS for reading");
+            return;
+        }
+
+        ESP_LOGI(TAG, "ssid: %s", tempPrefs.getString("ssid", "").c_str());
+        ESP_LOGI(TAG, "selectedStopId: %s", tempPrefs.getString("selectedStopId", "").c_str());
+        ESP_LOGI(TAG, "latitude: %.6f", tempPrefs.getDouble("latitude", 0.0));
+        ESP_LOGI(TAG, "longitude: %.6f", tempPrefs.getDouble("longitude", 0.0));
+        // ... add other critical fields
+
+        tempPrefs.end();
+        ESP_LOGI(TAG, "=== END NVS CONFIGURATION ===");
+    } else {
+        ESP_LOGI(TAG, "=== CONFIGURATION FROM RTC MEMORY ===");
+        ESP_LOGI(TAG, "isValid: %s", rtcConfig.isValid ? "true" : "false");
+        ESP_LOGI(TAG, "configMode: %s", rtcConfig.configMode ? "true" : "false");
+        ESP_LOGI(TAG, "lastUpdate: %lu", rtcConfig.lastUpdate);
+
+        ESP_LOGI(TAG, "--- Location ---");
+        ESP_LOGI(TAG, "latitude: %.6f", rtcConfig.latitude);
+        ESP_LOGI(TAG, "longitude: %.6f", rtcConfig.longitude);
+        ESP_LOGI(TAG, "cityName: %s", rtcConfig.cityName);
+
+        ESP_LOGI(TAG, "--- Network ---");
+        ESP_LOGI(TAG, "ssid: %s", rtcConfig.ssid);
+        ESP_LOGI(TAG, "ipAddress: %s", rtcConfig.ipAddress);
+
+        ESP_LOGI(TAG, "--- Transport ---");
+        ESP_LOGI(TAG, "selectedStopId: %s", rtcConfig.selectedStopId);
+        ESP_LOGI(TAG, "selectedStopName: %s", rtcConfig.selectedStopName);
+        ESP_LOGI(TAG, "transportInterval: %d", rtcConfig.transportInterval);
+        ESP_LOGI(TAG, "walkingTime: %d", rtcConfig.walkingTime);
+        ESP_LOGI(TAG, "transportActiveStart: %s", rtcConfig.transportActiveStart);
+        ESP_LOGI(TAG, "transportActiveEnd: %s", rtcConfig.transportActiveEnd);
+
+        ESP_LOGI(TAG, "--- Weather ---");
+        ESP_LOGI(TAG, "weatherInterval: %d", rtcConfig.weatherInterval);
+
+        ESP_LOGI(TAG, "--- Sleep ---");
+        ESP_LOGI(TAG, "sleepStart: %s", rtcConfig.sleepStart);
+        ESP_LOGI(TAG, "sleepEnd: %s", rtcConfig.sleepEnd);
+
+        ESP_LOGI(TAG, "--- Weekend ---");
+        ESP_LOGI(TAG, "weekendMode: %s", rtcConfig.weekendMode ? "true" : "false");
+        ESP_LOGI(TAG, "weekendTransportStart: %s", rtcConfig.weekendTransportStart);
+        ESP_LOGI(TAG, "weekendTransportEnd: %s", rtcConfig.weekendTransportEnd);
+        ESP_LOGI(TAG, "weekendSleepStart: %s", rtcConfig.weekendSleepStart);
+        ESP_LOGI(TAG, "weekendSleepEnd: %s", rtcConfig.weekendSleepEnd);
+
+        ESP_LOGI(TAG, "--- Filters ---");
+        ESP_LOGI(TAG, "filterFlags: %u", rtcConfig.filterFlags);
+        ESP_LOGI(TAG, "=== END RTC CONFIGURATION ===");
+    }
+}

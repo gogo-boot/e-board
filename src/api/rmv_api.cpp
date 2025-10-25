@@ -6,7 +6,9 @@
 #include <esp_log.h>
 #include <StreamUtils.h>
 #include "config/config_struct.h"
+#include "config/config_manager.h"
 #include "sec/aes_crypto.h"
+#include <time.h>
 
 static const char* TAG = "RMV_API";
 // const size_t JSON_CAPACITY = 16384; // 16KB - safer for API responses
@@ -26,6 +28,46 @@ namespace {
         departureFilter["Departure"][0]["Product"][0]["line"] = true;
         departureFilter["Departure"][0]["Product"][0]["catOut"] = true;
         departureFilter["Departure"][0]["Messages"]["Message"][0]["head"] = true;
+    }
+
+    // Build RMV products parameter based on filter flags
+    String buildProductsFilter(uint8_t filterFlags) {
+        if (filterFlags == 0) {
+            // No filters - return empty string to get all transport types
+            return "";
+        }
+
+        // RMV product bit values (from RMV API documentation)
+        int productsBitmask = 0;
+        if (filterFlags & FILTER_RE) productsBitmask |= 2; // Regional Express
+        if (filterFlags & FILTER_R) productsBitmask |= 4; // Regional
+        if (filterFlags & FILTER_S) productsBitmask |= 8; // S-Bahn
+        if (filterFlags & FILTER_BUS) productsBitmask |= 32; // Bus
+        if (filterFlags & FILTER_U) productsBitmask |= 16; // U-Bahn
+        if (filterFlags & FILTER_TRAM) productsBitmask |= 64; // Tram
+
+        if (productsBitmask == 0) {
+            return ""; // No valid filters
+        }
+
+        return "&products=" + String(productsBitmask);
+    }
+
+    // Calculate departure time including walking time for RMV API time parameter
+    String calculateDepartureTime(int walkingTimeMinutes) {
+        time_t now;
+        time(&now);
+
+        // Add walking time to current time
+        now += (walkingTimeMinutes * 60);
+
+        struct tm timeinfo;
+        localtime_r(&now, &timeinfo);
+
+        // Format as HH:MM for RMV API
+        char timeStr[6];
+        snprintf(timeStr, sizeof(timeStr), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+        return String(timeStr);
     }
 } // end anonymous namespace
 
@@ -196,9 +238,21 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
 
     HTTPClient http;
     String encodedId = Util::urlEncode(String(stopId));
+
+    // Get configured vehicle type filters from ConfigManager
+    RTCConfigData& config = ConfigManager::getConfig();
+    std::vector<String> activeFilters = ConfigManager::getActiveFilters();
+
+    // Build products parameter based on active filters
+    String productsParam = buildProductsFilter(config.filterFlags);
+
+    // Calculate departure time including walking time for API request
+    String departureTime = calculateDepartureTime(config.walkingTime);
+
     String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(decrypted.c_str()) +
         "&id=" + encodedId +
-        "&format=json&maxJourneys=20&products=8";
+        "&format=json&maxJourneys=20" + productsParam +
+        "&time=" + departureTime;
 
     String urlForLog = url;
     int keyPos = urlForLog.indexOf("accessId=");
@@ -209,6 +263,8 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     }
 
     ESP_LOGI(TAG, "Requesting departure board: %s", urlForLog.c_str());
+    ESP_LOGI(TAG, "Walking time: %d minutes, departure time filter: %s", config.walkingTime, departureTime.c_str());
+
     http.begin(url);
 
     const char* keys[] = {"Transfer-Encoding"};
@@ -254,10 +310,7 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     ESP_LOGD(TAG, "JSON Document (pretty):\n%s", prettyJson.c_str());
 
     // Check actual memory usage
-    // Memory used: 7128/10240 bytes for 30 rmv departure response
     ESP_LOGI(TAG, "Memory used: %u/%u bytes", doc.memoryUsage(), doc.capacity());
-
-    // Check heap before/after
     ESP_LOGI(TAG, "Free heap: %u bytes", ESP.getFreeHeap());
 
     // Set basic departure data
