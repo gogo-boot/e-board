@@ -12,16 +12,16 @@ flowchart TD
 %%  Half Half Mode / If Departure is in Active Time
     IfDepartureActive -->|yes| IfNeedWeatherDeparture{{Time to update Weather \n && Time to update Departure}}
     IfDepartureActive -->|no| IfNeedWeatherUpdate{{Time to update Weather}}
-%%  Half Half Mode / If Time to update Weather & Departure
+%%  If Departure is in Active Time / If Time to update Weather & Departure
     IfNeedWeatherDeparture -->|no| IfNeedDepartureUpdate{{Time to update Departure}}
     IfNeedWeatherDeparture -->|yes| GetWeatherDepartureData[Get weather data \n Get departure Data] --> DisplayWeatherDeparture[Update Weather & Departure] --> PrepareToSleep
-%%  Half Half Mode / If Time to update Departure
+%%  If Time to update Weather & Departure / If Time to update Departure
     IfNeedDepartureUpdate -->|no| IfTimeToUpdateWeather{{Time to update Weather}}
     IfNeedDepartureUpdate -->|yes| GetDepartureData[Get Departure Data] --> DisplayDepartureHalf[Update Departure Half] --> PrepareToSleep
-%%  Half Half Mode / If Time to update Weather
+%%  If Time to update Departure / If Time to update Weather
     IfTimeToUpdateWeather -->|yes| GetWeatherData[Get Weather Data] --> DisplayWeatherHalf[Update Weather Half] --> PrepareToSleep
     IfTimeToUpdateWeather -->|no| PrepareToSleep
-%%   Separator
+%%  If Departure is in Active Time / Time to update Weather
     IfNeedWeatherUpdate -->|no| PrepareToSleep
     IfNeedWeatherUpdate -->|yes| GetWeather
     PrepareToSleep --> DeepSleep[Enter Deep Sleep]
