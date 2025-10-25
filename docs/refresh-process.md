@@ -3,30 +3,28 @@
 ```mermaid
 flowchart TD
     PrepareToSleep[Calulate Next Wake Up Time]
+%%  Getting Configured Display Mode
     Start([Wake Up]) --> StartOperation
     StartOperation([Start Opration Mode]) --> GetDisplayMode[Get Configured Display Mode]
-    GetDisplayMode -->|Weather Departure halfhalf Screen Mode| NeedWeatherDeparture{{Time to update Weather \n && Time to update Departure}}
-    GetDisplayMode -->|Weather Full Screen Mode| GetWeather[Get Weather Data]
-    GetDisplayMode -->|Departure Full Screen Mode| GetDeparture[Get Departure Data]
-    NeedWeatherDeparture -->|no| NeedWeatherUpdate{Time to update Weather}
-    NeedWeatherDeparture -->|yes| GetWeatherDepartureData[Get weather data \n Get departure Data]
-    GetWeatherDepartureData --> DisplayWeatherDeparture[Display Weather & Departure]
-    DisplayWeatherDeparture --> PrepareToSleep
-    NeedWeatherUpdate -->|no| NeedDepartureUpdate{Time to update Departure}
-    NeedDepartureUpdate -->|Yes| CheckDepartureActive{If Departure in Active Time}
-    NeedDepartureUpdate -->|no| PrepareToSleep
-    NeedWeatherUpdate -->|yes| GetWeatherData[Get Weather Data]
-    GetWeatherData --> DisplayWeather[Display Weather Half]
-    DisplayWeather --> PrepareToSleep
-    CheckDepartureActive -->|yes| GetDepartureData[Get Departure Data]
-    GetDepartureData --> DisplayDeparture[Display Departure Half]
-    DisplayDeparture --> PrepareToSleep
-    GetWeather --> UpdateWeather[Update Weather Full Display]
-    UpdateWeather --> PrepareToSleep
-    GetDeparture --> UpdateDeparture[Update Departure Full Display]
-    UpdateDeparture --> PrepareToSleep
+    GetDisplayMode -->|Weather Departure halfhalf Screen Mode| IfDepartureActive{{If Departure in Active Time}}
+    GetDisplayMode -->|Weather Full Screen Mode| GetWeather[Get Weather Data] --> UpdateWeather[Update Weather Full Display] --> PrepareToSleep
+    GetDisplayMode -->|Departure Full Screen Mode| GetDeparture[Get Departure Data] --> UpdateDeparture[Update Departure Full Display] --> PrepareToSleep
+%%  Half Half Mode / If Departure is in Active Time
+    IfDepartureActive -->|yes| IfNeedWeatherDeparture{{Time to update Weather \n && Time to update Departure}}
+    IfDepartureActive -->|no| IfNeedWeatherUpdate{{Time to update Weather}}
+%%  Half Half Mode / If Time to update Weather & Departure
+    IfNeedWeatherDeparture -->|no| IfNeedDepartureUpdate{{Time to update Departure}}
+    IfNeedWeatherDeparture -->|yes| GetWeatherDepartureData[Get weather data \n Get departure Data] --> DisplayWeatherDeparture[Update Weather & Departure] --> PrepareToSleep
+%%  Half Half Mode / If Time to update Departure
+    IfNeedDepartureUpdate -->|no| IfTimeToUpdateWeather{{Time to update Weather}}
+    IfNeedDepartureUpdate -->|yes| GetDepartureData[Get Departure Data] --> DisplayDepartureHalf[Update Departure Half] --> PrepareToSleep
+%%  Half Half Mode / If Time to update Weather
+    IfTimeToUpdateWeather -->|yes| GetWeatherData[Get Weather Data] --> DisplayWeatherHalf[Update Weather Half] --> PrepareToSleep
+    IfTimeToUpdateWeather -->|no| PrepareToSleep
+%%   Separator
+    IfNeedWeatherUpdate -->|no| PrepareToSleep
+    IfNeedWeatherUpdate -->|yes| GetWeather
     PrepareToSleep --> DeepSleep[Enter Deep Sleep]
-%%    style PrepareToSleep fill: #ff9999
     style Start fill: #99ff99
     style DeepSleep fill: #9999ff
 ```
