@@ -439,27 +439,27 @@
   </div>
 
   <script>
-      // Display mode preview functionalit
-      function updateDisplayModePreview() {
-          const displayMode = document.getElementById('display-mode').value;
-          const previewBox = document.querySelector('.preview-box');
-          const previewText = document.getElementById('preview-text');
+    // Display mode preview functionalit
+    function updateDisplayModePreview() {
+      const displayMode = document.getElementById('display-mode').value;
+      const previewBox = document.querySelector('.preview-box');
+      const previewText = document.getElementById('preview-text');
 
-          switch (displayMode) {
-              case '0': // Half and half
-                  previewBox.innerHTML = '<div class="preview-half">🌤️</div><div class="preview-half">🚌</div>';
-                  previewText.textContent = 'Wetter links, Abfahrten rechts';
-                  break;
-              case '1': // Weather only
-                  previewBox.innerHTML = '🌤️📊';
-                  previewText.textContent = 'Vollbild Wetterprognose mit Details';
-                  break;
-              case '2': // Departure only
-                  previewBox.innerHTML = '🚌📋';
-                  previewText.textContent = 'Vollbild Abfahrtszeiten mit Details';
-                  break;
-          }
+      switch (displayMode) {
+          case '0': // Half and half
+              previewBox.innerHTML = '<div class="preview-half">🌤️</div><div class="preview-half">🚌</div>';
+              previewText.textContent = 'Wetter links, Abfahrten rechts';
+              break;
+          case '1': // Weather only
+              previewBox.innerHTML = '🌤️📊';
+              previewText.textContent = 'Vollbild Wetterprognose mit Details';
+              break;
+          case '2': // Departure only
+              previewBox.innerHTML = '🚌📋';
+              previewText.textContent = 'Vollbild Abfahrtszeiten mit Details';
+              break;
       }
+    }
 
     // --- Stadt bearbeiten ---
     function editCity() {
@@ -844,6 +844,11 @@
         });
       }
     }, 150);
+
+      // Initialize display mode preview
+      document.addEventListener('DOMContentLoaded', function () {
+          updateDisplayModePreview();
+      });
   </script>
 </body>
 </html>
