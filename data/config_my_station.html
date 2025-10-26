@@ -661,6 +661,7 @@
 
     // --- Save config handler ---
     document.getElementById('save-btn').onclick = function() {
+      var displayMode = document.getElementById('display-mode').value;
       var city = '';
       var cityDisplay = document.getElementById('city-display');
       var cityInput = document.getElementById('city-input');
@@ -684,6 +685,19 @@
         stopId = stopSelect.value;
         stopName = stopSelect.options[stopSelect.selectedIndex] ? stopSelect.options[stopSelect.selectedIndex].text : '';
       }
+
+      // Validate "stop-select" for display modes 0 and 2
+      if ((displayMode === '0' || displayMode === '2') && (!stopSelect || stopSelect.value.trim() === '')) {
+          alert('Bitte wählen Sie eine Haltestelle aus, um den Anzeigemodus zu speichern.');
+          return;
+      }
+
+      // Validate "city-lat" and "city-lon" for display modes 0 and 1
+      if ((displayMode === '0' || displayMode === '1') && (cityLat.trim() === '' || cityLon.trim() === '')) {
+          alert('Bitte geben Sie gültige Breitengrad- und Längengradwerte ein, um den Anzeigemodus zu speichern.');
+          return;
+      }
+
       var filterChips = document.querySelectorAll('.chip.active');
       var filters = Array.from(filterChips).map(function(chip) { return chip.getAttribute('data-type'); });
 
