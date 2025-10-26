@@ -129,89 +129,92 @@ void DeviceModeManager::showWeatherDeparture() {
         return; // Let main.cpp handle sleep
     }
 
-    // Check if transport is in active time
+    // === FLOWCHART IMPLEMENTATION ===
+    // Step 1: Check if Departure is in Active Time
     bool isTransportActiveTime = TimingManager::isTransportActiveTime();
+    ESP_LOGI(TAG, "Transport active time: %s", isTransportActiveTime ? "YES" : "NO");
 
-    // Determine display mode based on transport active time
-    DisplayMode displayMode = isTransportActiveTime ? DisplayMode::HALF_AND_HALF : DisplayMode::WEATHER_ONLY;
+    if (!isTransportActiveTime) {
+        // Path: Outside active time -> Check if time to update weather
+        bool needsWeatherUpdate = TimingManager::isTimeForWeatherUpdate();
+        ESP_LOGI(TAG, "Outside transport hours - weather update needed: %s", needsWeatherUpdate ? "YES" : "NO");
 
-    // Initialize display with appropriate mode
-    initializeDisplay(displayMode, DisplayOrientation::LANDSCAPE);
+        if (needsWeatherUpdate) {
+            // Fetch and display full weather screen
+            WeatherInfo weather;
+            if (fetchWeatherData(weather)) {
+                initializeDisplay(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
+                DisplayManager::displayWeatherFull(weather);
+                TimingManager::markWeatherUpdated();
+                ESP_LOGI(TAG, "Updated weather full screen (outside transport hours)");
+            }
+        } else {
+            ESP_LOGI(TAG, "No weather update needed - going to sleep");
+        }
+        return;
+    }
 
-    // Determine what needs to be updated based on intervals
-    UpdateType updateType = TimingManager::getRequiredUpdates();
+    // === IN TRANSPORT ACTIVE TIME ===
+    // Step 2: Check what needs updating
+    bool needsWeatherUpdate = TimingManager::isTimeForWeatherUpdate();
+    bool needsTransportUpdate = TimingManager::isTimeForTransportUpdate();
 
-    // Mode-specific data fetching and display
-    RTCConfigData& config = ConfigManager::getConfig();
+    ESP_LOGI(TAG, "Update requirements - Weather: %s, Transport: %s",
+             needsWeatherUpdate ? "YES" : "NO", needsTransportUpdate ? "YES" : "NO");
+
+    // Initialize display for half-and-half mode
+    initializeDisplay(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
     DepartureData depart;
     WeatherInfo weather;
     bool hasTransport = false;
     bool hasWeather = false;
-    bool fetchedTransport = false;
-    bool fetchedWeather = false;
 
-    // Fetch departure data only if in active time and needed
-    if (isTransportActiveTime &&
-        (updateType == UpdateType::TRANSPORT_ONLY || updateType == UpdateType::BOTH)) {
-        String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
+    if (needsWeatherUpdate && needsTransportUpdate) {
+        // Path: Update both weather and departure
+        ESP_LOGI(TAG, "Updating both weather and departure data");
 
-        if (stopIdToUse.length() > 0) {
-            ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
-                     stopIdToUse.c_str(), config.selectedStopName);
-
-            if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
-                printDepartInfo(depart);
-                if (depart.departureCount > 0) hasTransport = true;
-                fetchedTransport = true;
-                TimingManager::markTransportUpdated();
-            } else {
-                ESP_LOGE(TAG, "Failed to get departure information from RMV.");
-            }
-        } else {
-            ESP_LOGW(TAG, "No stop configured.");
-        }
-    } else if (!isTransportActiveTime) {
-        ESP_LOGI(TAG, "Outside transport active hours - showing weather only");
-    } else {
-        ESP_LOGI(TAG, "Skipping transport update - not due yet");
-    }
-
-    // Fetch weather data only if needed
-    if (updateType == UpdateType::WEATHER_ONLY || updateType == UpdateType::BOTH) {
-        ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
-                 g_webConfigPageData.latitude, g_webConfigPageData.longitude);
-        if (getGeneralWeatherFull(g_webConfigPageData.latitude,
-                                  g_webConfigPageData.longitude, weather)) {
-            printWeatherInfo(weather);
+        if (fetchWeatherData(weather)) {
             hasWeather = true;
-            fetchedWeather = true;
             TimingManager::markWeatherUpdated();
-        } else {
-            ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
-    } else {
-        ESP_LOGI(TAG, "Skipping weather update - not due yet");
-    }
 
-    // Display based on active time and available data
-    if (isTransportActiveTime) {
-        // Normal half-and-half mode during transport hours
-        if (hasWeather || hasTransport) {
-            ESP_LOGI(TAG, "Displaying half-and-half - weather:%s transport:%s",
-                     hasWeather ? "YES" : "NO", hasTransport ? "YES" : "NO");
-            DisplayManager::displayHalfAndHalf(hasWeather ? &weather : nullptr,
-                                               hasTransport ? &depart : nullptr);
-        } else {
-            ESP_LOGW(TAG, "No data to display in half-and-half mode");
+        if (fetchTransportData(depart)) {
+            hasTransport = true;
+            TimingManager::markTransportUpdated();
+        }
+
+        // Display both halves
+        DisplayManager::displayHalfAndHalf(hasWeather ? &weather : nullptr,
+                                           hasTransport ? &depart : nullptr);
+        ESP_LOGI(TAG, "Updated both halves");
+    } else if (needsTransportUpdate) {
+        // Path: Update departure half only
+        ESP_LOGI(TAG, "Updating departure data only");
+
+        if (fetchTransportData(depart)) {
+            hasTransport = true;
+            TimingManager::markTransportUpdated();
+
+            // Partial update - departure half only
+            DisplayManager::displayHalfAndHalf(nullptr, &depart);
+            ESP_LOGI(TAG, "Updated departure half only");
+        }
+    } else if (needsWeatherUpdate) {
+        // Path: Update weather half only
+        ESP_LOGI(TAG, "Updating weather data only");
+
+        if (fetchWeatherData(weather)) {
+            hasWeather = true;
+            TimingManager::markWeatherUpdated();
+
+            // Partial update - weather half only
+            DisplayManager::displayHalfAndHalf(&weather, nullptr);
+            ESP_LOGI(TAG, "Updated weather half only");
         }
     } else {
-        // Full weather mode outside transport hours
-        if (hasWeather) {
-            ESP_LOGI(TAG, "Displaying full weather (outside transport hours)");
-            DisplayManager::displayWeatherFull(weather);
-        } else {
-            ESP_LOGW(TAG, "No weather data to display");
-        }
+        // Path: No updates needed
+        ESP_LOGI(TAG, "No updates required - going to sleep");
     }
 }
 
@@ -426,4 +429,45 @@ void DeviceModeManager::enterOperationalSleep() {
     ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds (%.1f minutes)", sleepTime,
              sleepTime / (60.0 * 1000000.0));
     enterDeepSleep(sleepTime);
+}
+
+// ===== HELPER FUNCTIONS FOR DATA FETCHING =====
+
+bool DeviceModeManager::fetchWeatherData(WeatherInfo& weather) {
+    ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
+             g_webConfigPageData.latitude, g_webConfigPageData.longitude);
+ if (getGeneralWeatherFull(g_webConfigPageData.latitude,
+                              g_webConfigPageData.longitude, weather)) {
+        printWeatherInfo(weather);
+        return true;
+    } else {
+        ESP_LOGE(TAG, "Failed to get weather information");
+        return false;
+    }
+}
+
+bool DeviceModeManager::fetchTransportData(DepartureData& depart) {
+    RTCConfigData& config = ConfigManager::getConfig();
+    String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
+
+    if (stopIdToUse.length() == 0) {
+        ESP_LOGW(TAG, "No stop configured for transport data");
+        return false;
+    }
+
+    ESP_LOGI(TAG, "Fetching departures for stop: %s (%s)",
+             stopIdToUse.c_str(), config.selectedStopName);
+
+    if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
+        printDepartInfo(depart);
+        if (depart.departureCount > 0) {
+            return true;
+        } else {
+            ESP_LOGW(TAG, "No departures found for stop");
+            return false;
+        }
+    } else {
+        ESP_LOGE(TAG, "Failed to get departure information from RMV");
+        return false;
+    }
 }

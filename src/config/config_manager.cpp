@@ -7,6 +7,7 @@ static const char* TAG = "CONFIG_MGR";
 // RTC memory allocation - define the static member with defaults
 RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
     false, // isValid
+    DISPLAY_MODE_HALF_AND_HALF, // displayMode - default to half and half
     0.0, // latitude
     0.0, // longitude
     "", // cityName
@@ -94,6 +95,9 @@ bool ConfigManager::loadFromNVS() {
     rtcConfig.transportInterval = preferences.getInt("transportInt", 3);
     rtcConfig.walkingTime = preferences.getInt("walkTime", 5);
 
+    // Load display mode
+    rtcConfig.displayMode = preferences.getUChar("displayMode", DISPLAY_MODE_HALF_AND_HALF);
+
     String transStart = preferences.getString("transStart", "06:00");
     copyString(rtcConfig.transportActiveStart, transStart, sizeof(rtcConfig.transportActiveStart));
     String transEnd = preferences.getString("transEnd", "09:00");
@@ -176,6 +180,9 @@ bool ConfigManager::saveToNVS() {
     preferences.putInt("weatherInt", rtcConfig.weatherInterval);
     preferences.putInt("transportInt", rtcConfig.transportInterval);
     preferences.putInt("walkTime", rtcConfig.walkingTime);
+     // Save display mode
+    preferences.putUChar("displayMode", rtcConfig.displayMode);
+
     preferences.putString("transStart", rtcConfig.transportActiveStart);
     preferences.putString("transEnd", rtcConfig.transportActiveEnd);
     preferences.putString("sleepStart", rtcConfig.sleepStart);

@@ -9,6 +9,9 @@ struct RTCConfigData {
     // Validation
     bool isValid; // 1 byte
 
+    // Display configuration
+    uint8_t displayMode; // 1 byte (0=half_and_half, 1=weather_only, 2=departure_only)
+
     // Location data
     float latitude; // 4 bytes
     float longitude; // 4 bytes
@@ -56,6 +59,11 @@ struct RTCConfigData {
 #define FILTER_U        (1 << 4)   // U-Bahn
 #define FILTER_TRAM     (1 << 5)   // Tram
 
+// Display mode constants
+#define DISPLAY_MODE_HALF_AND_HALF  0
+#define DISPLAY_MODE_WEATHER_ONLY   1
+#define DISPLAY_MODE_DEPARTURE_ONLY 2
+
 class ConfigManager {
 public:
     static ConfigManager& getInstance();
@@ -94,6 +102,10 @@ public:
     static void setWeekendMode(bool enabled);
     static void setWeekendHours(const String& transStart, const String& transEnd,
                                 const String& sleepStart, const String& sleepEnd);
+
+    // Display mode configuration
+    static uint8_t getDisplayMode() { return rtcConfig.displayMode; }
+    static void setDisplayMode(uint8_t mode) { rtcConfig.displayMode = mode; }
 
     // Filter management
     static void setFilterFlag(uint8_t flag, bool enabled);
