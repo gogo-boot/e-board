@@ -63,7 +63,7 @@ void handleConfigPage(WebServer& server) {
     // Separate Router (SSID) and IP info
     page.replace("{{ROUTER}}", g_webConfigPageData.ssid);
     page.replace("{{IP}}", g_webConfigPageData.ipAddress); // Replace with IP info if available
-    page.replace("{{MDNS}}", ".local"); // mDNS hostname
+    page.replace("{{MDNS}}", "mystation.local"); // mDNS hostname
 
     // Replace configuration values with current settings
     page.replace("{{WEATHER_INTERVAL}}", String(g_webConfigPageData.weatherInterval));
