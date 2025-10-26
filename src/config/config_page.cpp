@@ -124,10 +124,12 @@ void handleSaveConfig(WebServer& server) {
     if (doc.containsKey("city")) strncpy(config.cityName, doc["city"].as<const char*>(), sizeof(config.cityName) - 1);
     if (doc.containsKey("cityLat")) config.latitude = doc["cityLat"].as<float>();
     if (doc.containsKey("cityLon")) config.longitude = doc["cityLon"].as<float>();
-    if (doc.containsKey("stopId")) strncpy(config.selectedStopId, doc["stopId"].as<const char*>(),
-                                           sizeof(config.selectedStopId) - 1);
-    if (doc.containsKey("stopName")) strncpy(config.selectedStopName, doc["stopName"].as<const char*>(),
-                                             sizeof(config.selectedStopName) - 1);
+    if (doc.containsKey("stopId"))
+        strncpy(config.selectedStopId, doc["stopId"].as<const char*>(),
+                sizeof(config.selectedStopId) - 1);
+    if (doc.containsKey("stopName"))
+        strncpy(config.selectedStopName, doc["stopName"].as<const char*>(),
+                sizeof(config.selectedStopName) - 1);
 
     // Update ÖPNV filters
     if (doc.containsKey("filters")) {
@@ -141,29 +143,44 @@ void handleSaveConfig(WebServer& server) {
     // Update new configuration values
     if (doc.containsKey("weatherInterval")) config.weatherInterval = doc["weatherInterval"].as<int>();
     if (doc.containsKey("transportInterval")) config.transportInterval = doc["transportInterval"].as<int>();
-    if (doc.containsKey("transportActiveStart")) strncpy(config.transportActiveStart,
-                                                         doc["transportActiveStart"].as<const char*>(),
-                                                         sizeof(config.transportActiveStart) - 1);
-    if (doc.containsKey("transportActiveEnd")) strncpy(config.transportActiveEnd,
-                                                       doc["transportActiveEnd"].as<const char*>(),
-                                                       sizeof(config.transportActiveEnd) - 1);
+
+    // NEW: Handle display mode configuration
+    if (doc.containsKey("displayMode")) {
+        config.displayMode = doc["displayMode"].as<uint8_t>();
+        ESP_LOGI(TAG, "Display mode set to: %d", config.displayMode);
+    }
+
+    if (doc.containsKey("transportActiveStart"))
+        strncpy(config.transportActiveStart,
+                doc["transportActiveStart"].as<const char*>(),
+                sizeof(config.transportActiveStart) - 1);
+    if (doc.containsKey("transportActiveEnd"))
+        strncpy(config.transportActiveEnd,
+                doc["transportActiveEnd"].as<const char*>(),
+                sizeof(config.transportActiveEnd) - 1);
     if (doc.containsKey("walkingTime")) config.walkingTime = doc["walkingTime"].as<int>();
-    if (doc.containsKey("sleepStart")) strncpy(config.sleepStart, doc["sleepStart"].as<const char*>(),
-                                               sizeof(config.sleepStart) - 1);
-    if (doc.containsKey("sleepEnd")) strncpy(config.sleepEnd, doc["sleepEnd"].as<const char*>(),
-                                             sizeof(config.sleepEnd) - 1);
+    if (doc.containsKey("sleepStart"))
+        strncpy(config.sleepStart, doc["sleepStart"].as<const char*>(),
+                sizeof(config.sleepStart) - 1);
+    if (doc.containsKey("sleepEnd"))
+        strncpy(config.sleepEnd, doc["sleepEnd"].as<const char*>(),
+                sizeof(config.sleepEnd) - 1);
     if (doc.containsKey("weekendMode")) config.weekendMode = doc["weekendMode"].as<bool>();
-    if (doc.containsKey("weekendTransportStart")) strncpy(config.weekendTransportStart,
-                                                          doc["weekendTransportStart"].as<const char*>(),
-                                                          sizeof(config.weekendTransportStart) - 1);
-    if (doc.containsKey("weekendTransportEnd")) strncpy(config.weekendTransportEnd,
-                                                        doc["weekendTransportEnd"].as<const char*>(),
-                                                        sizeof(config.weekendTransportEnd) - 1);
-    if (doc.containsKey("weekendSleepStart")) strncpy(config.weekendSleepStart,
-                                                      doc["weekendSleepStart"].as<const char*>(),
-                                                      sizeof(config.weekendSleepStart) - 1);
-    if (doc.containsKey("weekendSleepEnd")) strncpy(config.weekendSleepEnd, doc["weekendSleepEnd"].as<const char*>(),
-                                                    sizeof(config.weekendSleepEnd) - 1);
+    if (doc.containsKey("weekendTransportStart"))
+        strncpy(config.weekendTransportStart,
+                doc["weekendTransportStart"].as<const char*>(),
+                sizeof(config.weekendTransportStart) - 1);
+    if (doc.containsKey("weekendTransportEnd"))
+        strncpy(config.weekendTransportEnd,
+                doc["weekendTransportEnd"].as<const char*>(),
+                sizeof(config.weekendTransportEnd) - 1);
+    if (doc.containsKey("weekendSleepStart"))
+        strncpy(config.weekendSleepStart,
+                doc["weekendSleepStart"].as<const char*>(),
+                sizeof(config.weekendSleepStart) - 1);
+    if (doc.containsKey("weekendSleepEnd"))
+        strncpy(config.weekendSleepEnd, doc["weekendSleepEnd"].as<const char*>(),
+                sizeof(config.weekendSleepEnd) - 1);
 
     // Save config mode to NVS (persists across power loss)
     configMgr.setConfigMode(false);
