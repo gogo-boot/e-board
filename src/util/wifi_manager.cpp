@@ -3,6 +3,8 @@
 #include "util/util.h"
 #include <esp_log.h>
 
+#include "config/config_struct.h"
+
 static const char* TAG = "WIFI_MGR";
 
 // RTC variables to persist WiFi state across deep sleep
@@ -86,6 +88,10 @@ void MyWiFiManager::setupAPMode(WiFiManager& wm) {
     ESP_LOGI(TAG, "Saving WiFi credentials to NVS: SSID=%s, IP=%s",
              wm.getWiFiSSID().c_str(), WiFi.localIP().toString().c_str());
     configMgr.saveToNVS();
+
+    g_webConfigPageData.ssid = wm.getWiFiSSID().c_str();
+    g_webConfigPageData.ipAddress = WiFi.localIP().toString().c_str();
+
 
     if (MDNS.begin("mystation")) {
         ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
