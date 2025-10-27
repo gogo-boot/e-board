@@ -2,7 +2,7 @@
 
 ```mermaid
 flowchart TD
-    PrepareToSleep[Calulate Next Wake Up Time]
+    PrepareToSleep[Calculate Sleep Duration]
 %%  Getting Configured Display Mode
     Start([Wake Up]) --> StartOperation
     StartOperation([Start Opration Mode]) --> GetDisplayMode[Get Configured Display Mode]
@@ -27,4 +27,25 @@ flowchart TD
     PrepareToSleep --> DeepSleep[Enter Deep Sleep]
     style Start fill: #99ff99
     style DeepSleep fill: #9999ff
+```
+
+Pseudo Code for Sleep Preparation
+
+```c++
+function prepareToSleep() {
+    int sleepDuration = 0
+    time departureFetched = getLastTransportUpdate();
+    time weatherFetched = getLastWeatherUpdate();
+
+    if departureActive {
+        //Departure Interval is in minutes so multiply by 60 to convert to seconds
+        sleepDuration = departureFetched - time.Now() + config.DepartureUpdateInterval * 60;
+    }else{
+        //Weather Intraval is in hours so multiply by 3600 to convert to seconds
+        sleepDuration = weatherFetched - time.Now() + config.WeatherUpdateInterval * 3600;
+    }
+
+    // deep sleep parameter is duration of sleep in milliseconds
+    deepsleep(sleepTime * 1000);
+}
 ```
