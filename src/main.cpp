@@ -102,12 +102,12 @@ void setup() {
 
         case DISPLAY_MODE_WEATHER_ONLY:
             ESP_LOGI(TAG, "Starting Weather-only full screen mode");
-            DeviceModeManager::showGeneralWeather();
+            DeviceModeManager::updateWeatherFull();
             break;
 
         case DISPLAY_MODE_DEPARTURE_ONLY:
             ESP_LOGI(TAG, "Starting Departure-only full screen mode");
-            DeviceModeManager::showDeparture();
+            DeviceModeManager::updateDepartureFull();
             break;
         default:
             ESP_LOGW(TAG, "Unknown display mode %d, defaulting to half-and-half", displayMode);

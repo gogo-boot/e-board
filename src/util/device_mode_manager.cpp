@@ -218,7 +218,7 @@ void DeviceModeManager::showWeatherDeparture() {
     }
 }
 
-void DeviceModeManager::showGeneralWeather() {
+void DeviceModeManager::updateWeatherFull() {
     // Use common operational setup
     if (!setupOperationalMode()) {
         return; // setupOperationalMode already handles error case
@@ -264,16 +264,14 @@ void DeviceModeManager::showGeneralWeather() {
     }
 }
 
-void DeviceModeManager::showMarineWeather() {}
-
-void DeviceModeManager::showDeparture() {
+void DeviceModeManager::updateDepartureFull() {
     // Use common operational setup
     if (!setupOperationalMode()) {
         return; // setupOperationalMode already handles error case
     }
 
     // Initialize display for departure-only mode (using HALF_AND_HALF for full departures)
-    initializeDisplay(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+    initializeDisplay(DisplayMode::DEPARTURES_ONLY, DisplayOrientation::LANDSCAPE);
 
     // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
@@ -436,7 +434,7 @@ void DeviceModeManager::enterOperationalSleep() {
 bool DeviceModeManager::fetchWeatherData(WeatherInfo& weather) {
     ESP_LOGI(TAG, "Fetching weather for location: (%f, %f)",
              g_webConfigPageData.latitude, g_webConfigPageData.longitude);
- if (getGeneralWeatherFull(g_webConfigPageData.latitude,
+    if (getGeneralWeatherFull(g_webConfigPageData.latitude,
                               g_webConfigPageData.longitude, weather)) {
         printWeatherInfo(weather);
         return true;

@@ -11,9 +11,8 @@ public:
     static bool hasValidConfiguration(bool& hasValidConfig);
     static void runConfigurationMode();
     static void showWeatherDeparture();
-    static void showGeneralWeather();
-    static void showMarineWeather();
-    static void showDeparture();
+    static void updateWeatherFull();
+    static void updateDepartureFull();
 
     // Common operational mode functions for refactoring
     static bool setupOperationalMode();
