@@ -86,12 +86,12 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     if (nextWeatherUpdateSeconds > 0 && nextDepartureUpdateSeconds > 0) {
         nearestUpdateSeconds = min(nextWeatherUpdateSeconds, nextDepartureUpdateSeconds);
         ESP_LOGI(TAG, "Both updates needed - nearest at: %u seconds", nearestUpdateSeconds);
-    } else if (nextWeatherUpdateSeconds > 0) {
-        nearestUpdateSeconds = nextWeatherUpdateSeconds;
-        ESP_LOGI(TAG, "Only weather update needed at: %u seconds", nearestUpdateSeconds);
     } else if (nextDepartureUpdateSeconds > 0) {
         nearestUpdateSeconds = nextDepartureUpdateSeconds;
         ESP_LOGI(TAG, "Only departure update needed at: %u seconds", nearestUpdateSeconds);
+    } else if (nextWeatherUpdateSeconds > 0) {
+        nearestUpdateSeconds = nextWeatherUpdateSeconds;
+        ESP_LOGI(TAG, "Only weather update needed at: %u seconds", nearestUpdateSeconds);
     } else {
         // Fallback - wake up in 1 minute
         nearestUpdateSeconds = currentTimeSeconds + 60;
