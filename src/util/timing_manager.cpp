@@ -35,10 +35,9 @@ UpdateType TimingManager::getRequiredUpdates() {
 }
 
 uint64_t TimingManager::getNextSleepDuration() {
-    RTCConfigData& config = ConfigManager::getConfig();
-
     // Check if we're in sleep hours
     TimeOfDay timeStatus = getCurrentTimeStatus();
+
     if (timeStatus == TimeOfDay::SLEEP_HOURS) {
         // Calculate time until sleep period ends
         String sleepEnd = isWeekend() ? ConfigManager::getWeekendSleepEnd() : ConfigManager::getSleepEnd();
@@ -136,6 +135,11 @@ void TimingManager::markTransportUpdated() {
     ESP_LOGI(TAG, "Transport update timestamp recorded: %u", (uint32_t)now);
 }
 
+// currentTime, lastWeather, lastTransport: seconds since Unix epoch (timestamps)
+// weatherInterval: minutes (converted from hours earlier in the function)
+// transportInterval: minutes
+// minutesSinceWeather, minutesSinceTransport: minutes
+// minutesUntilWeather, minutesUntilTransport: minutes
 int TimingManager::getMinutesUntilNextUpdate() {
     RTCConfigData& config = ConfigManager::getConfig();
 

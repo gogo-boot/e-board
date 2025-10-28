@@ -2,7 +2,7 @@
 
 ```mermaid
 flowchart TD
-    PrepareToSleep[Calculate Sleep Duration]
+    PrepareToSleep[Hibernate Display and Wifi Modem]
 %%  Getting Configured Display Mode
     Start([Wake Up]) --> StartOperation
     StartOperation([Start Opration Mode]) --> GetDisplayMode[Get Configured Display Mode]
@@ -24,7 +24,8 @@ flowchart TD
 %%  If Departure is in Active Time / Time to update Weather
     IfNeedWeatherUpdate -->|no| PrepareToSleep
     IfNeedWeatherUpdate -->|yes| GetWeather
-    PrepareToSleep --> DeepSleep[Enter Deep Sleep]
+    PrepareToSleep --> CalculateSleepDuration[Calculate Sleep Duration Based on Next Required Update]
+    CalculateSleepDuration --> DeepSleep[Enter Deep Sleep]
     style Start fill: #99ff99
     style DeepSleep fill: #9999ff
 ```
@@ -32,20 +33,52 @@ flowchart TD
 Pseudo Code for Sleep Preparation
 
 ```c++
-function prepareToSleep() {
-    int sleepDuration = 0
-    time departureFetched = getLastTransportUpdate();
-    time weatherFetched = getLastWeatherUpdate();
+function cacluateSleepDuration() {
+    time currentTime = time.Now();
+    time nextDepartureUpdate = 0;
+    time nextWeatherUpdate = 0;
+    time nextWakeupTime = 0;
 
-    if departureActive {
-        //Departure Interval is in minutes so multiply by 60 to convert to seconds
-        sleepDuration = departureFetched - time.Now() + config.DepartureUpdateInterval * 60;
-    }else{
-        //Weather Intraval is in hours so multiply by 3600 to convert to seconds
-        sleepDuration = weatherFetched - time.Now() + config.WeatherUpdateInterval * 3600;
+    // Calculate next departure update time
+    if (config.displayMode == 0 || config.displayMode == 2) { // half-and-half or departure-only
+        time lastDepartureUpdate = getLastTransportUpdate();
+        nextDepartureUpdate = lastDepartureUpdate + (config.transportInterval * 60); // minutes to seconds
     }
 
-    // deep sleep parameter is duration of sleep in milliseconds
-    deepsleep(sleepTime * 1000);
+    // Calculate next weather update time
+    if (config.displayMode == 0 || config.displayMode == 1) { // half-and-half or weather-only
+        time lastWeatherUpdate = getLastWeatherUpdate();
+        nextWeatherUpdate = lastWeatherUpdate + (config.weatherInterval * 3600); // hours to seconds
+    }
+
+    // Determine earliest required update
+    if (nextDepartureUpdate > 0 && nextWeatherUpdate > 0) {
+        // Both updates needed - wake up for the earliest one
+        nextWakeupTime = min(nextDepartureUpdate, nextWeatherUpdate);
+    } else if (nextDepartureUpdate > 0) {
+        // Only departure update needed
+        nextWakeupTime = nextDepartureUpdate;
+    } else if (nextWeatherUpdate > 0) {
+        // Only weather update needed
+        nextWakeupTime = nextWeatherUpdate;
+    } else {
+        // Default fallback - wake up in 1 minute
+        nextWakeupTime = currentTime + 60;
+    }
+
+    // Calculate sleep duration in seconds
+    int sleepDurationSeconds = nextWakeupTime - currentTime;
+
+    // Ensure minimum sleep time and maximum reasonable sleep time
+    if (sleepDurationSeconds < 30) {
+        sleepDurationSeconds = 30; // Minimum 30 seconds
+    }
+
+    if (isInConfiguredDeepSleepTime(sleepDurationSeconds)){
+        sleepDurationSeconds = getConfiguredDeepSleepEndDurationSecond();
+    }
+
+    // Convert to microseconds for ESP32 deep sleep
+    esp_deep_sleep(sleepDurationSeconds * 1000000ULL);
 }
 ```
