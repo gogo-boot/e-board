@@ -33,60 +33,6 @@ void printWakeupReason() {
     }
 }
 
-// Calculate sleep time until next scheduled wakeup
-uint64_t calculateSleepTime(int wakeupIntervalMinutes) {
-    time_t now = time(nullptr);
-    struct tm* timeinfo = localtime(&now);
-
-    // Calculate next wakeup time based on interval
-    int currentMinute = timeinfo->tm_min;
-    int currentSecond = timeinfo->tm_sec;
-
-    // Find next interval boundary (e.g., 0, 5, 10, 15, 20... for 5-min intervals)
-    int nextWakeupMinute = ((currentMinute / wakeupIntervalMinutes) + 1) * wakeupIntervalMinutes;
-    int minutesToSleep = nextWakeupMinute - currentMinute;
-    int secondsToSleep = (minutesToSleep * 60) - currentSecond;
-
-    // Handle hour boundary
-    if (nextWakeupMinute >= 60) {
-        secondsToSleep = (60 - currentMinute) * 60 - currentSecond;
-    }
-
-    ESP_LOGI(TAG, "Current: %02d:%02d:%02d, next wakeup in %d seconds (at xx:%02d:00)",
-             timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
-             secondsToSleep, nextWakeupMinute % 60);
-
-    return (uint64_t)secondsToSleep * 1000000ULL; // Convert to microseconds
-}
-
-// Calculate sleep time until specific time (e.g., 01:00)
-uint64_t calculateSleepUntilTime(int targetHour, int targetMinute) {
-    time_t now = time(nullptr);
-    struct tm* timeinfo = localtime(&now);
-
-    // Create target time structure
-    struct tm targetTime = *timeinfo;
-    targetTime.tm_hour = targetHour;
-    targetTime.tm_min = targetMinute;
-    targetTime.tm_sec = 0;
-
-    time_t targetTimestamp = mktime(&targetTime);
-
-    // If target time is in the past today, set it for tomorrow
-    if (targetTimestamp <= now) {
-        targetTime.tm_mday += 1;
-        targetTimestamp = mktime(&targetTime);
-    }
-
-    int secondsToSleep = (int)(targetTimestamp - now);
-
-    ESP_LOGI(TAG, "Current: %02d:%02d:%02d, sleeping until %02d:%02d:00 (%d seconds)",
-             timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
-             targetHour, targetMinute, secondsToSleep);
-
-    return (uint64_t)secondsToSleep * 1000000ULL;
-}
-
 // Enhanced deep sleep function with multiple wakeup options
 void enterDeepSleep(uint64_t sleepTimeSeconds) {
     if (sleepTimeSeconds <= 0) {
@@ -100,7 +46,7 @@ void enterDeepSleep(uint64_t sleepTimeSeconds) {
         TimeManager::setupNTPTime();
     }
 
-    ESP_LOGI(TAG, "Entering deep sleep for %u seconds (%.1f minutes)",
+    ESP_LOGI(TAG, "Entering deep sleep for %u seconds (%u minutes)",
              sleepTimeSeconds, sleepTimeSeconds / 60);
 
     // Configure timer wakeup
