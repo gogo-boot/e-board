@@ -34,7 +34,7 @@ UpdateType TimingManager::getRequiredUpdates() {
     return UpdateType::WEATHER_ONLY; // Default fallback
 }
 
-uint64_t TimingManager::getNextSleepDuration() {
+uint64_t TimingManager::getNextSleepDurationSeconds() {
     // Check if we're in sleep hours
     TimeOfDay timeStatus = getCurrentTimeStatus();
 
@@ -63,7 +63,7 @@ uint64_t TimingManager::getNextSleepDuration() {
     minutesUntilNext = max(1, minutesUntilNext);
 
     ESP_LOGI(TAG, "Next update in %d minutes", minutesUntilNext);
-    return (uint64_t)minutesUntilNext * 60 * 1000000ULL; // Convert to microseconds
+    return (uint64_t)minutesUntilNext * 60; // Convert to seconds
 }
 
 TimeOfDay TimingManager::getCurrentTimeStatus() {

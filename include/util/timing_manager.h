@@ -21,7 +21,7 @@ public:
     static UpdateType getRequiredUpdates();
 
     // Get next sleep duration based on mode and next required update
-    static uint64_t getNextSleepDuration();
+    static uint64_t getNextSleepDurationSeconds();
 
     // Check if currently in active hours (considering weekday/weekend)
     static TimeOfDay getCurrentTimeStatus();

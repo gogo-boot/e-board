@@ -423,10 +423,8 @@ void DeviceModeManager::enterOperationalSleep() {
     DisplayManager::hibernate();
 
     // Calculate sleep time using TimingManager based on configured intervals
-    uint64_t sleepTime = TimingManager::getNextSleepDuration();
-    ESP_LOGI(TAG, "Entering deep sleep for %llu microseconds (%.1f minutes)", sleepTime,
-             sleepTime / (60.0 * 1000000.0));
-    enterDeepSleep(sleepTime);
+    uint64_t sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
+    enterDeepSleep(sleepTimeSeconds);
 }
 
 // ===== HELPER FUNCTIONS FOR DATA FETCHING =====
