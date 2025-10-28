@@ -17,14 +17,8 @@ enum class TimeOfDay {
 
 class TimingManager {
 public:
-    // Determine what needs to be updated based on last update times and intervals
-    static UpdateType getRequiredUpdates();
-
     // Get next sleep duration based on mode and next required update
     static uint64_t getNextSleepDurationSeconds();
-
-    // Check if currently in active hours (considering weekday/weekend)
-    static TimeOfDay getCurrentTimeStatus();
 
     // Check if transport should be active at current time
     static bool isTransportActiveTime();
@@ -36,11 +30,6 @@ public:
     static void markWeatherUpdated();
     static void markTransportUpdated();
 
-    // Get time until next required update (in minutes)
-    static int getMinutesUntilNextUpdate();
-
-    // Calculate walking time adjusted departure filter (in minutes from now)
-    static int getEarliestDepartureTime();
     // Check if it's time for a specific update type
     static bool isTimeForWeatherUpdate();
     static bool isTimeForTransportUpdate();

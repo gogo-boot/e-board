@@ -9,31 +9,6 @@ static const char* TAG = "TIMING_MGR";
 RTC_DATA_ATTR uint32_t lastWeatherUpdate = 0;
 RTC_DATA_ATTR uint32_t lastTransportUpdate = 0;
 
-UpdateType TimingManager::getRequiredUpdates() {
-    bool needWeather = isTimeForWeatherUpdate();
-    bool needTransport = isTimeForTransportUpdate();
-
-    // Check if we're in active transport hours
-    if (!isTransportActiveTime()) {
-        needTransport = false;
-        ESP_LOGI(TAG, "Outside transport active hours - skipping transport update");
-    }
-
-    if (needWeather && needTransport) {
-        ESP_LOGI(TAG, "Both weather and transport updates required");
-        return UpdateType::BOTH;
-    } else if (needWeather) {
-        ESP_LOGI(TAG, "Weather update required");
-        return UpdateType::WEATHER_ONLY;
-    } else if (needTransport) {
-        ESP_LOGI(TAG, "Transport update required");
-        return UpdateType::TRANSPORT_ONLY;
-    }
-
-    ESP_LOGI(TAG, "No updates required");
-    return UpdateType::WEATHER_ONLY; // Default fallback
-}
-
 uint64_t TimingManager::getNextSleepDurationSeconds() {
     // Get current time in seconds since Unix epoch
     time_t now;
@@ -202,28 +177,6 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     return sleepDurationSeconds;
 }
 
-TimeOfDay TimingManager::getCurrentTimeStatus() {
-    int currentMinutes = getCurrentMinutesSinceMidnight();
-
-    String sleepStart, sleepEnd;
-    if (isWeekend()) {
-        sleepStart = ConfigManager::getWeekendSleepStart();
-        sleepEnd = ConfigManager::getWeekendSleepEnd();
-    } else {
-        sleepStart = ConfigManager::getSleepStart();
-        sleepEnd = ConfigManager::getSleepEnd();
-    }
-
-    int sleepStartMinutes = parseTimeString(sleepStart);
-    int sleepEndMinutes = parseTimeString(sleepEnd);
-
-    if (isTimeInRange(currentMinutes, sleepStartMinutes, sleepEndMinutes)) {
-        return TimeOfDay::SLEEP_HOURS;
-    }
-
-    return TimeOfDay::ACTIVE_HOURS;
-}
-
 bool TimingManager::isTransportActiveTime() {
     int currentMinutes = getCurrentMinutesSinceMidnight();
 
@@ -269,44 +222,6 @@ void TimingManager::markTransportUpdated() {
     time(&now);
     setLastTransportUpdate((uint32_t)now);
     ESP_LOGI(TAG, "Transport update timestamp recorded: %u", (uint32_t)now);
-}
-
-// currentTime, lastWeather, lastTransport: seconds since Unix epoch (timestamps)
-// weatherInterval: minutes (converted from hours earlier in the function)
-// transportInterval: minutes
-// minutesSinceWeather, minutesSinceTransport: minutes
-// minutesUntilWeather, minutesUntilTransport: minutes
-int TimingManager::getMinutesUntilNextUpdate() {
-    RTCConfigData& config = ConfigManager::getConfig();
-
-    int weatherInterval = config.weatherInterval * 60; // Convert hours to minutes
-    int transportInterval = config.transportInterval; // Already in minutes
-
-    time_t now;
-    time(&now);
-    uint32_t currentTime = (uint32_t)now;
-
-    uint32_t lastWeather = getLastWeatherUpdate();
-    uint32_t lastTransport = getLastTransportUpdate();
-
-    int minutesSinceWeather = lastWeather > 0 ? (currentTime - lastWeather) / 60 : weatherInterval;
-    int minutesSinceTransport = lastTransport > 0 ? (currentTime - lastTransport) / 60 : transportInterval;
-
-    int minutesUntilWeather = max(0, weatherInterval - minutesSinceWeather);
-    int minutesUntilTransport = max(0, transportInterval - minutesSinceTransport);
-
-    // If transport is not in active hours, ignore transport timing
-    if (!isTransportActiveTime()) {
-        return minutesUntilWeather;
-    }
-
-    // Return the shorter interval (next required update)
-    return min(minutesUntilWeather, minutesUntilTransport);
-}
-
-int TimingManager::getEarliestDepartureTime() {
-    RTCConfigData& config = ConfigManager::getConfig();
-    return config.walkingTime; // Walking time in minutes from now
 }
 
 bool TimingManager::isTimeForWeatherUpdate() {
