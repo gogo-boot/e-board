@@ -1,6 +1,11 @@
 #include "util/timing_manager.h"
+#ifdef NATIVE_TEST
+#include "time_manager.h"
+#include "esp_log.h"
+#else
 #include "util/time_manager.h"
 #include <esp_log.h>
+#endif
 #include <time.h>
 
 static const char* TAG = "TIMING_MGR";
