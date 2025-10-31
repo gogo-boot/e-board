@@ -61,60 +61,65 @@ void tearDown(void) {
     MockTime::useRealTime();
 }
 
+// If weather-only mode, should wake up every hour
 void test_getNextSleepDurationSeconds_weather_only_mode() {
+    time_t morningTime = createTime(2025, 10, 30, 7, 30, 0); // Thursday
+    MockTime::setMockTime(morningTime);
+
     // Test weather-only mode (displayMode = 1)
     RTCConfigData& config = ConfigManager::getConfig();
     config.displayMode = 1; // weather_only
-    config.weatherInterval = 1; // 1 hour
+
+    TimingManager::setLastWeatherUpdate((uint32_t)morningTime);
 
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
 
-    // Should return at least minimum sleep duration (30 seconds)
-    TEST_ASSERT_GREATER_OR_EQUAL(30, sleepDuration);
-
-    printf("%llu\n", sleepDuration);
-
-    // Should be reasonable (not more than 1 hour + buffer)
-    TEST_ASSERT_LESS_THAN(3700, sleepDuration); // 1 hour + 100 seconds buffer
+    TEST_ASSERT_EQUAL(3600, sleepDuration); // 1 hour
 }
 
+// If transport only mode, should wake up every 3 minutes during active hours
 void test_getNextSleepDurationSeconds_departure_only_mode() {
+    time_t morningTime = createTime(2025, 10, 30, 7, 30, 0); // Thursday
+    MockTime::setMockTime(morningTime);
+
     // Test departure-only mode (displayMode = 2)
     RTCConfigData& config = ConfigManager::getConfig();
     config.displayMode = 2; // departure_only
-    config.transportInterval = 5; // 5 minutes
 
+    TimingManager::setLastTransportUpdate((uint32_t)morningTime);
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
 
-    // Should return at least minimum sleep duration
-    TEST_ASSERT_GREATER_OR_EQUAL(30, sleepDuration);
-
-    // Should be reasonable (not more than 5 minutes + buffer)
-    TEST_ASSERT_LESS_THAN(350, sleepDuration); // 5 minutes + 50 seconds buffer
+    TEST_ASSERT_EQUAL(180, sleepDuration);
 }
 
-void test_getNextSleepDurationSeconds_half_and_half_mode() {
-    // Test half-and-half mode (displayMode = 0)
+// Todo - Failed.. fix it
+// If transport only mode, but during inactive hours, should wake up in 21 hours after deep sleep
+void test_getNextSleepDurationSeconds_departure_only_mode_inactive() {
+    time_t morningTime = createTime(2025, 10, 30, 9, 0, 0); // Thursday
+    MockTime::setMockTime(morningTime);
+
+    // Test departure-only mode (displayMode = 2)
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 0; // half_and_half
-    config.weatherInterval = 2; // 2 hours
-    config.transportInterval = 10; // 10 minutes
+    config.displayMode = 2; // departure_only
 
+    TimingManager::setLastTransportUpdate((uint32_t)morningTime);
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
 
-    // Should return at least minimum sleep duration
-    TEST_ASSERT_GREATER_OR_EQUAL(30, sleepDuration);
-
-    // Should wake up for the nearest update (transport is more frequent)
-    // So should be closer to transport interval than weather interval
-    TEST_ASSERT_LESS_THAN(650, sleepDuration); // 10 minutes + 50 seconds buffer
+    TEST_ASSERT_EQUAL(3600 * 21, sleepDuration);
 }
 
+// If weather and transport not updated, Ensure minimum sleep duration of 30 seconds is enforced
 void test_minimum_sleep_duration_enforced() {
+    time_t morningTime = createTime(2025, 10, 30, 9, 0, 0); // Thursday
+    MockTime::setMockTime(morningTime);
+
     // Test that minimum sleep duration is always enforced
     RTCConfigData& config = ConfigManager::getConfig();
     config.displayMode = 2; // departure_only
     config.transportInterval = 1; // 1 minute - very frequent updates
+
+    TimingManager::setLastWeatherUpdate(0);
+    TimingManager::setLastTransportUpdate(0);
 
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
 
@@ -122,44 +127,7 @@ void test_minimum_sleep_duration_enforced() {
     TEST_ASSERT_GREATER_OR_EQUAL(30, sleepDuration);
 }
 
-void test_parseTimeString_helper() {
-    // Test the time string parsing helper function
-    String testTime1 = "06:30";
-    String testTime2 = "23:45";
-    String testTime3 = "00:00";
-    // Access through TimingManager (we'll need to make parseTimeString public for testing)
-    // For now, we'll test indirectly through the main function behavior
-    TEST_ASSERT_TRUE(true); // Placeholder - would need access to private method
-}
-
-void test_isTimeInRange_helper() {
-    // Test the time range checking
-    // This would also need access to private methods
-    TEST_ASSERT_TRUE(true); // Placeholder
-}
-
-void test_with_previous_weather_update() {
-    // Set up scenario where weather was updated 30 minutes ago
-    time_t now = time(nullptr);
-    uint32_t thirtyMinutesAgo = (uint32_t)now - (30 * 60); // 30 minutes in seconds
-
-    TimingManager::setLastWeatherUpdate(thirtyMinutesAgo);
-    TimingManager::setLastTransportUpdate(0); // No previous transport update
-
-    RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 1; // weather_only
-    config.weatherInterval = 1; // 1 hour
-
-    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
-
-    printf("Sleep duration with 30min ago weather update: %llu seconds (~%llu minutes)\n",
-           sleepDuration, sleepDuration / 60);
-
-    // Should sleep for approximately 30 minutes (1 hour - 30 minutes already passed)
-    TEST_ASSERT_GREATER_OR_EQUAL(1700, sleepDuration); // ~30 min - buffer
-    TEST_ASSERT_LESS_THAN(1900, sleepDuration); // ~30 min + buffer
-}
-
+// If transport was updated 2 minutes ago, should wake up in ~3 minutes for next update
 void test_with_previous_transport_update() {
     // Set up scenario where transport was updated 2 minutes ago
     time_t now = time(nullptr);
@@ -184,8 +152,10 @@ void test_with_previous_transport_update() {
     TEST_ASSERT_LESS_THAN(210, sleepDuration); // ~3 min + buffer
 }
 
+// If weather was updated 1 hour ago and transport 2 minutes ago, should wake up for nearest update
 void test_with_both_previous_updates() {
-    time_t now = time(nullptr);
+    time_t now = createTime(2025, 10, 30, 9, 0, 0);
+    MockTime::setMockTime(now);
 
     // Weather was updated 1 hour ago
     uint32_t oneHourAgo = (uint32_t)now - (60 * 60);
@@ -210,8 +180,7 @@ void test_with_both_previous_updates() {
     printf("  Transport updated: 2 minutes ago (interval: 5 minutes)\n");
 
     // Should wake up for the nearest update (transport in ~3 minutes)
-    TEST_ASSERT_GREATER_OR_EQUAL(150, sleepDuration); // ~3 min - buffer
-    TEST_ASSERT_LESS_THAN(210, sleepDuration); // ~3 min + buffer
+    TEST_ASSERT_EQUAL(180, sleepDuration); // ~3 min + buffer
 }
 
 void test_weather_update_overdue() {
@@ -250,8 +219,7 @@ void test_verify_timestamp_setters() {
 }
 
 void test_transport_active_time_morning() {
-    // Set mock time to 7:30 AM on a weekday (Wednesday)
-    time_t morningTime = createTime(2024, 10, 30, 7, 30, 0); // Wednesday
+    time_t morningTime = createTime(2024, 10, 30, 7, 30, 0); // Thursday
     MockTime::setMockTime(morningTime);
 
     RTCConfigData& config = ConfigManager::getConfig();
@@ -300,32 +268,42 @@ void test_transport_weekend_time() {
     TEST_ASSERT_TRUE(isActive);
 }
 
-void test_sleep_duration_with_mocked_time() {
-    // Set mock time to 7:00 AM on a weekday
-    time_t morningTime = createTime(2024, 10, 30, 7, 0, 0);
-    MockTime::setMockTime(morningTime);
+// Todo - Fix Friday night to Saturday morning deep sleep test
+void test_friday_to_saturday_deepsleep() {
+    // Set mock time to 9:00 AM on Saturday
+    time_t fridayNight = createTime(2025, 10, 31, 22, 0, 0); // Friday night
+    MockTime::setMockTime(fridayNight);
 
-    // Set last update to 5 minutes ago
-    TimingManager::setLastTransportUpdate((uint32_t)morningTime - (5 * 60));
-
-    RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 2; // departure_only
-    config.transportInterval = 10; // 10 minutes
-    strcpy(config.transportActiveStart, "06:00");
-    strcpy(config.transportActiveEnd, "09:00");
+    // Set last transport update to now (just updated)
+    TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastWeatherUpdate((uint32_t)fridayNight);
 
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
-
-    printf("Sleep duration at 7:00 AM (5 min after last update, 10 min interval): %llu seconds (~%llu min)\n",
+    printf("Sleep until Saturday 7 AM (transport inactive hours): %llu seconds (~%llu min)\n",
            sleepDuration, sleepDuration / 60);
 
-    // Should sleep for about 5 more minutes (10 min interval - 5 min elapsed)
-    TEST_ASSERT_GREATER_OR_EQUAL(250, sleepDuration); // ~5 min - buffer
-    TEST_ASSERT_LESS_THAN(350, sleepDuration); // ~5 min + buffer
+    TEST_ASSERT_EQUAL(3600 * 9, sleepDuration);
 }
 
+// Todo - Fix Sunday night to Monday morning deep sleep test
+void test_sunday_to_monday_deepsleep() {
+    // Set mock time to 9:00 AM on Saturday
+    time_t sundayNight = createTime(2025, 11, 2, 22, 30, 0); // Sunday night
+    MockTime::setMockTime(sundayNight);
+
+    // Set last transport update to now (just updated)
+    TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastWeatherUpdate((uint32_t)sundayNight);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+    printf("Sleep until Monday 5:30 AM (transport inactive hours): %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    TEST_ASSERT_EQUAL(3600 * 7, sleepDuration);
+}
+
+// If weather is never updated, transport just updated, during transport inactive hours
 void test_sleep_duration_half_half_weather_updated_never() {
-    // Set mock time to 10:00 AM (outside active hours 06:00-09:00)
     time_t latemorning = createTime(2025, 10, 30, 10, 0, 0);
     MockTime::setMockTime(latemorning);
 
@@ -333,53 +311,77 @@ void test_sleep_duration_half_half_weather_updated_never() {
     TimingManager::setLastTransportUpdate((uint32_t)latemorning);
     TimingManager::setLastWeatherUpdate(0); // No weather update
 
-    RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 0; // half_and_half
-    config.weatherInterval = 2; // 2 hours
-    config.transportInterval = 5; // 5 minutes
-    strcpy(config.transportActiveStart, "06:00");
-    strcpy(config.transportActiveEnd, "09:00");
-    config.weekendMode = false;
-
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
     printf("Sleep duration at 10:00 AM (outside active hours): %llu seconds (~%llu min)\n",
            sleepDuration, sleepDuration / 60);
 
-    // Should use weather update time since transport is outside active hours
-    // Should be minimum sleep (30 sec) since weather was never updated
     TEST_ASSERT_EQUAL(30, sleepDuration);
 }
 
-void test_sleep_duration_half_half_weather_updated_now() {
-    // time_t now = time(nullptr);
-    // Set mock time to 10:00 AM (outside active hours 06:00-09:00)
-    time_t latemorning = createTime(2025, 10, 30, 10, 0, 0);
+// If both weather and transport just updated, during transport active hours
+void test_sleep_duration_half_half_weather_transport_active_updated_now() {
+    time_t latemorning = createTime(2025, 10, 30, 6, 0, 0);
     MockTime::setMockTime(latemorning);
 
     // Set last transport update to now (just updated)
     TimingManager::setLastTransportUpdate((uint32_t)latemorning);
-    TimingManager::setLastWeatherUpdate(0); // No weather update
-
-    RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 0; // half_and_half
-    config.weatherInterval = 2; // 2 hours
-    config.transportInterval = 5; // 5 minutes
-    strcpy(config.transportActiveStart, "06:00");
-    strcpy(config.transportActiveEnd, "09:00");
-    config.weekendMode = false;
+    TimingManager::setLastWeatherUpdate((uint32_t)latemorning);
 
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
-    printf("Sleep duration at 10:00 AM (outside active hours): %llu seconds (~%llu min)\n",
+    printf("Sleep duration at 6:00 AM (active hours): %llu seconds (~%llu min)\n",
            sleepDuration, sleepDuration / 60);
 
-    // Should use weather update time since transport is outside active hours
-    // Should be minimum sleep (30 sec) since weather was never updated
-    TEST_ASSERT_EQUAL(30, sleepDuration);
+    TEST_ASSERT_EQUAL(180, sleepDuration);
 }
 
-void test_sleep_duration_half_half_trasport_updated_now() {}
+// If both weather and transport just updated, during transport inactive hours
+void test_sleep_duration_half_half_weather_transport_inactive_updated_now() {
+    time_t latemorning = createTime(2025, 10, 30, 9, 0, 0);
+    MockTime::setMockTime(latemorning);
 
-void test_sleep_duration_half_half_do_deepsleep() {}
+    // Set last transport update to now (just updated)
+    TimingManager::setLastTransportUpdate((uint32_t)latemorning);
+    TimingManager::setLastWeatherUpdate((uint32_t)latemorning);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+    printf("Sleep duration at 9:00 AM (transport inactive hours): %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    TEST_ASSERT_EQUAL(3600, sleepDuration);
+}
+
+// Todo - Fix test If weather transport never updated, during transport inactive hours
+void test_sleep_duration_half_half_weather_trasport_inactive_transport_not_updated() {
+    time_t latemorning = createTime(2025, 10, 30, 9, 0, 0);
+    MockTime::setMockTime(latemorning);
+
+    // Set last transport update to now (just updated)
+    TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastWeatherUpdate((uint32_t)latemorning);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+    printf("Sleep duration at 9:00 AM (transport inactive hours): %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    TEST_ASSERT_EQUAL(3600, sleepDuration);
+}
+
+// If weather updated and transport updated long ago before deep sleep period
+void test_sleep_duration_half_half_deep_sleep() {
+    time_t morning = createTime(2025, 10, 30, 9, 0, 0);
+    time_t evening = createTime(2025, 10, 30, 22, 0, 0);
+    MockTime::setMockTime(evening);
+
+    TimingManager::setLastTransportUpdate((uint32_t)morning); // Updated at 09:00 AM
+    TimingManager::setLastWeatherUpdate((uint32_t)evening); // Updated at 22:00 PM
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+    printf("Sleep duration at 22:00 AM : %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    // Should sleep until 05:30 next day
+    TEST_ASSERT_EQUAL(3600 * 7.5L, sleepDuration);
+}
 
 void test_sleep_duration_weather_full_weather_updated_now() {}
 
@@ -398,13 +400,10 @@ int main() {
 
     RUN_TEST(test_getNextSleepDurationSeconds_weather_only_mode);
     RUN_TEST(test_getNextSleepDurationSeconds_departure_only_mode);
-    RUN_TEST(test_getNextSleepDurationSeconds_half_and_half_mode);
+    RUN_TEST(test_getNextSleepDurationSeconds_departure_only_mode_inactive);
     RUN_TEST(test_minimum_sleep_duration_enforced);
-    RUN_TEST(test_parseTimeString_helper);
-    RUN_TEST(test_isTimeInRange_helper);
 
     // Tests with RTC timestamp variables
-    RUN_TEST(test_with_previous_weather_update);
     RUN_TEST(test_with_previous_transport_update);
     RUN_TEST(test_with_both_previous_updates);
     RUN_TEST(test_weather_update_overdue);
@@ -414,8 +413,15 @@ int main() {
     RUN_TEST(test_transport_active_time_morning);
     RUN_TEST(test_transport_inactive_time_afternoon);
     RUN_TEST(test_transport_weekend_time);
-    RUN_TEST(test_sleep_duration_with_mocked_time);
-    RUN_TEST(test_sleep_duration_half_half_weather_updated_now);
+    RUN_TEST(test_friday_to_saturday_deepsleep);
+    RUN_TEST(test_sunday_to_monday_deepsleep);
+
+    // test start
+    RUN_TEST(test_sleep_duration_half_half_weather_updated_never);
+    RUN_TEST(test_sleep_duration_half_half_weather_transport_active_updated_now);
+    RUN_TEST(test_sleep_duration_half_half_weather_transport_inactive_updated_now);
+    RUN_TEST(test_sleep_duration_half_half_weather_trasport_inactive_transport_not_updated);
+    RUN_TEST(test_sleep_duration_half_half_deep_sleep);
 
     return UNITY_END();
 }
