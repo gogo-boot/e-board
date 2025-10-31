@@ -2,9 +2,12 @@
 #ifdef NATIVE_TEST
 #include "time_manager.h"
 #include "esp_log.h"
+#include "mock_time.h"
+#define GET_CURRENT_TIME() MockTime::now()
 #else
 #include "util/time_manager.h"
 #include <esp_log.h>
+#define GET_CURRENT_TIME() ({ time_t t; time(&t); t; })
 #endif
 #include <time.h>
 
@@ -16,8 +19,7 @@ RTC_DATA_ATTR uint32_t lastTransportUpdate = 0;
 
 uint64_t TimingManager::getNextSleepDurationSeconds() {
     // Get current time in seconds since Unix epoch
-    time_t now;
-    time(&now);
+    time_t now = GET_CURRENT_TIME();
     uint32_t currentTimeSeconds = (uint32_t)now;
 
     // Get configuration
@@ -206,8 +208,7 @@ bool TimingManager::isWeekend() {
         return false; // Weekend mode disabled
     }
 
-    time_t now;
-    time(&now);
+    time_t now = GET_CURRENT_TIME();
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
 
@@ -216,15 +217,13 @@ bool TimingManager::isWeekend() {
 }
 
 void TimingManager::markWeatherUpdated() {
-    time_t now;
-    time(&now);
+    time_t now = GET_CURRENT_TIME();
     setLastWeatherUpdate((uint32_t)now);
     ESP_LOGI(TAG, "Weather update timestamp recorded: %u", (uint32_t)now);
 }
 
 void TimingManager::markTransportUpdated() {
-    time_t now;
-    time(&now);
+    time_t now = GET_CURRENT_TIME();
     setLastTransportUpdate((uint32_t)now);
     ESP_LOGI(TAG, "Transport update timestamp recorded: %u", (uint32_t)now);
 }
@@ -238,8 +237,7 @@ bool TimingManager::isTimeForWeatherUpdate() {
         return true; // No previous update
     }
 
-    time_t now;
-    time(&now);
+    time_t now = GET_CURRENT_TIME();
     uint32_t currentTime = (uint32_t)now;
 
     uint32_t intervalSeconds = config.weatherInterval * 3600; // Convert hours to seconds
@@ -260,8 +258,7 @@ bool TimingManager::isTimeForTransportUpdate() {
         return true; // No previous update
     }
 
-    time_t now;
-    time(&now);
+    time_t now = GET_CURRENT_TIME();
     uint32_t currentTime = (uint32_t)now;
 
     uint32_t intervalSeconds = config.transportInterval * 60; // Convert minutes to seconds
@@ -285,8 +282,7 @@ int TimingManager::parseTimeString(const String& timeStr) {
 }
 
 int TimingManager::getCurrentMinutesSinceMidnight() {
-    time_t now;
-    time(&now);
+    time_t now = GET_CURRENT_TIME();
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
 

@@ -34,15 +34,15 @@ public:
     static bool isTimeForWeatherUpdate();
     static bool isTimeForTransportUpdate();
 
+    // RTC timestamp management (public for testing)
+    static uint32_t getLastWeatherUpdate();
+    static uint32_t getLastTransportUpdate();
+    static void setLastWeatherUpdate(uint32_t timestamp);
+    static void setLastTransportUpdate(uint32_t timestamp);
+
 private:
     // Helper functions
     static int parseTimeString(const String& timeStr); // Convert "HH:MM" to minutes since midnight
     static int getCurrentMinutesSinceMidnight();
     static bool isTimeInRange(int currentMinutes, int startMinutes, int endMinutes);
-
-    // RTC timestamp management
-    static uint32_t getLastWeatherUpdate();
-    static uint32_t getLastTransportUpdate();
-    static void setLastWeatherUpdate(uint32_t timestamp);
-    static void setLastTransportUpdate(uint32_t timestamp);
 };
