@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug ESP32 Native" type="CLionExternalRunConfiguration" factoryName="Application" PROGRAM_PARAMS="test -e native --without-uploading --without-testing" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://$ProjectFileDir$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="mystation" TARGET_NAME="Unnamed" CONFIG_NAME="Unnamed" RUN_PATH="$PROJECT_DIR$/.pio/build/native/program">
+    <method v="2">
+      <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      <option name="ToolBeforeRunTask" enabled="true" actionId="Tool_External Tools_pio test" />
+    </method>
+  </configuration>
+</component>
