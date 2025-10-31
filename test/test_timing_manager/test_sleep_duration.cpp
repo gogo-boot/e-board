@@ -268,7 +268,8 @@ void test_transport_weekend_time() {
     TEST_ASSERT_TRUE(isActive);
 }
 
-// Todo - Fix Friday night to Saturday morning deep sleep test
+// Todo - Fix
+// Friday night to Saturday morning deep sleep test
 void test_friday_to_saturday_deepsleep() {
     // Set mock time to 9:00 AM on Saturday
     time_t fridayNight = createTime(2025, 10, 31, 22, 0, 0); // Friday night
@@ -285,7 +286,8 @@ void test_friday_to_saturday_deepsleep() {
     TEST_ASSERT_EQUAL(3600 * 9, sleepDuration);
 }
 
-// Todo - Fix Sunday night to Monday morning deep sleep test
+// Todo - Fix
+// Sunday night to Monday morning deep sleep test
 void test_sunday_to_monday_deepsleep() {
     // Set mock time to 9:00 AM on Saturday
     time_t sundayNight = createTime(2025, 11, 2, 22, 30, 0); // Sunday night
@@ -350,7 +352,8 @@ void test_sleep_duration_half_half_weather_transport_inactive_updated_now() {
     TEST_ASSERT_EQUAL(3600, sleepDuration);
 }
 
-// Todo - Fix test If weather transport never updated, during transport inactive hours
+// Todo - Fix test
+// If weather transport never updated, during transport inactive hours
 void test_sleep_duration_half_half_weather_trasport_inactive_transport_not_updated() {
     time_t latemorning = createTime(2025, 10, 30, 9, 0, 0);
     MockTime::setMockTime(latemorning);
@@ -382,18 +385,6 @@ void test_sleep_duration_half_half_deep_sleep() {
     // Should sleep until 05:30 next day
     TEST_ASSERT_EQUAL(3600 * 7.5L, sleepDuration);
 }
-
-void test_sleep_duration_weather_full_weather_updated_now() {}
-
-void test_sleep_duration_weather_full_trasport_updated_now() {}
-
-void test_sleep_duration_weather_full_do_deepsleep() {}
-
-void test_sleep_duration_transport_full_weather_updated_now() {}
-
-void test_sleep_duration_transport_full_trasport_updated_now() {}
-
-void test_sleep_duration_transport_full_do_deepsleep() {}
 
 int main() {
     UNITY_BEGIN();
