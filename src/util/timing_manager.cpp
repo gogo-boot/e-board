@@ -111,9 +111,67 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
 
         bool isInActiveHours = isTimeInRange(nearestMinutesSinceMidnight, activeStartMinutes, activeEndMinutes);
 
+        // Special case: if at the exact end boundary and transport interval hasn't passed yet,
+        // treat it as outside active hours
+        if (isInActiveHours && nearestMinutesSinceMidnight == activeEndMinutes &&
+            lastDepartureUpdateSeconds == 0) {
+            isInActiveHours = false;
+            ESP_LOGI(TAG, "At end boundary of active hours with no previous update - treating as inactive");
+        }
+
         if (!isInActiveHours) {
-            ESP_LOGI(TAG, "Departure update outside transport active hours - using weather update time");
-            nearestUpdateSeconds = nextWeatherUpdateSeconds > 0 ? nextWeatherUpdateSeconds : currentTimeSeconds + 60;
+            ESP_LOGI(TAG, "Departure update outside transport active hours");
+
+            // Calculate next transport active period start time
+            // We need to find when transport will be active next
+            struct tm currentTm;
+            time_t currentTimeT = (time_t)currentTimeSeconds;
+            localtime_r(&currentTimeT, &currentTm);
+            int currentMinutes = currentTm.tm_hour * 60 + currentTm.tm_min;
+            bool isCurrentWeekend = config.weekendMode && (currentTm.tm_wday == 0 || currentTm.tm_wday == 6);
+
+            String nextActiveStart;
+            int nextActiveStartMinutes;
+            uint32_t nextActiveSeconds = 0;
+
+            // Check if we're currently in a weekend or weekday
+            if (isCurrentWeekend) {
+                nextActiveStart = String(config.weekendTransportStart);
+            } else {
+                nextActiveStart = String(config.transportActiveStart);
+            }
+            nextActiveStartMinutes = parseTimeString(nextActiveStart);
+
+            // Calculate seconds until next active period
+            if (currentMinutes < nextActiveStartMinutes) {
+                // Active period starts later today
+                int minutesUntilActive = nextActiveStartMinutes - currentMinutes;
+                nextActiveSeconds = currentTimeSeconds + (minutesUntilActive * 60);
+            } else {
+                // Active period starts tomorrow
+                int minutesUntilMidnight = (24 * 60) - currentMinutes;
+
+                // Determine if tomorrow is weekend or weekday
+                int nextDayOfWeek = (currentTm.tm_wday + 1) % 7;
+                bool isTomorrowWeekend = config.weekendMode && (nextDayOfWeek == 0 || nextDayOfWeek == 6);
+
+                if (isTomorrowWeekend) {
+                    nextActiveStart = String(config.weekendTransportStart);
+                } else {
+                    nextActiveStart = String(config.transportActiveStart);
+                }
+                nextActiveStartMinutes = parseTimeString(nextActiveStart);
+                nextActiveSeconds = currentTimeSeconds + ((minutesUntilMidnight + nextActiveStartMinutes) * 60);
+            }
+
+            ESP_LOGI(TAG, "Next transport active period starts at: %u seconds", nextActiveSeconds);
+
+            // Choose the earlier of: next weather update or next transport active period
+            if (nextWeatherUpdateSeconds > 0) {
+                nearestUpdateSeconds = min(nextWeatherUpdateSeconds, nextActiveSeconds);
+            } else {
+                nearestUpdateSeconds = nextActiveSeconds;
+            }
         }
     }
 
@@ -129,7 +187,7 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
         isUpdateWeekend = (updateTimeInfo.tm_wday == 0 || updateTimeInfo.tm_wday == 6);
     }
 
-    // Get sleep period configuration
+    // Get sleep period configuration based on update time's day
     String sleepStart, sleepEnd;
     if (isUpdateWeekend) {
         sleepStart = String(config.weekendSleepStart);
@@ -160,8 +218,45 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
             sleepEndSeconds = nearestUpdateSeconds + ((minutesUntilNextDay + sleepEndMinutes) * 60);
         }
 
+        // NOW check if the sleep END time (wake-up time) is weekend or weekday
+        // This is important for Friday->Saturday and Sunday->Monday transitions
+        struct tm sleepEndTimeInfo;
+        time_t sleepEndTime = (time_t)sleepEndSeconds;
+        localtime_r(&sleepEndTime, &sleepEndTimeInfo);
+        bool isSleepEndWeekend = false;
+        if (config.weekendMode) {
+            isSleepEndWeekend = (sleepEndTimeInfo.tm_wday == 0 || sleepEndTimeInfo.tm_wday == 6);
+        }
+
+        // If sleep end day type differs from update day type, recalculate with correct sleep end time
+        if (isSleepEndWeekend != isUpdateWeekend) {
+            ESP_LOGI(TAG, "Sleep crosses weekend boundary - adjusting sleep end time");
+
+            // Get the correct sleep end time for the wake-up day
+            String correctSleepEnd;
+            if (isSleepEndWeekend) {
+                correctSleepEnd = String(config.weekendSleepEnd);
+            } else {
+                correctSleepEnd = String(config.sleepEnd);
+            }
+
+            int correctSleepEndMinutes = parseTimeString(correctSleepEnd);
+            // Recalculate sleep end time with correct configuration
+            if (correctSleepEndMinutes > updateMinutesSinceMidnight) {
+                // Sleep ends same day (shouldn't happen if we crossed boundary, but check anyway)
+                sleepEndSeconds = nearestUpdateSeconds + ((correctSleepEndMinutes - updateMinutesSinceMidnight) * 60);
+            } else {
+                // Sleep ends next day
+                int minutesUntilNextDay = (24 * 60) - updateMinutesSinceMidnight;
+                sleepEndSeconds = nearestUpdateSeconds + ((minutesUntilNextDay + correctSleepEndMinutes) * 60);
+            }
+
+            ESP_LOGI(TAG, "Adjusted sleep end to %s time: %u seconds",
+                     isSleepEndWeekend ? "weekend" : "weekday", sleepEndSeconds);
+        }
+
         nearestUpdateSeconds = sleepEndSeconds;
-        ESP_LOGI(TAG, "Adjusted wake time to sleep end: %u seconds", nearestUpdateSeconds);
+        ESP_LOGI(TAG, "Final wake time: %u seconds", nearestUpdateSeconds);
     }
 
     // Calculate sleep duration in seconds

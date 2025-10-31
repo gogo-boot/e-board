@@ -92,7 +92,6 @@ void test_getNextSleepDurationSeconds_departure_only_mode() {
     TEST_ASSERT_EQUAL(180, sleepDuration);
 }
 
-// Todo - Failed.. fix it
 // If transport only mode, but during inactive hours, should wake up in 21 hours after deep sleep
 void test_getNextSleepDurationSeconds_departure_only_mode_inactive() {
     time_t morningTime = createTime(2025, 10, 30, 9, 0, 0); // Thursday
@@ -268,7 +267,6 @@ void test_transport_weekend_time() {
     TEST_ASSERT_TRUE(isActive);
 }
 
-// Todo - Fix
 // Friday night to Saturday morning deep sleep test
 void test_friday_to_saturday_deepsleep() {
     // Set mock time to 9:00 AM on Saturday
@@ -286,7 +284,6 @@ void test_friday_to_saturday_deepsleep() {
     TEST_ASSERT_EQUAL(3600 * 9, sleepDuration);
 }
 
-// Todo - Fix
 // Sunday night to Monday morning deep sleep test
 void test_sunday_to_monday_deepsleep() {
     // Set mock time to 9:00 AM on Saturday
@@ -352,7 +349,6 @@ void test_sleep_duration_half_half_weather_transport_inactive_updated_now() {
     TEST_ASSERT_EQUAL(3600, sleepDuration);
 }
 
-// Todo - Fix test
 // If weather transport never updated, during transport inactive hours
 void test_sleep_duration_half_half_weather_trasport_inactive_transport_not_updated() {
     time_t latemorning = createTime(2025, 10, 30, 9, 0, 0);
