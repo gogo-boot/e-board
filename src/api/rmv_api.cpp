@@ -40,15 +40,16 @@ namespace {
         }
 
         // RMV product bit values (from RMV API documentation)
+        // These values are passed directly to RMV API as product codes
         int productsBitmask = 0;
-        if (filterFlags & FILTER_R) productsBitmask |= FILTER_R; // Regional
-        if (filterFlags & FILTER_S) productsBitmask |= FILTER_S; // S-Bahn
-        if (filterFlags & FILTER_U) productsBitmask |= FILTER_U; // U-Bahn
-        if (filterFlags & FILTER_TRAM) productsBitmask |= FILTER_TRAM; // S-Bahn
-        if (filterFlags & FILTER_BUS) productsBitmask |= FILTER_BUS; // Bus
-        if (filterFlags & FILTER_STAIR_BUS) productsBitmask |= FILTER_STAIR_BUS; //Streetcar/High-floor Bus
-        if (filterFlags & FILTER_FERRY) productsBitmask |= FILTER_FERRY; // Ferry/Ship
-        if (filterFlags & FILTER_CALL_BUS) productsBitmask |= FILTER_CALL_BUS; // Call Bus/Ride Bus
+        if (filterFlags & FILTER_R) productsBitmask |= FILTER_R; // Regional (4)
+        if (filterFlags & FILTER_S) productsBitmask |= FILTER_S; // S-Bahn (8)
+        if (filterFlags & FILTER_U) productsBitmask |= FILTER_U; // U-Bahn (16)
+        if (filterFlags & FILTER_TRAM) productsBitmask |= FILTER_TRAM; // Tram (32)
+        if (filterFlags & FILTER_BUS) productsBitmask |= FILTER_BUS; // Bus (64)
+        if (filterFlags & FILTER_HIGHFLOOR) productsBitmask |= FILTER_HIGHFLOOR; // High-floor Bus (128)
+        if (filterFlags & FILTER_FERRY) productsBitmask |= FILTER_FERRY; // Ferry (256)
+        if (filterFlags & FILTER_CALLBUS) productsBitmask |= FILTER_CALLBUS; // Call Bus (512)
 
         if (productsBitmask == 0) {
             return ""; // No valid filters

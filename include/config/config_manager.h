@@ -52,27 +52,29 @@ struct RTCConfigData {
 };
 
 /*
-*Folgende Werte gelten für die einzelnen Verkehrsmittel.
-Regionalverkehrszug 4
-S-Bahn 8
-U-Bahn 16
-Straßenbahn 32
-Bus 64
-Hochflurbus 128
-Fähre/Schiff 256
-Ast/Rufbus 512
+ * RMV API Product Values (from official RMV HAFAS API documentation)
+ * These bit values must match exactly what RMV expects in the products parameter
+ *
+ * Regionalverkehrszug (Regional Express/Regional) = 4
+ * S-Bahn                                          = 8
+ * U-Bahn                                          = 16
+ * Straßenbahn (Tram)                             = 32
+ * Bus                                             = 64
+ * Hochflurbus (High-floor Bus)                   = 128
+ * Fähre/Schiff (Ferry/Ship)                      = 256
+ * Ast/Rufbus (Call Bus/On-demand)                = 512
  */
-// Transport filter bit flags
-#define FILTER_R        (1 << 2)   // Regional
-#define FILTER_S        (1 << 3)   // S-Bahn
-#define FILTER_U        (1 << 4)   // U-Bahn
-#define FILTER_TRAM     (1 << 5)   // Tram
-#define FILTER_BUS      (1 << 6)   // Bus
-#define FILTER_STAIR_BUS (1 << 7)   // Streetcar/High-floor Bus
-#define FILTER_FERRY     (1 << 8)   // Ferry/Ship
-#define FILTER_CALL_BUS  (1 << 9)   // Call Bus/Ride Bus
+// Transport filter bit flags - MUST match RMV API product values!
+#define FILTER_R         4      // Regionalverkehrszug (Regional trains)
+#define FILTER_S         8      // S-Bahn
+#define FILTER_U         16     // U-Bahn
+#define FILTER_TRAM      32     // Straßenbahn (Tram)
+#define FILTER_BUS       64     // Bus
+#define FILTER_HIGHFLOOR 128    // Hochflurbus (High-floor Bus)
+#define FILTER_FERRY     256    // Fähre/Schiff (Ferry/Ship)
+#define FILTER_CALLBUS   512    // Ast/Rufbus (Call Bus/On-demand)
 
-// Maximum number of transport filters (matches bit flags)
+// Maximum number of transport filters
 constexpr size_t MAX_TRANSPORT_FILTERS = 8;
 
 // Display mode constants

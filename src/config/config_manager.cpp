@@ -27,7 +27,7 @@ RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
     "20:00", // weekendTransportEnd
     "23:00", // weekendSleepStart
     "07:00", // weekendSleepEnd
-    FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_STAIR_BUS | FILTER_FERRY | FILTER_CALL_BUS,
+    FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY | FILTER_CALLBUS,
     // filterFlags - Default filters
     true, // configMode
     0 // lastUpdate
@@ -130,13 +130,16 @@ bool ConfigManager::loadFromNVS() {
         else if (filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
         else if (filter == "U") rtcConfig.filterFlags |= FILTER_U;
         else if (filter == "Tram") rtcConfig.filterFlags |= FILTER_TRAM;
-        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS | FILTER_STAIR_BUS | FILTER_CALL_BUS;
+        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
+        else if (filter == "Hochflurbus") rtcConfig.filterFlags |= FILTER_HIGHFLOOR;
+        else if (filter == "Fähre") rtcConfig.filterFlags |= FILTER_FERRY;
+        else if (filter == "Rufbus") rtcConfig.filterFlags |= FILTER_CALLBUS;
     }
 
     // Set default filters if none loaded
     if (rtcConfig.filterFlags == 0) {
-        rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_STAIR_BUS |
-            FILTER_FERRY | FILTER_CALL_BUS;
+        rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR |
+            FILTER_FERRY | FILTER_CALLBUS;
     }
 
     // Load system state
@@ -286,9 +289,12 @@ std::vector<String> ConfigManager::getActiveFilters() {
     std::vector<String> filters;
     if (rtcConfig.filterFlags & FILTER_R) filters.push_back("R");
     if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S-Bahn");
-    if (rtcConfig.filterFlags & FILTER_BUS) filters.push_back("Bus");
     if (rtcConfig.filterFlags & FILTER_U) filters.push_back("U");
     if (rtcConfig.filterFlags & FILTER_TRAM) filters.push_back("Tram");
+    if (rtcConfig.filterFlags & FILTER_BUS) filters.push_back("Bus");
+    if (rtcConfig.filterFlags & FILTER_HIGHFLOOR) filters.push_back("Hochflurbus");
+    if (rtcConfig.filterFlags & FILTER_FERRY) filters.push_back("Fähre");
+    if (rtcConfig.filterFlags & FILTER_CALLBUS) filters.push_back("Rufbus");
     return filters;
 }
 
@@ -297,9 +303,12 @@ void ConfigManager::setActiveFilters(const std::vector<String>& filters) {
     for (const String& filter : filters) {
         if (filter == "R") rtcConfig.filterFlags |= FILTER_R;
         else if (filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
-        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
         else if (filter == "U") rtcConfig.filterFlags |= FILTER_U;
         else if (filter == "Tram") rtcConfig.filterFlags |= FILTER_TRAM;
+        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
+        else if (filter == "Hochflurbus") rtcConfig.filterFlags |= FILTER_HIGHFLOOR;
+        else if (filter == "Fähre") rtcConfig.filterFlags |= FILTER_FERRY;
+        else if (filter == "Rufbus") rtcConfig.filterFlags |= FILTER_CALLBUS;
     }
     ESP_LOGI(TAG, "Filters updated: %d active", filters.size());
 }
@@ -331,7 +340,8 @@ void ConfigManager::setDefaults() {
     strcpy(rtcConfig.weekendTransportEnd, "20:00");
     strcpy(rtcConfig.weekendSleepStart, "23:00");
     strcpy(rtcConfig.weekendSleepEnd, "07:00");
-    rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS;
+    rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY
+        | FILTER_CALLBUS;
     rtcConfig.configMode = true;
     rtcConfig.lastUpdate = 0;
 }
