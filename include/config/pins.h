@@ -34,6 +34,10 @@ namespace Pins {
   constexpr int EPD_SDI = 9; // E-Paper SDI  MOSI
   constexpr int EPD_RES = 38; // E-Paper RES
   constexpr int EPD_DC = 10; // E-Paper D/C
+   // Battery voltage reading (TRMNL 7.5" OG DIY Kit)
+  // Reference: https://wiki.seeedstudio.com/ogdiy_kit_works_with_arduino/
+  constexpr int BATTERY_ADC = 1; // GPIO 1 (A0) - BAT_ADC (2:1 divider)
+  constexpr int ADC_EN = 6; // GPIO 6 (A5) - ADC_EN (power control)
 #else
 #error "Board not defined! Please specify board type in platformio.ini"
 #endif

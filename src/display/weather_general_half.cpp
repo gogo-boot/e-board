@@ -121,5 +121,5 @@ void WeatherHalfDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t da
 
 void WeatherHalfDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {
     // Use common footer with time and refresh icon
-    CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH | FOOTER_WIFI);
+    CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH | FOOTER_WIFI | FOOTER_BATTERY);
 }
