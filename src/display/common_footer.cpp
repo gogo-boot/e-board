@@ -2,6 +2,7 @@
 #include "display/display_shared.h"
 #include "display/text_utils.h"
 #include "util/time_manager.h"
+#include "util/battery_manager.h"
 #include <esp_log.h>
 #include <icons.h>
 #include <WiFi.h>
@@ -78,13 +79,50 @@ void CommonFooter::drawWiFiStatus(int16_t& currentX, int16_t y) {
 
 void CommonFooter::drawBatteryStatus(int16_t& currentX, int16_t y) {
     auto* display = DisplayShared::getDisplay();
-    if (!display) return;
-    // TODO: Implement actual battery reading
-    // For now, use a default battery icon
-    icon_name batteryIcon = Battery_5; // Assume we have battery icons
+
+    // Check if battery monitoring is available
+    if (!BatteryManager::isAvailable()) {
+        ESP_LOGD(TAG, "Battery monitoring not available on this board");
+        return;
+    }
+
+    // Get battery icon level (1-5)
+    int iconLevel = BatteryManager::getBatteryIconLevel();
+    if (iconLevel <= 0) {
+        ESP_LOGW(TAG, "Unable to read battery status");
+        return;
+    }
+
+    // Map icon level to icon name
+    icon_name batteryIcon;
+    switch (iconLevel) {
+    case 1: batteryIcon = Battery_1;
+        break;
+    case 2: batteryIcon = Battery_2;
+        break;
+    case 3: batteryIcon = Battery_3;
+        break;
+    case 4: batteryIcon = Battery_4;
+        break;
+    case 5: batteryIcon = Battery_5;
+        break;
+    default: batteryIcon = Battery_3;
+        break; // Fallback
+    }
+
+    // Check if charging
+    if (BatteryManager::isCharging()) {
+        // Use charging icon instead
+        batteryIcon = battery_charging_full_90deg;
+    }
 
     display->drawInvertedBitmap(currentX, y, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
     currentX += 20; // Move right
+
+    // Log battery info for debugging
+    float voltage = BatteryManager::getBatteryVoltage();
+    int percentage = BatteryManager::getBatteryPercentage();
+    ESP_LOGD(TAG, "Battery: %.2fV (%d%%) - Icon level: %d", voltage, percentage, iconLevel);
 }
 
 void CommonFooter::drawRefreshIcon(int16_t& currentX, int16_t y) {

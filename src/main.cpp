@@ -25,6 +25,7 @@
 #include "config/config_struct.h"
 #include "config/config_manager.h"
 #include "util/device_mode_manager.h"
+#include "util/battery_manager.h"
 #include <SPI.h>
 #include "ota/ota_update.h"
 //EPD
@@ -84,6 +85,9 @@ void setup() {
 
     // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
     ESP_LOGI(TAG, "System starting...");
+
+    // Initialize battery manager (only available on ESP32-S3)
+    BatteryManager::init();
 
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
