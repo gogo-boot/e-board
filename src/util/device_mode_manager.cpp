@@ -12,7 +12,7 @@
 #include "config/config_page.h"
 #include "config/config_struct.h"
 #include "display/display_manager.h"
-#include "util/departure_print.h"
+#include "util/transport_print.h"
 #include "util/sleep_utils.h"
 #include "util/time_manager.h"
 #include "util/timing_manager.h"
@@ -296,7 +296,7 @@ void DeviceModeManager::updateDepartureFull() {
                      stopIdToUse.c_str(), config.selectedStopName);
 
             if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
-                printDepartInfo(depart);
+                printTransportInfo(depart);
                 if (depart.departureCount > 0) hasTransport = true;
                 TimingManager::markTransportUpdated();
             } else {
@@ -455,7 +455,7 @@ bool DeviceModeManager::fetchTransportData(DepartureData& depart) {
              stopIdToUse.c_str(), config.selectedStopName);
 
     if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
-        printDepartInfo(depart);
+        printTransportInfo(depart);
         if (depart.departureCount > 0) {
             return true;
         } else {
