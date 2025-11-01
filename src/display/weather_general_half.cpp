@@ -10,6 +10,24 @@
 
 static const char* TAG = "WEATHER_DISPLAY";
 
+// Weather display layout constants
+namespace WeatherDisplayConstants {
+    constexpr int16_t CITY_NAME_HEIGHT = 22;
+    constexpr int16_t CITY_NAME_SPACING = 20;
+    constexpr int16_t CITY_DATE_SPACING = 20;
+    constexpr int16_t FIRST_COLUMN_WIDTH = 80;
+    constexpr int16_t SECOND_COLUMN_WIDTH = 170;
+    constexpr int16_t WEATHER_INFO_HEIGHT = 80;
+    constexpr int16_t SECTION_SPACING = 12;
+    constexpr int16_t GRAPH_HEADER_HEIGHT = 15;
+    constexpr int16_t GRAPH_HEADER_SPACING = 25;
+    constexpr int16_t FOOTER_HEIGHT = 15;
+    constexpr int16_t MAX_GRAPH_HEIGHT = 304;
+    constexpr int16_t WEATHER_ICON_SIZE = 48;
+}
+
+using namespace WeatherDisplayConstants;
+
 void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
                                                      int16_t leftMargin, int16_t rightMargin,
                                                      int16_t y, int16_t h) {
@@ -28,14 +46,14 @@ void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
     TextUtils::setFont18px_margin22px();
     // Calculate available width and fit city name
     RTCConfigData& config = ConfigManager::getConfig();
-    int16_t maxCityWidth = rightMargin - leftMargin - dateTextWidth - 20; // Reserve space for date text
+    int16_t maxCityWidth = rightMargin - leftMargin - dateTextWidth - CITY_DATE_SPACING;
     String fittedCityName = TextUtils::shortenTextToFit(config.cityName, maxCityWidth);
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName); // Use helper function
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, fittedCityName);
 
     TextUtils::setFont14px_margin17px();
 
-    currentY += 22; // city name
-    currentY += 20; // Space after city name
+    currentY += CITY_NAME_HEIGHT;
+    currentY += CITY_NAME_SPACING;
 
     int16_t maxWidth = rightMargin - leftMargin;
 
@@ -43,25 +61,25 @@ void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
     drawWeatherInfoFirstColumn(leftMargin, currentY, weather);
 
     // Draw second Column - Today's temps, UV, Pollen
-    int16_t currentX = leftMargin + 80;
+    int16_t currentX = leftMargin + FIRST_COLUMN_WIDTH;
     drawWeatherInfoSecondColumn(currentX, currentY, weather);
 
     // Draw third Column - Date, Sunrise, Sunset
-    currentX += 170;
+    currentX += SECOND_COLUMN_WIDTH;
     drawWeatherInfoThirdColumn(currentX, currentY, weather);
 
-    currentY += 80; // Day Weather Information section height
-    currentY += 12; // Space after Day Weather Information section
+    currentY += WEATHER_INFO_HEIGHT;
+    currentY += SECTION_SPACING;
 
     // Weather Graph section (replaces text-based forecast for better visualization)
-    TextUtils::setFont12px_margin15px(); // Medium font for graph headers
+    TextUtils::setFont12px_margin15px();
     TextUtils::printTextAtWithMargin(leftMargin, currentY, "Nächste 12 Stunden");
-    currentY += 15; // Nächste 12 Stunden
-    currentY += 25; // Space after
+    currentY += GRAPH_HEADER_HEIGHT;
+    currentY += GRAPH_HEADER_SPACING;
 
     // Calculate available space for graph
-    int availableHeight = (y + h - 15) - currentY; // Leave 15px for footer
-    int graphHeight = min(304, availableHeight); // Max 307px, but adapt to available space
+    int16_t availableHeight = (y + h - FOOTER_HEIGHT) - currentY;
+    int16_t graphHeight = min(MAX_GRAPH_HEIGHT, availableHeight);
 
     // Only draw graph if we have enough space
     WeatherGraph::drawTemperatureAndRainGraph(weather,
@@ -78,7 +96,8 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
     // Draw weather icon using Util::getWeatherIcon
     icon_name currentWeatherIcon = WeatherUtil::getWeatherIcon(weather.weatherCode);
     auto* display = DisplayShared::getDisplay();
-    display->drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, 48), 48, 48, GxEPD_BLACK);
+    display->drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, WEATHER_ICON_SIZE),
+                                WEATHER_ICON_SIZE, WEATHER_ICON_SIZE, GxEPD_BLACK);
     // Current temperature: 30px
     String tempText = String(weather.temperature) + "°C  ";
     TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);

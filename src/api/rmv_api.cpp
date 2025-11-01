@@ -1,4 +1,5 @@
 #include "api/rmv_api.h"
+#include "api/rmv_json_parser.h"
 #include <HTTPClient.h>
 #include <vector>
 #include <Arduino.h>
@@ -7,6 +8,7 @@
 #include <StreamUtils.h>
 #include "config/config_struct.h"
 #include "config/config_manager.h"
+#include "config/config_page_data.h"
 #include "sec/aes_crypto.h"
 #include <time.h>
 
@@ -101,11 +103,9 @@ void getNearbyStops(float lat, float lon) {
         DeserializationError error = deserializeJson(doc, payload);
         if (!error) {
             stations.clear();
-            g_webConfigPageData.stopIds.clear();
-            g_webConfigPageData.stopNames.clear();
-            g_webConfigPageData.stopDistances.clear();
+            ConfigPageData& pageData = ConfigPageData::getInstance();
+            pageData.clearStops();
             JsonArray stops = doc["stopLocationOrCoordLocation"];
-            // extern ConfigOption g_webConfigPageData;
             for (JsonObject item : stops) {
                 JsonObject stop = item["StopLocation"];
                 if (!stop.isNull()) {
@@ -115,11 +115,9 @@ void getNearbyStops(float lat, float lon) {
                     float lat = stop["lat"] | 0.0;
                     int dist = stop["dist"] | 0;
                     int products = stop["products"] | 0;
-                    String type = (products & 64) ? "train" : "bus"; // Example: RMV uses bitmask for products
+                    String type = (products & 64) ? "train" : "bus";
                     stations.push_back({String(id), String(name), type});
-                    g_webConfigPageData.stopIds.push_back(id);
-                    g_webConfigPageData.stopNames.push_back(name);
-                    g_webConfigPageData.stopDistances.push_back(dist);
+                    pageData.addStop(id, name, String(dist));
                     ESP_LOGI(TAG, "Stop ID: %s, Name: %s, Lon: %f, Lat: %f, Type: %s", id, name, lon, lat,
                              type.c_str());
                 }
@@ -181,29 +179,17 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
             }
         */
         // Extract basic departure information with safe string conversion
-        const char* direction = departureVariant["direction"];
-        const char* directionFlag = departureVariant["directionFlag"];
-        const char* time = departureVariant["time"];
-        const char* rtTime = departureVariant["rtTime"];
-        const bool cancelled = departureVariant["cancelled"].as<bool>();
-        const char* track = departureVariant["track"];
-
-        // Safe string assignment with null checks
-        depInfo.direction = direction ? String(direction) : "";
-        depInfo.directionFlag = directionFlag ? String(directionFlag) : "";
-        depInfo.time = time ? String(time) : "";
-        depInfo.rtTime = rtTime ? String(rtTime) : "";
-        depInfo.cancelled = cancelled ? cancelled : false;
-        depInfo.track = track ? String(track) : "";
+        depInfo.direction = safeJsonString(departureVariant, "direction");
+        depInfo.directionFlag = safeJsonString(departureVariant, "directionFlag");
+        depInfo.time = safeJsonString(departureVariant, "time");
+        depInfo.rtTime = safeJsonString(departureVariant, "rtTime");
+        depInfo.cancelled = departureVariant["cancelled"].as<bool>();
+        depInfo.track = safeJsonString(departureVariant, "track");
 
         // Extract category from Product array with safety checks
         if (departureVariant["Product"].size() > 0) {
-            // Direct path access
-            const char* catOut = departureVariant["Product"][0]["catOut"];
-            const char* line = departureVariant["Product"][0]["line"];
-
-            depInfo.category = catOut ? String(catOut) : "";
-            depInfo.line = line ? String(line) : "";
+            depInfo.category = safeJsonString(departureVariant["Product"][0], "catOut");
+            depInfo.line = safeJsonString(departureVariant["Product"][0], "line");
         }
 
         // Extract category from Product array with safety checks

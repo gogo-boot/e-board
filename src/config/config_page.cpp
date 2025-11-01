@@ -4,13 +4,12 @@
 #include <WebServer.h>
 #include "config/config_struct.h"
 #include "config/config_manager.h"
+#include "config/config_page_data.h"
 #include "util/util.h"
 #include <esp_log.h>
 #include "util/sleep_utils.h"
 
 static const char* TAG = "CONFIG";
-
-extern ConfigOption g_webConfigPageData;
 
 void handleStationSelect(WebServer& server) {
     File file = LittleFS.open("/station_select.html", "r");
@@ -20,11 +19,13 @@ void handleStationSelect(WebServer& server) {
     }
     String page = file.readString();
     file.close();
+
+    ConfigPageData& pageData = ConfigPageData::getInstance();
     String html;
-    for (size_t i = 0; i < g_webConfigPageData.stopNames.size(); ++i) {
+    for (size_t i = 0; i < pageData.getStopCount(); ++i) {
         html += "<div class='station'>";
-        html += "<input type='radio' name='station' value='" + g_webConfigPageData.stopIds[i] + "'>";
-        html += g_webConfigPageData.stopNames[i] + " (ID: " + g_webConfigPageData.stopIds[i] + ")";
+        html += "<input type='radio' name='station' value='" + pageData.getStopId(i) + "'>";
+        html += pageData.getStopName(i) + " (ID: " + pageData.getStopId(i) + ")";
         html += "</div>";
     }
     page.replace("{{stations}}", html);
@@ -41,47 +42,51 @@ void handleConfigPage(WebServer& server) {
     String page = file.readString();
     file.close();
 
+    ConfigPageData& pageData = ConfigPageData::getInstance();
     // Replace reserved keywords
-    page.replace("{{LAT}}", String(g_webConfigPageData.latitude, 6));
-    page.replace("{{LON}}", String(g_webConfigPageData.longitude, 6));
+    page.replace("{{LAT}}", String(pageData.getLatitude(), 6));
+    page.replace("{{LON}}", String(pageData.getLongitude(), 6));
 
     // Build <option> list for stops, add manual entry option
     String stopsHtml = "<option value=''>Bitte wählen...</option>";
-    for (size_t i = 0; i < g_webConfigPageData.stopNames.size(); ++i) {
-        String encodedId = Util::urlEncode(g_webConfigPageData.stopIds[i]);
-        stopsHtml += "<option value='" + encodedId + "'>" + g_webConfigPageData.stopNames[i] + "   (" +
-            g_webConfigPageData.stopDistances[i] + "m)</option>";
+    for (size_t i = 0; i < pageData.getStopCount(); ++i) {
+        String encodedId = Util::urlEncode(pageData.getStopId(i));
+        stopsHtml += "<option value='" + encodedId + "'>" + pageData.getStopName(i) + "   (" +
+            pageData.getStopDistance(i) + "m)</option>";
     }
     stopsHtml += "<option value='__manual__'>Manuell eingeben...</option>";
-    if (g_webConfigPageData.stopNames.size() == 0) stopsHtml = "<option>Keine Haltestellen gefunden</option>";
+    if (pageData.getStopCount() == 0) stopsHtml = "<option>Keine Haltestellen gefunden</option>";
     page.replace("{{STOPS}}", stopsHtml);
 
     // Replace city, ssid, etc.
-    page.replace("{{CITY}}", g_webConfigPageData.cityName);
-    // Separate Router (SSID) and IP info
-    page.replace("{{ROUTER}}", g_webConfigPageData.ssid);
-    page.replace("{{IP}}", g_webConfigPageData.ipAddress); // Replace with IP info if available
-    page.replace("{{MDNS}}", "mystation.local"); // mDNS hostname
+    page.replace("{{CITY}}", pageData.getCityName());
 
-    // Replace configuration values with current settings
-    page.replace("{{WEATHER_INTERVAL}}", String(g_webConfigPageData.weatherInterval));
-    page.replace("{{TRANSPORT_INTERVAL}}", String(g_webConfigPageData.transportInterval));
-    page.replace("{{TRANSPORT_ACTIVE_START}}", g_webConfigPageData.transportActiveStart);
-    page.replace("{{TRANSPORT_ACTIVE_END}}", g_webConfigPageData.transportActiveEnd);
-    page.replace("{{WALKING_TIME}}", String(g_webConfigPageData.walkingTime));
-    page.replace("{{SLEEP_START}}", g_webConfigPageData.sleepStart);
-    page.replace("{{SLEEP_END}}", g_webConfigPageData.sleepEnd);
-    page.replace("{{WEEKEND_MODE}}", g_webConfigPageData.weekendMode ? "checked" : "");
-    page.replace("{{WEEKEND_TRANSPORT_START}}", g_webConfigPageData.weekendTransportStart);
-    page.replace("{{WEEKEND_TRANSPORT_END}}", g_webConfigPageData.weekendTransportEnd);
-    page.replace("{{WEEKEND_SLEEP_START}}", g_webConfigPageData.weekendSleepStart);
-    page.replace("{{WEEKEND_SLEEP_END}}", g_webConfigPageData.weekendSleepEnd);
+    // Get configuration from ConfigManager
+    RTCConfigData& config = ConfigManager::getConfig();
+    page.replace("{{ROUTER}}", config.ssid);
+    page.replace("{{IP}}", pageData.getIPAddress());
+    page.replace("{{MDNS}}", "mystation.local");
 
-    // Build JavaScript array for saved filters
+    // Replace configuration values with current settings from ConfigManager
+    page.replace("{{WEATHER_INTERVAL}}", String(config.weatherInterval));
+    page.replace("{{TRANSPORT_INTERVAL}}", String(config.transportInterval));
+    page.replace("{{TRANSPORT_ACTIVE_START}}", config.transportActiveStart);
+    page.replace("{{TRANSPORT_ACTIVE_END}}", config.transportActiveEnd);
+    page.replace("{{WALKING_TIME}}", String(config.walkingTime));
+    page.replace("{{SLEEP_START}}", config.sleepStart);
+    page.replace("{{SLEEP_END}}", config.sleepEnd);
+    page.replace("{{WEEKEND_MODE}}", config.weekendMode ? "checked" : "");
+    page.replace("{{WEEKEND_TRANSPORT_START}}", config.weekendTransportStart);
+    page.replace("{{WEEKEND_TRANSPORT_END}}", config.weekendTransportEnd);
+    page.replace("{{WEEKEND_SLEEP_START}}", config.weekendSleepStart);
+    page.replace("{{WEEKEND_SLEEP_END}}", config.weekendSleepEnd);
+
+    // Build JavaScript array for saved filters from ConfigManager
+    std::vector<String> activeFilters = ConfigManager::getActiveFilters();
     String filtersJs = "[";
-    for (size_t i = 0; i < g_webConfigPageData.oepnvFilters.size(); i++) {
+    for (size_t i = 0; i < activeFilters.size(); i++) {
         if (i > 0) filtersJs += ",";
-        filtersJs += "\"" + g_webConfigPageData.oepnvFilters[i] + "\"";
+        filtersJs += "\"" + activeFilters[i] + "\"";
     }
     filtersJs += "]";
     page.replace("{{SAVED_FILTERS}}", filtersJs);
@@ -131,11 +136,12 @@ void handleSaveConfig(WebServer& server) {
 
     // Update ÖPNV filters
     if (doc.containsKey("filters")) {
-        g_webConfigPageData.oepnvFilters.clear();
+        std::vector<String> filterList;
         JsonArray filters = doc["filters"];
         for (JsonVariant v : filters) {
-            g_webConfigPageData.oepnvFilters.push_back(v.as<String>());
+            filterList.push_back(v.as<String>());
         }
+        ConfigManager::setActiveFilters(filterList);
     }
 
     // Update new configuration values

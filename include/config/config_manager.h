@@ -59,6 +59,9 @@ struct RTCConfigData {
 #define FILTER_U        (1 << 4)   // U-Bahn
 #define FILTER_TRAM     (1 << 5)   // Tram
 
+// Maximum number of transport filters (matches bit flags)
+constexpr size_t MAX_TRANSPORT_FILTERS = 8;
+
 // Display mode constants
 #define DISPLAY_MODE_HALF_AND_HALF  0
 #define DISPLAY_MODE_WEATHER_ONLY   1

@@ -66,10 +66,6 @@ WebServer server(80);
 RTC_DATA_ATTR unsigned long loopCount = 0;
 RTC_DATA_ATTR bool hasValidConfig = false; // Flag to track if valid config exists
 
-// This Struct is only for showing on configureation web interface
-// It is used to hold dynamic data like stopNames, stopIds, and stopDistances from API calls
-// This will not be used to store configuration data in NVS
-ConfigOption g_webConfigPageData;
 
 void setup() {
 #if PRODUCTION > 0

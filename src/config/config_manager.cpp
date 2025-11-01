@@ -122,7 +122,7 @@ bool ConfigManager::loadFromNVS() {
     // Load transport filters
     size_t filterCount = preferences.getUInt("filterCount", 3);
     rtcConfig.filterFlags = 0; // Reset flags
-    for (size_t i = 0; i < filterCount && i < 8; i++) {
+    for (size_t i = 0; i < filterCount && i < MAX_TRANSPORT_FILTERS; i++) {
         String key = "filter" + String(i);
         String filter = preferences.getString(key.c_str(), "");
         if (filter == "RE") rtcConfig.filterFlags |= FILTER_RE;
@@ -198,7 +198,7 @@ bool ConfigManager::saveToNVS() {
     // Save transport filters
     std::vector<String> filters = getActiveFilters();
     preferences.putUInt("filterCount", filters.size());
-    for (size_t i = 0; i < filters.size() && i < 8; i++) {
+    for (size_t i = 0; i < filters.size() && i < MAX_TRANSPORT_FILTERS; i++) {
         String key = "filter" + String(i);
         preferences.putString(key.c_str(), filters[i]);
     }
