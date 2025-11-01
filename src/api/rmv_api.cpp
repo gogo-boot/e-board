@@ -41,12 +41,14 @@ namespace {
 
         // RMV product bit values (from RMV API documentation)
         int productsBitmask = 0;
-        if (filterFlags & FILTER_RE) productsBitmask |= 2; // Regional Express
-        if (filterFlags & FILTER_R) productsBitmask |= 4; // Regional
-        if (filterFlags & FILTER_S) productsBitmask |= 8; // S-Bahn
-        if (filterFlags & FILTER_BUS) productsBitmask |= 32; // Bus
-        if (filterFlags & FILTER_U) productsBitmask |= 16; // U-Bahn
-        if (filterFlags & FILTER_TRAM) productsBitmask |= 64; // Tram
+        if (filterFlags & FILTER_R) productsBitmask |= FILTER_R; // Regional
+        if (filterFlags & FILTER_S) productsBitmask |= FILTER_S; // S-Bahn
+        if (filterFlags & FILTER_U) productsBitmask |= FILTER_U; // U-Bahn
+        if (filterFlags & FILTER_TRAM) productsBitmask |= FILTER_TRAM; // S-Bahn
+        if (filterFlags & FILTER_BUS) productsBitmask |= FILTER_BUS; // Bus
+        if (filterFlags & FILTER_STAIR_BUS) productsBitmask |= FILTER_STAIR_BUS; //Streetcar/High-floor Bus
+        if (filterFlags & FILTER_FERRY) productsBitmask |= FILTER_FERRY; // Ferry/Ship
+        if (filterFlags & FILTER_CALL_BUS) productsBitmask |= FILTER_CALL_BUS; // Call Bus/Ride Bus
 
         if (productsBitmask == 0) {
             return ""; // No valid filters

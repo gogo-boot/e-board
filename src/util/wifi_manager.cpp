@@ -93,7 +93,6 @@ void MyWiFiManager::setupAPMode(WiFiManager& wm) {
     ConfigPageData& pageData = ConfigPageData::getInstance();
     pageData.setIPAddress(WiFi.localIP().toString());
 
-
     if (MDNS.begin("mystation")) {
         ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
     } else {
