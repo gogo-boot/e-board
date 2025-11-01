@@ -120,6 +120,9 @@ public:
     // Check if this is first boot
     static bool isFirstBoot() { return !rtcConfig.isValid; }
 
+    // Extract stop name from stopId format: "@O=StopName@"
+    static String getStopNameFromId();
+
     // Public method to set defaults
     static void setDefaults();
 

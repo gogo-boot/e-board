@@ -27,18 +27,7 @@ public:
      */
     static void drawTransportFooter(int16_t x, int16_t y, int16_t h);
 
-    /**
-     * @brief Extract stop name from config format
-     */
-    static String getStopName(RTCConfigData& config);
-
 private:
-    /**
-     * @brief Draw transports in full screen mode
-     */
-    static void drawFullScreenTransports(const DepartureData& departures, int16_t leftMargin,
-                                         int16_t rightMargin, int16_t currentY, int16_t h);
-
     /**
      * @brief Draw transports in half screen mode (separated by direction)
      */

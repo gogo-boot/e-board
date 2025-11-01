@@ -180,7 +180,7 @@ bool ConfigManager::saveToNVS() {
     preferences.putInt("weatherInt", rtcConfig.weatherInterval);
     preferences.putInt("transportInt", rtcConfig.transportInterval);
     preferences.putInt("walkTime", rtcConfig.walkingTime);
-     // Save display mode
+    // Save display mode
     preferences.putUChar("displayMode", rtcConfig.displayMode);
 
     preferences.putString("transStart", rtcConfig.transportActiveStart);
@@ -335,6 +335,21 @@ void ConfigManager::setDefaults() {
     rtcConfig.filterFlags = FILTER_RE | FILTER_S | FILTER_BUS;
     rtcConfig.configMode = true;
     rtcConfig.lastUpdate = 0;
+}
+
+String ConfigManager::getStopNameFromId() {
+    String stopId = String(rtcConfig.selectedStopId);
+
+    // Extract stop name from stopId format: "@O=StopName@"
+    int startIndex = stopId.indexOf("@O=");
+    if (startIndex != -1) {
+        startIndex += 3; // Move past "@O="
+        int endIndex = stopId.indexOf("@", startIndex);
+        if (endIndex != -1) {
+            return stopId.substring(startIndex, endIndex);
+        }
+    }
+    return "";
 }
 
 void ConfigManager::printConfiguration(bool fromNVS = false) {

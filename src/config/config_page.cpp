@@ -10,8 +10,6 @@
 
 static const char* TAG = "CONFIG";
 
-extern float g_lat, g_lon;
-
 extern ConfigOption g_webConfigPageData;
 
 void handleStationSelect(WebServer& server) {

@@ -60,8 +60,6 @@ private:
     static int16_t halfWidth;
     static int16_t halfHeight;
 
-    static String getStopName(RTCConfigData& config);
-
     // Coordinate calculation helpers
     static void calculateDimensions();
 
