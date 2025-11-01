@@ -15,6 +15,9 @@ public:
     static unsigned long getTimeSinceLastSync();
     static bool setupNTPTimeWithRetry(int maxRetries = 3);
 
+    // Utility function for logging time durations
+    static String formatDurationInHours(unsigned long milliseconds);
+
 private:
     static const unsigned long SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000UL; // 24 hours
     static const unsigned long MAX_RTC_DRIFT_MS = 1 * 60 * 1000UL; // 1 minutes acceptable drift

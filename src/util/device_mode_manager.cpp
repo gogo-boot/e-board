@@ -22,7 +22,6 @@
 static const char* TAG = "DEVICE_MODE";
 
 // Global variables needed for operation
-extern float g_lat, g_lon;
 extern WebServer server;
 
 ConfigManager& configMgr = ConfigManager::getInstance();
@@ -45,12 +44,10 @@ bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
 
     // Validate critical configuration fields
     RTCConfigData& config = ConfigManager::getConfig();
-    hasValidConfig =
-    (strlen(config.selectedStopId) > 0 && strlen(config.ssid) > 0 &&
-        strlen(config.selectedStopId) >
-        0 && // Ensure selectedStopId is not empty
-        config.latitude != 0.0 &&
-        config.longitude != 0.0);
+    bool hasStopId = strlen(config.selectedStopId) > 0;
+    bool hasSSID = strlen(config.ssid) > 0;
+    bool hasLocation = (config.latitude != 0.0 && config.longitude != 0.0);
+    hasValidConfig = hasStopId && hasSSID && hasLocation;
 
     ESP_LOGI(TAG, "- SSID: %s", config.ssid);
     ESP_LOGI(TAG, "- Stop: %s (%s)", config.selectedStopName,
@@ -383,8 +380,8 @@ bool DeviceModeManager::setupConnectivityAndTime() {
             // Time is set but needs periodic refresh due to RTC drift
             ESP_LOGI(TAG, "Time needs periodic refresh - performing NTP sync...");
             unsigned long timeSinceSync = TimeManager::getTimeSinceLastSync();
-            ESP_LOGI(TAG, "Time since last sync: %lu ms (%.1f hours)",
-                     timeSinceSync, timeSinceSync / (1000.0 * 60.0 * 60.0));
+            ESP_LOGI(TAG, "Time since last sync: %lu ms (%s)",
+                     timeSinceSync, TimeManager::formatDurationInHours(timeSinceSync).c_str());
 
             if (TimeManager::setupNTPTimeWithRetry(2)) {
                 ESP_LOGI(TAG, "Periodic NTP sync successful");
@@ -396,8 +393,8 @@ bool DeviceModeManager::setupConnectivityAndTime() {
             // Time is set and recent - use RTC time (most efficient path)
             ESP_LOGI(TAG, "Using RTC time - no sync needed");
             unsigned long timeSinceSync = TimeManager::getTimeSinceLastSync();
-            ESP_LOGI(TAG, "Time since last sync: %lu ms (%.1f hours)",
-                     timeSinceSync, timeSinceSync / (1000.0 * 60.0 * 60.0));
+            ESP_LOGI(TAG, "Time since last sync: %lu ms (%s)",
+                     timeSinceSync, TimeManager::formatDurationInHours(timeSinceSync).c_str());
         }
         // Always print current time for verification
         TimeManager::printCurrentTime();

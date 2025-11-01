@@ -224,3 +224,14 @@ bool TimeManager::setupNTPTimeWithRetry(int maxRetries) {
     ESP_LOGE(TAG, "All NTP sync attempts failed after %d tries", maxRetries);
     return false;
 }
+
+String TimeManager::formatDurationInHours(unsigned long milliseconds) {
+    if (milliseconds == ULONG_MAX) {
+        return "never";
+    }
+    float hours = milliseconds / (1000.0 * 60.0 * 60.0);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.1f hours", hours);
+    return String(buf);
+}
+

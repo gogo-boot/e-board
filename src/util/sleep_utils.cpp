@@ -46,7 +46,7 @@ void enterDeepSleep(uint64_t sleepTimeSeconds) {
         TimeManager::setupNTPTime();
     }
 
-    ESP_LOGI(TAG, "Entering deep sleep for %u seconds (%u minutes)",
+    ESP_LOGI(TAG, "Entering deep sleep for %u seconds (%llu minutes)",
              sleepTimeSeconds, sleepTimeSeconds / 60);
 
     // Configure timer wakeup

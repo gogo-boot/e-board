@@ -10,6 +10,26 @@
 
 static const char* TAG = "TRANSPORT_DISPLAY";
 
+// Display layout constants
+namespace TransportDisplayConstants {
+    constexpr int16_t MARGIN = 10;
+    constexpr int16_t STATION_NAME_HEIGHT = 17;
+    constexpr int16_t STATION_NAME_SPACING = 10;
+    constexpr int16_t COLUMN_HEADER_HEIGHT = 12;
+    constexpr int16_t COLUMN_HEADER_SPACING = 5;
+    constexpr int8_t SEPARATOR_PADDING = 9;
+    constexpr int16_t ENTRY_HEIGHT = 42;
+    constexpr int16_t ENTRY_TOP_PADDING = 3;
+    constexpr int16_t ENTRY_LINE_HEIGHT = 17;
+    constexpr int16_t ENTRY_BOTTOM_PADDING = 3;
+    constexpr int8_t COLUMN_PADDING = 10;
+    constexpr int8_t INFO_INDENT = 10;
+    constexpr int16_t TRACK_RIGHT_PADDING = 15;
+    constexpr int16_t FULL_SCREEN_STATION_SPACING = 25;
+}
+
+using namespace TransportDisplayConstants;
+
 void TransportDisplay::drawHalfScreenTransportSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
                                                       int16_t h) {
     auto* display = DisplayShared::getDisplay();
@@ -18,16 +38,14 @@ void TransportDisplay::drawHalfScreenTransportSection(const DepartureData& depar
         ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
         return;
     }
-    ESP_LOGI(TAG, "Drawing departure section at (%d, %d) with size %dx%d", x, y, w, h);
+    ESP_LOGI(TAG, "Drawing transport section at (%d, %d) with size %dx%d", x, y, w, h);
     int16_t currentY = y; // Start from actual top
-    int16_t leftMargin = x + 10;
-    int16_t rightMargin = x + w - 10;
+    int16_t leftMargin = x + MARGIN;
+    int16_t rightMargin = x + w - MARGIN;
 
     // Station name with TRUE 15px margin from top
     TextUtils::setFont14px_margin17px(); // Medium font for station name
-    RTCConfigData& config = ConfigManager::getConfig();
-    String stopName = getStopName(config);
-
+    String stopName = ConfigManager::getStopNameFromId();
     stopName = Util::Util::shortenStationName(stopName);
 
     // Calculate available width and fit station name
@@ -37,15 +55,10 @@ void TransportDisplay::drawHalfScreenTransportSection(const DepartureData& depar
     // Print station name at top margin
     TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
 
-    currentY += 17; // Space for station name
-    currentY += 10; // Space after station name
+    currentY += STATION_NAME_HEIGHT;
+    currentY += STATION_NAME_SPACING;
 
     drawHalfScreenTransports(departures, leftMargin, rightMargin, currentY, h - currentY);
-}
-
-void TransportDisplay::drawFullScreenTransports(const DepartureData& departures, int16_t x,
-                                                int16_t y, int16_t w, int16_t h) {
-    return;
 }
 
 void TransportDisplay::drawHalfScreenTransports(const DepartureData& departures, int16_t leftMargin,
@@ -64,16 +77,16 @@ void TransportDisplay::drawHalfScreenTransports(const DepartureData& departures,
     int16_t halfHeightY = currentY + h / 2;
     ESP_LOGI(TAG, "Drawing transport direction separator line at Y=%d", halfHeightY);
 
-    int8_t padding = 9; // Padding above and below the line
     auto* display = DisplayShared::getDisplay();
-    display->drawLine(leftMargin, halfHeightY + padding, rightMargin, halfHeightY + padding, GxEPD_BLACK);
+    display->drawLine(leftMargin, halfHeightY + SEPARATOR_PADDING, rightMargin, halfHeightY + SEPARATOR_PADDING,
+                      GxEPD_BLACK);
 
     constexpr int maxPerDirection = 5;
 
     drawTransportList(direction1Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       true, maxPerDirection);
 
-    currentY = halfHeightY + padding; // Reset currentY to halfHeightY for direction 2
+    currentY = halfHeightY + SEPARATOR_PADDING; // Reset currentY to halfHeightY for direction 2
     drawTransportList(direction2Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       false, maxPerDirection);
 }
@@ -85,8 +98,8 @@ void TransportDisplay::drawTransportList(std::vector<const DepartureInfo*> depar
         TextUtils::setFont10px_margin12px(); // Small font for column headers
         TextUtils::printTextAtTopMargin(x, y, "Soll    Ist      Linie     Ziel");
 
-        y += 12;
-        y += 5;
+        y += COLUMN_HEADER_HEIGHT;
+        y += COLUMN_HEADER_SPACING;
 
         // Underline
         auto* display = DisplayShared::getDisplay();
@@ -97,7 +110,7 @@ void TransportDisplay::drawTransportList(std::vector<const DepartureInfo*> depar
     for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++) {
         const auto& dep = *departure[i];
         drawSingleTransport(dep, x, w, y);
-        y += 42;
+        y += ENTRY_HEIGHT;
 
         if (y > DisplayShared::getScreenHeight()) {
             ESP_LOGW(TAG, "Reached end of section height while drawing transports");
@@ -109,11 +122,19 @@ void TransportDisplay::drawTransportList(std::vector<const DepartureInfo*> depar
 void TransportDisplay::getSeparatedTransportDirection(const DepartureData& departures,
                                                       std::vector<const DepartureInfo*>& direction1Departures,
                                                       std::vector<const DepartureInfo*>& direction2Departures) {
+    auto getDirectionNumber = [](const String& flag) -> int {
+        if (flag == "1" || flag.toInt() == 1) return 1;
+        if (flag == "2" || flag.toInt() == 2) return 2;
+        return 0;
+    };
+
     for (int i = 0; i < departures.departureCount; i++) {
         const auto& dep = departures.departures[i];
-        if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1) {
+        int direction = getDirectionNumber(dep.directionFlag);
+
+        if (direction == 1) {
             direction1Departures.push_back(&dep);
-        } else if (dep.directionFlag == "2" || dep.directionFlag.toInt() == 2) {
+        } else if (direction == 2) {
             direction2Departures.push_back(&dep);
         }
     }
@@ -121,17 +142,15 @@ void TransportDisplay::getSeparatedTransportDirection(const DepartureData& depar
 
 void TransportDisplay::drawFullScreenTransportSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
                                                       int16_t h) {
-    // Half screen mode: Separate by direction flag
+    // Full screen mode: Separate by direction flag
     ESP_LOGI(TAG, "drawFullScreenTransportSection at (%d, %d) with size %dx%d", x, y, w, h);
     int16_t currentY = y; // Start from actual top
-    const int16_t padding = 10;
-    const int16_t leftMargin = x + 10;
-    const int16_t rightMargin = x + w - 10;
+    const int16_t leftMargin = x + MARGIN;
+    const int16_t rightMargin = x + w - MARGIN;
 
     // Station name with TRUE 15px margin from top
     TextUtils::setFont14px_margin17px(); // Medium font for station name
-    RTCConfigData& config = ConfigManager::getConfig();
-    const String stopName = getStopName(config);
+    const String stopName = ConfigManager::getStopNameFromId();
 
     // Calculate available width and fit station name
     int stationMaxWidth = rightMargin - leftMargin;
@@ -144,13 +163,13 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
     int16_t dateTimeWidth = TextUtils::getTextWidth(dateTime);
 
     int16_t refreshIconWidth = 16; // Width of the refresh icon
-    TextUtils::printTextAtTopMargin(rightMargin - dateTimeWidth - refreshIconWidth - 10, currentY, dateTime);
+    TextUtils::printTextAtTopMargin(rightMargin - dateTimeWidth - refreshIconWidth - MARGIN, currentY, dateTime);
 
     auto* display = DisplayShared::getDisplay();
     display->drawInvertedBitmap(rightMargin - refreshIconWidth, currentY, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
 
-    currentY += 17; // Space for station name
-    currentY += 25; // Space after station name
+    currentY += STATION_NAME_HEIGHT;
+    currentY += FULL_SCREEN_STATION_SPACING;
 
     std::vector<const DepartureInfo*> direction1Departures;
     std::vector<const DepartureInfo*> direction2Departures;
@@ -163,9 +182,9 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
     constexpr int maxPerDirection = 10;
 
     const int16_t halfWidth = DisplayShared::getScreenWidth() / 2 - 1;
-    drawTransportList(direction1Departures, x + padding, currentY, halfWidth - padding, h - currentY, true,
+    drawTransportList(direction1Departures, x + MARGIN, currentY, halfWidth - MARGIN, h - currentY, true,
                       maxPerDirection);
-    drawTransportList(direction2Departures, halfWidth + padding, currentY, halfWidth - padding, h - currentY,
+    drawTransportList(direction2Departures, halfWidth + MARGIN, currentY, halfWidth - MARGIN, h - currentY,
                       true, maxPerDirection);
 }
 
@@ -177,7 +196,7 @@ void TransportDisplay::drawSingleTransport(const DepartureInfo& dep, int16_t x, 
     // Log the transport position and size
     ESP_LOGI(TAG, "Drawing single transport at Y=%d", currentY);
 
-    currentY += 3;
+    currentY += ENTRY_TOP_PADDING;
     // Half screen format with proper text positioning
     TextUtils::setFont10px_margin12px(); // Small font for transport entries
 
@@ -188,8 +207,7 @@ void TransportDisplay::drawSingleTransport(const DepartureInfo& dep, int16_t x, 
     bool timesAreDifferent = (dep.rtTime.length() > 0 && dep.rtTime != dep.time);
 
     // Clean up destination (remove "Frankfurt (Main)" prefix)
-    RTCConfigData& config = ConfigManager::getConfig();
-    const String stopName = getStopName(config);
+    const String stopName = ConfigManager::getStopNameFromId();
     String dest = Util::shortenDestination(stopName, dep.direction);
 
     // Prepare times
@@ -212,7 +230,6 @@ void TransportDisplay::drawSingleTransport(const DepartureInfo& dep, int16_t x, 
     // get max width for each column
     int8_t timeWidth = TextUtils::getTextWidth("88:88");
     int8_t lineWidth = TextUtils::getTextWidth("M888");
-    int8_t padding = 10;
 
     int16_t currentX = x;
 
@@ -223,7 +240,7 @@ void TransportDisplay::drawSingleTransport(const DepartureInfo& dep, int16_t x, 
         TextUtils::printTextAtTopMargin(currentX, currentY, sollTime.c_str());
     }
 
-    currentX += padding + timeWidth;
+    currentX += COLUMN_PADDING + timeWidth;
 
     if (dep.cancelled) {
         TextUtils::printStrikethroughTextAtTopMargin(currentX, currentY, istTime.c_str());
@@ -231,34 +248,32 @@ void TransportDisplay::drawSingleTransport(const DepartureInfo& dep, int16_t x, 
         TextUtils::printTextAtTopMargin(currentX, currentY, istTime.c_str());
     }
 
-    currentX += padding + timeWidth;
+    currentX += COLUMN_PADDING + timeWidth;
     TextUtils::printTextAtTopMargin(currentX, currentY, dep.line.c_str());
-    currentX += padding + lineWidth;
+    currentX += COLUMN_PADDING + lineWidth;
     TextUtils::printTextAtTopMargin(currentX, currentY, dest.c_str());
 
     // Draw track info right-aligned
     int8_t trackWidth = TextUtils::getTextWidth(dep.track.c_str());
-    currentX = x + width - trackWidth - 15; // 10px padding from right
+    currentX = x + width - trackWidth - TRACK_RIGHT_PADDING;
     TextUtils::printTextAtTopMargin(currentX, currentY, dep.track.c_str());
 
-    currentY += 17; // per entry height
-    currentY += 3; // Add spacing after departure entry
+    currentY += ENTRY_LINE_HEIGHT;
+    currentY += ENTRY_BOTTOM_PADDING;
 
     // Check if we have disruption information to display
     if (dep.cancelled) {
-        int8_t indent = 10;
-        TextUtils::printTextAtTopMargin(x + indent, currentY, "Fällt aus");
+        TextUtils::printTextAtTopMargin(x + INFO_INDENT, currentY, "Fällt aus");
     } else if (dep.lead.length() > 0 || dep.text.length() > 0) {
         // Use the lead text if available, otherwise use text
         String disruptionInfo = dep.lead.length() > 0 ? dep.lead : dep.text;
 
-        int8_t indent = 10;
         // Fit disruption text to available width
-        int disruptionMaxWidth = width - indent;
+        int disruptionMaxWidth = width - INFO_INDENT;
         String fittedDisruption = TextUtils::shortenTextToFit(disruptionInfo, disruptionMaxWidth);
 
         // Display disruption information with proper positioning
-        TextUtils::printTextAtTopMargin(x + indent, currentY, fittedDisruption);
+        TextUtils::printTextAtTopMargin(x + INFO_INDENT, currentY, fittedDisruption);
     }
 }
 
@@ -267,18 +282,3 @@ void TransportDisplay::drawTransportFooter(int16_t x, int16_t y, int16_t h) {
     CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH | FOOTER_BATTERY);
 }
 
-String TransportDisplay::getStopName(RTCConfigData& config) {
-    String stopName = config.selectedStopId;
-
-    // Extract stop name from stopId format: "@O=StopName@"
-    int startIndex = stopName.indexOf("@O=");
-    if (startIndex != -1) {
-        startIndex += 3; // Move past "@O="
-        int endIndex = stopName.indexOf("@", startIndex);
-        if (endIndex != -1) {
-            stopName = stopName.substring(startIndex, endIndex);
-            return stopName;
-        }
-    }
-    return "";
-}
