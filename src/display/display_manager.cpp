@@ -4,7 +4,7 @@
 #include <esp_log.h>
 
 #include "display/text_utils.h"
-#include "display/departure_display.h"
+#include "display/transport_display.h"
 #include "display/weather_general_half.h"
 #include "display/weather_general_full.h"
 #include "display/display_shared.h"
@@ -203,9 +203,9 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,
     // Note: setPartialWindow is now called in displayHalfAndHalf before firstPage()
     // so we don't need to call it here
 
-    DepartureDisplay::drawHalfScreenDepartureSection(
+    TransportDisplay::drawHalfScreenTransportSection(
         departures, halfWidth, contentY, halfWidth, contentHeight - footerHeight);
-    DepartureDisplay::drawDepartureFooter(halfWidth, screenHeight - footerHeight,
+    TransportDisplay::drawTransportFooter(halfWidth, screenHeight - footerHeight,
                                           footerHeight);
 }
 
@@ -224,20 +224,20 @@ void DisplayManager::displayWeatherFull(const WeatherInfo& weather) {
 }
 
 void DisplayManager::displayDeparturesFull(const DepartureData& departures) {
-    ESP_LOGI(TAG, "Displaying departures only mode");
+    ESP_LOGI(TAG, "Displaying transports only mode");
 
     display.setFullWindow();
     display.firstPage();
 
     do {
         display.fillScreen(GxEPD_WHITE);
-        DepartureDisplay::drawFullScreenDepartureSection(departures, 0, 0,
+        TransportDisplay::drawFullScreenTransportSection(departures, 0, 0,
                                                          screenWidth, screenHeight);
     } while (display.nextPage());
 }
 
 // Weather functions moved to WeatherDisplay class
-// Departure functions moved to DepartureDisplay class
+// Transport functions moved to TransportDisplay class
 
 void DisplayManager::hibernate() {
     ESP_LOGI(TAG, "Hibernating display");

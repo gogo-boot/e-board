@@ -1,4 +1,4 @@
-#include "display/departure_display.h"
+#include "display/transport_display.h"
 #include "display/text_utils.h"
 #include "util/util.h"
 #include "util/time_manager.h"
@@ -8,9 +8,9 @@
 #include <vector>
 #include <icons.h>
 
-static const char* TAG = "DEPARTURE_DISPLAY";
+static const char* TAG = "TRANSPORT_DISPLAY";
 
-void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
+void TransportDisplay::drawHalfScreenTransportSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
                                                       int16_t h) {
     auto* display = DisplayShared::getDisplay();
     auto* u8g2 = DisplayShared::getU8G2();
@@ -40,29 +40,29 @@ void DepartureDisplay::drawHalfScreenDepartureSection(const DepartureData& depar
     currentY += 17; // Space for station name
     currentY += 10; // Space after station name
 
-    drawHalfScreenDepartures(departures, leftMargin, rightMargin, currentY, h - currentY);
+    drawHalfScreenTransports(departures, leftMargin, rightMargin, currentY, h - currentY);
 }
 
-void DepartureDisplay::drawFullScreenDepartures(const DepartureData& departures, int16_t x,
+void TransportDisplay::drawFullScreenTransports(const DepartureData& departures, int16_t x,
                                                 int16_t y, int16_t w, int16_t h) {
     return;
 }
 
-void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures, int16_t leftMargin,
+void TransportDisplay::drawHalfScreenTransports(const DepartureData& departures, int16_t leftMargin,
                                                 int16_t rightMargin, int16_t currentY, int16_t h) {
     // Half screen mode: Separate by direction flag
-    ESP_LOGI(TAG, "Drawing departures separated by direction flag");
+    ESP_LOGI(TAG, "Drawing transports separated by direction flag");
 
     std::vector<const DepartureInfo*> direction1Departures;
     std::vector<const DepartureInfo*> direction2Departures;
-    getSeparatedDepatureDirection(departures, direction1Departures, direction2Departures);
+    getSeparatedTransportDirection(departures, direction1Departures, direction2Departures);
 
-    ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2",
+    ESP_LOGI(TAG, "Found %d transports for direction 1, %d for direction 2",
              direction1Departures.size(), direction2Departures.size());
 
     // Draw separator line between directions
     int16_t halfHeightY = currentY + h / 2;
-    ESP_LOGI(TAG, "Drawing departure direction separator line at Y=%d", halfHeightY);
+    ESP_LOGI(TAG, "Drawing transport direction separator line at Y=%d", halfHeightY);
 
     int8_t padding = 9; // Padding above and below the line
     auto* display = DisplayShared::getDisplay();
@@ -70,15 +70,15 @@ void DepartureDisplay::drawHalfScreenDepartures(const DepartureData& departures,
 
     constexpr int maxPerDirection = 5;
 
-    drawDepartureList(direction1Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
+    drawTransportList(direction1Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       true, maxPerDirection);
 
     currentY = halfHeightY + padding; // Reset currentY to halfHeightY for direction 2
-    drawDepartureList(direction2Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
+    drawTransportList(direction2Departures, leftMargin, currentY, rightMargin - leftMargin, h - currentY,
                       false, maxPerDirection);
 }
 
-void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> departure, int16_t x, int16_t y, int16_t w,
+void TransportDisplay::drawTransportList(std::vector<const DepartureInfo*> departure, int16_t x, int16_t y, int16_t w,
                                          int16_t h, bool printLabel, int maxPerDirection) {
     if (printLabel) {
         // Column headers with TRUE 12px margin from current position
@@ -93,22 +93,22 @@ void DepartureDisplay::drawDepartureList(std::vector<const DepartureInfo*> depar
         display->drawLine(x, y, x + w, y, GxEPD_BLACK);
     }
 
-    // Direction 1 departures
+    // Direction 1 transports
     for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++) {
         const auto& dep = *departure[i];
-        drawSingleDeparture(dep, x, w, y);
+        drawSingleTransport(dep, x, w, y);
         y += 42;
 
         if (y > DisplayShared::getScreenHeight()) {
-            ESP_LOGW(TAG, "Reached end of section height while drawing departures");
+            ESP_LOGW(TAG, "Reached end of section height while drawing transports");
             break; // Stop if we exceed the section height
         }
     }
 }
 
-void DepartureDisplay::getSeparatedDepatureDirection(const DepartureData& departures,
-                                                     std::vector<const DepartureInfo*>& direction1Departures,
-                                                     std::vector<const DepartureInfo*>& direction2Departures) {
+void TransportDisplay::getSeparatedTransportDirection(const DepartureData& departures,
+                                                      std::vector<const DepartureInfo*>& direction1Departures,
+                                                      std::vector<const DepartureInfo*>& direction2Departures) {
     for (int i = 0; i < departures.departureCount; i++) {
         const auto& dep = departures.departures[i];
         if (dep.directionFlag == "1" || dep.directionFlag.toInt() == 1) {
@@ -119,10 +119,10 @@ void DepartureDisplay::getSeparatedDepatureDirection(const DepartureData& depart
     }
 }
 
-void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
+void TransportDisplay::drawFullScreenTransportSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
                                                       int16_t h) {
     // Half screen mode: Separate by direction flag
-    ESP_LOGI(TAG, "drawFullScreenDepartureSection at (%d, %d) with size %dx%d", x, y, w, h);
+    ESP_LOGI(TAG, "drawFullScreenTransportSection at (%d, %d) with size %dx%d", x, y, w, h);
     int16_t currentY = y; // Start from actual top
     const int16_t padding = 10;
     const int16_t leftMargin = x + 10;
@@ -154,32 +154,32 @@ void DepartureDisplay::drawFullScreenDepartureSection(const DepartureData& depar
 
     std::vector<const DepartureInfo*> direction1Departures;
     std::vector<const DepartureInfo*> direction2Departures;
-    getSeparatedDepatureDirection(departures, direction1Departures, direction2Departures);
+    getSeparatedTransportDirection(departures, direction1Departures, direction2Departures);
 
-    ESP_LOGI(TAG, "Found %d departures for direction 1, %d for direction 2",
+    ESP_LOGI(TAG, "Found %d transports for direction 1, %d for direction 2",
              direction1Departures.size(), direction2Departures.size());
 
-    // Draw first 4 departures from direction 1
+    // Draw first 4 transports from direction 1
     constexpr int maxPerDirection = 10;
 
     const int16_t halfWidth = DisplayShared::getScreenWidth() / 2 - 1;
-    drawDepartureList(direction1Departures, x + padding, currentY, halfWidth - padding, h - currentY, true,
+    drawTransportList(direction1Departures, x + padding, currentY, halfWidth - padding, h - currentY, true,
                       maxPerDirection);
-    drawDepartureList(direction2Departures, halfWidth + padding, currentY, halfWidth - padding, h - currentY,
+    drawTransportList(direction2Departures, halfWidth + padding, currentY, halfWidth - padding, h - currentY,
                       true, maxPerDirection);
 }
 
-void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, int16_t width,
+void TransportDisplay::drawSingleTransport(const DepartureInfo& dep, int16_t x, int16_t width,
                                            int16_t currentY) {
     auto* u8g2 = DisplayShared::getU8G2();
     if (!u8g2) return;
 
-    // Log the departure position and size
-    ESP_LOGI(TAG, "Drawing single departure at Y=%d", currentY);
+    // Log the transport position and size
+    ESP_LOGI(TAG, "Drawing single transport at Y=%d", currentY);
 
     currentY += 3;
     // Half screen format with proper text positioning
-    TextUtils::setFont10px_margin12px(); // Small font for departure entries
+    TextUtils::setFont10px_margin12px(); // Small font for transport entries
 
     // Calculate available space
     int totalWidth = width - x;
@@ -262,12 +262,12 @@ void DepartureDisplay::drawSingleDeparture(const DepartureInfo& dep, int16_t x, 
     }
 }
 
-void DepartureDisplay::drawDepartureFooter(int16_t x, int16_t y, int16_t h) {
+void TransportDisplay::drawTransportFooter(int16_t x, int16_t y, int16_t h) {
     // Use common footer with time and refresh icon
     CommonFooter::drawFooter(x, y, h, FOOTER_TIME | FOOTER_REFRESH | FOOTER_BATTERY);
 }
 
-String DepartureDisplay::getStopName(RTCConfigData& config) {
+String TransportDisplay::getStopName(RTCConfigData& config) {
     String stopName = config.selectedStopId;
 
     // Extract stop name from stopId format: "@O=StopName@"

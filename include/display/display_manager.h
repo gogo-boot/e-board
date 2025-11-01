@@ -60,16 +60,10 @@ private:
     static int16_t halfWidth;
     static int16_t halfHeight;
 
-    // Internal drawing functions
-    static void drawDepartureFooter(int16_t x, int16_t y);
-
     static String getStopName(RTCConfigData& config);
 
     // Coordinate calculation helpers
     static void calculateDimensions();
 
     static String shortenTextToFit(const String& text, int16_t maxWidth);
-
-    static void drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
-                                    int16_t& currentY, bool isFullScreen);
 };

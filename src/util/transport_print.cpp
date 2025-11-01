@@ -1,4 +1,4 @@
-#include "util/departure_print.h"
+#include "util/transport_print.h"
 #include <Arduino.h>
 #include <esp_log.h>
 
@@ -9,10 +9,10 @@
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
 
-static const char* TAG = "DEPARTURE";
+static const char* TAG = "TRANSPORT";
 
-void printDepartInfo(const DepartureData& depart) {
-    ESP_LOGI(TAG, "--- DepartureInfo ---");
+void printTransportInfo(const DepartureData& depart) {
+    ESP_LOGI(TAG, "--- TransportInfo ---");
     ESP_LOGI(TAG, "Stop: %s (%s)", depart.stopName.c_str(), depart.stopId.c_str());
     ESP_LOGI(TAG, "Departure count: %d", depart.departureCount);
 
@@ -31,5 +31,5 @@ void printDepartInfo(const DepartureData& depart) {
             dep.track.c_str(),
             dep.category.c_str());
     }
-    ESP_LOGI(TAG, "--- End DepartureInfo ---");
+    ESP_LOGI(TAG, "--- End TransportInfo ---");
 }
