@@ -108,18 +108,81 @@
         min-width: unset;
       }
     }
+
+    .display-mode-preview {
+        margin-top: 0.5em;
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
+    }
+
+    .preview-box {
+        width: 60px;
+        height: 30px;
+        border: 2px solid #007aff;
+        border-radius: 4px;
+        display: flex;
+        font-size: 0.7em;
+        align-items: center;
+        justify-content: center;
+        background: #f0f8ff;
+    }
+
+    .preview-half {
+        width: 28px;
+        height: 28px;
+        border-right: 1px solid #007aff;
+    }
+
+    .preview-half:last-child {
+        border-right: none;
+        border-left: 1px solid #007aff;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>MyStation Status</h1>
-    
-    <!-- Weather Configuration Section -->
-    <div class="chapter">🌤️ Wetter-Konfiguration</div>
-    
+
+    <!-- Display Mode Configuration Section (NEW) -->
+    <div class="chapter">📺 Anzeige-Konfiguration</div>
+
     <div class="config-item">
       <div class="label">
-        Mein Standort 
+          Anzeigemodus
+          <span class="tooltip">ℹ️
+      <span class="tooltiptext">Wählen Sie, was auf dem Display angezeigt werden soll.</span>
+    </span>
+      </div>
+      <div class="config-row">
+          <select id="display-mode"
+                  style="width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;"
+                  onchange="updateDisplayModePreview()">
+              <option value="0" selected>Wetter + Abfahrten (Hälfte-Hälfte)</option>
+              <option value="1">Nur Wetter (Vollbild)</option>
+              <option value="2">Nur Abfahrten (Vollbild)</option>
+          </select>
+      </div>
+      <div class="display-mode-preview" id="display-preview">
+          <div class="preview-box">
+              <div class="preview-half">🌤️</div>
+              <div class="preview-half">🚌</div>
+          </div>
+          <span id="preview-text">Wetter links, Abfahrten rechts</span>
+      </div>
+      <div class="help-text">
+          <strong>Hälfte-Hälfte:</strong> Wetter links, Abfahrten rechts - ideal für beide Informationen.<br>
+          <strong>Nur Wetter:</strong> Vollbild-Wetterprognose mit Details und Grafiken.<br>
+          <strong>Nur Abfahrten:</strong> Mehr Platz für Verkehrsinformationen und Details.
+      </div>
+    </div>
+
+    <!-- Weather Configuration Section -->
+    <div class="chapter">🌤️ Wetter-Konfiguration</div>
+
+    <div class="config-item">
+      <div class="label">
+        Mein Standort
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Standort wird für Wetter- und Verkehrsdaten verwendet.</span>
         </span>
@@ -136,10 +199,10 @@
         Breitengrad: <span id="lat-display">{{LAT}}</span>, Längengrad: <span id="lon-display">{{LON}}</span>
       </div>
     </div>
-    
+
     <div class="config-item">
       <div class="label">
-        Wetter-API Aktualisierungsintervall 
+        Wetter-API Aktualisierungsintervall
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Empfohlen: alle 3 Stunden. Längere Intervalle sparen Batterie und reduzieren Aktualisierungen.</span>
         </span>
@@ -159,10 +222,10 @@
 
     <!-- ÖPNV Configuration Section -->
     <div class="chapter">🚌 ÖPNV-Konfiguration</div>
-    
+
     <div class="config-item">
       <div class="label">
-        Meine Haltestelle 
+        Meine Haltestelle
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Wählen Sie Ihre häufig genutzte Haltestelle aus oder geben Sie sie manuell ein.</span>
         </span>
@@ -178,7 +241,7 @@
 
     <div class="config-item">
       <div class="label">
-        Verkehrsmittel-Filter 
+        Verkehrsmittel-Filter
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Wählen Sie die Verkehrsmittel aus, die Sie nutzen möchten.</span>
         </span>
@@ -196,7 +259,7 @@
     <div class="config-grid">
       <div class="config-item">
         <div class="label">
-          Abfahrten Aktualisierungsintervall 
+          Abfahrten Aktualisierungsintervall
           <span class="tooltip">ℹ️
             <span class="tooltiptext">Wie oft sollen Abfahrtszeiten aktualisiert werden? Häufigere Updates verbrauchen mehr Batterie.</span>
           </span>
@@ -217,7 +280,7 @@
 
       <div class="config-item">
         <div class="label">
-          Gehzeit zur Haltestelle 
+          Gehzeit zur Haltestelle
           <span class="tooltip">ℹ️
             <span class="tooltiptext">Busse/Bahnen, die in weniger als dieser Zeit abfahren, werden ausgeblendet.</span>
           </span>
@@ -232,7 +295,7 @@
 
     <div class="config-item">
       <div class="label">
-        Aktive Zeiten für Abfahrten-Updates 
+        Aktive Zeiten für Abfahrten-Updates
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Nur in diesen Zeiten werden Abfahrtszeiten aktualisiert. Außerhalb: Deep Sleep für maximale Batterieschonung.</span>
         </span>
@@ -250,10 +313,10 @@
 
     <!-- Deep Sleep Configuration -->
     <div class="chapter">💤 Energiespar-Konfiguration</div>
-    
+
     <div class="config-item">
       <div class="label">
-        Deep Sleep Zeiten 
+        Deep Sleep Zeiten
         <span class="tooltip">ℹ️
           <span class="tooltiptext">In diesen Zeiten macht das Gerät keine Updates und spart maximal Batterie.</span>
         </span>
@@ -273,7 +336,7 @@
 
     <div class="config-item">
       <div class="label">
-        Wochenend-Modus 
+        Wochenend-Modus
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Andere Zeiten am Wochenende für längeres Ausschlafen.</span>
         </span>
@@ -304,7 +367,7 @@
 
     <div class="config-item">
       <div class="label">
-        Geschätzte Batterienutzung 
+        Geschätzte Batterienutzung
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Basierend auf Ihren Einstellungen: Weniger Aktualisierungen = längere Batterielebensdauer. Berechnung pro Wochentag.</span>
         </span>
@@ -315,8 +378,8 @@
             ⚡ <span id="total-calls-per-day">0</span> Aktualisierungen pro Tag
           </div>
           <div style="font-size: 0.85em; color: #666;">
-            🌤️ Wetter: <span id="weather-calls">0</span> Updates • 
-            🚌 ÖPNV: <span id="transport-calls">0</span> Updates • 
+            🌤️ Wetter: <span id="weather-calls">0</span> Updates •
+            🚌 ÖPNV: <span id="transport-calls">0</span> Updates •
             💤 Sleep: <span id="sleep-hours">0</span>h
           </div>
         </div>
@@ -328,10 +391,10 @@
 
     <!-- Netzwerk Section -->
     <div class="chapter">📶 Netzwerk-Information</div>
-    
+
     <div class="config-item">
       <div class="label">
-        Router-Verbindung 
+        Router-Verbindung
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Aktuell verbundenes WLAN-Netzwerk.</span>
         </span>
@@ -340,10 +403,10 @@
         <span id="router">{{ROUTER}}</span>
       </div>
     </div>
-    
+
     <div class="config-item">
       <div class="label">
-        IP-Adresse 
+        IP-Adresse
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Lokale Netzwerk-Adresse des Geräts.</span>
         </span>
@@ -352,10 +415,10 @@
         <span id="ip">{{IP}}</span>
       </div>
     </div>
-    
+
     <div class="config-item">
       <div class="label">
-        mDNS-Adresse 
+        mDNS-Adresse
         <span class="tooltip">ℹ️
           <span class="tooltiptext">Lokaler Hostname für einfachen Zugriff im Netzwerk ohne IP-Adresse zu merken.</span>
         </span>
@@ -376,6 +439,28 @@
   </div>
 
   <script>
+    // Display mode preview functionalit
+    function updateDisplayModePreview() {
+      const displayMode = document.getElementById('display-mode').value;
+      const previewBox = document.querySelector('.preview-box');
+      const previewText = document.getElementById('preview-text');
+
+      switch (displayMode) {
+          case '0': // Half and half
+              previewBox.innerHTML = '<div class="preview-half">🌤️</div><div class="preview-half">🚌</div>';
+              previewText.textContent = 'Wetter links, Abfahrten rechts';
+              break;
+          case '1': // Weather only
+              previewBox.innerHTML = '🌤️📊';
+              previewText.textContent = 'Vollbild Wetterprognose mit Details';
+              break;
+          case '2': // Departure only
+              previewBox.innerHTML = '🚌📋';
+              previewText.textContent = 'Vollbild Abfahrtszeiten mit Details';
+              break;
+      }
+    }
+
     // --- Stadt bearbeiten ---
     function editCity() {
       document.getElementById('city-display').style.display = 'none';
@@ -383,7 +468,7 @@
       document.getElementById('city-input').focus();
       document.getElementById('city-input').value = document.getElementById('city-display').textContent;
     }
-    
+
     // --- Haltestelle bearbeiten ---
     function editStop() {
       document.getElementById('stop-select').style.display = 'none';
@@ -395,12 +480,12 @@
         document.getElementById('stop-input').value = currentSelection.options[currentSelection.selectedIndex].text;
       }
     }
-    
+
     // --- Filter Chips ---
     function toggleChip(el) {
       el.classList.toggle('active');
     }
-    
+
     // --- Stop select population ---
     function populateStops() {
       var select = document.getElementById('stop-select');
@@ -417,17 +502,17 @@
       }
     }
     if (window.stopsData) populateStops();
-    
+
     // --- Event Handlers ---
     var stopSelect = document.getElementById('stop-select');
     var stopInput = document.getElementById('stop-input');
     var stopSuggestions = document.getElementById('stop-suggestions');
     var cityInput = document.getElementById('city-input');
     var citySuggestions = document.getElementById('city-suggestions');
-    
+
     // Handle manual stop entry switching back to select
     stopInput.addEventListener('blur', function() {
-      setTimeout(function() { 
+      setTimeout(function() {
         stopSuggestions.style.display = 'none';
         if (stopInput.style.display !== 'none' && stopInput.value.trim() === '') {
           stopInput.style.display = 'none';
@@ -435,10 +520,10 @@
         }
       }, 200);
     });
-    
+
     // Handle manual city entry
     cityInput.addEventListener('blur', function() {
-      setTimeout(function() { 
+      setTimeout(function() {
         citySuggestions.style.display = 'none';
         if (cityInput.style.display !== 'none' && cityInput.value.trim() === '') {
           cityInput.style.display = 'none';
@@ -450,7 +535,7 @@
         }
       }, 200);
     });
-    
+
     // Handle city input suggestions
     cityInput.addEventListener('input', function() {
       var q = cityInput.value.trim();
@@ -502,7 +587,7 @@
           citySuggestions.style.display = '';
         });
     });
-    
+
     // Handle Enter key for city input
     cityInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
@@ -513,7 +598,7 @@
         document.getElementById('city-display').style.display = '';
       }
     });
-    
+
     // Handle Enter key for stop input
     stopInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
@@ -524,7 +609,7 @@
         }
       }
     });
-    
+
     // Handle stop input suggestions
     stopInput.addEventListener('input', function() {
       var q = stopInput.value.trim();
@@ -573,9 +658,10 @@
           stopSuggestions.style.display = '';
         });
     });
-    
+
     // --- Save config handler ---
     document.getElementById('save-btn').onclick = function() {
+      var displayMode = document.getElementById('display-mode').value;
       var city = '';
       var cityDisplay = document.getElementById('city-display');
       var cityInput = document.getElementById('city-input');
@@ -585,7 +671,7 @@
       } else {
         city = cityDisplay.textContent;
       }
-      
+
       var cityLat = document.getElementById('city-lat') ? document.getElementById('city-lat').value : '';
       var cityLon = document.getElementById('city-lon') ? document.getElementById('city-lon').value : '';
       var stopId = '';
@@ -599,9 +685,22 @@
         stopId = stopSelect.value;
         stopName = stopSelect.options[stopSelect.selectedIndex] ? stopSelect.options[stopSelect.selectedIndex].text : '';
       }
+
+      // Validate "stop-select" for display modes 0 and 2
+      if ((displayMode === '0' || displayMode === '2') && (!stopSelect || stopSelect.value.trim() === '')) {
+          alert('Bitte wählen Sie eine Haltestelle aus, um den Anzeigemodus zu speichern.');
+          return;
+      }
+
+      // Validate "city-lat" and "city-lon" for display modes 0 and 1
+      if ((displayMode === '0' || displayMode === '1') && (cityLat.trim() === '' || cityLon.trim() === '')) {
+          alert('Bitte geben Sie gültige Breitengrad- und Längengradwerte ein, um den Anzeigemodus zu speichern.');
+          return;
+      }
+
       var filterChips = document.querySelectorAll('.chip.active');
       var filters = Array.from(filterChips).map(function(chip) { return chip.getAttribute('data-type'); });
-      
+
       var weatherInterval = document.getElementById('weather-interval').value;
       var transportInterval = document.getElementById('transport-interval').value;
       var transportActiveStart = document.getElementById('transport-active-start').value;
@@ -614,7 +713,7 @@
       var weekendTransportEnd = document.getElementById('weekend-transport-end').value;
       var weekendSleepStart = document.getElementById('weekend-sleep-start').value;
       var weekendSleepEnd = document.getElementById('weekend-sleep-end').value;
-      
+
       var config = {
         city: city,
         cityLat: cityLat,
@@ -635,7 +734,7 @@
         weekendSleepStart: weekendSleepStart,
         weekendSleepEnd: weekendSleepEnd
       };
-      
+
       fetch('/save_config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -669,32 +768,32 @@
       var activeEnd = document.getElementById('transport-active-end').value || "09:00";
       var sleepStart = document.getElementById('sleep-start').value || "22:30";
       var sleepEnd = document.getElementById('sleep-end').value || "05:30";
-      
+
       var activeStartMinutes = timeToMinutes(activeStart);
       var activeEndMinutes = timeToMinutes(activeEnd);
       var sleepStartMinutes = timeToMinutes(sleepStart);
       var sleepEndMinutes = timeToMinutes(sleepEnd);
-      
-      var sleepDuration = sleepEndMinutes < sleepStartMinutes ? 
-        (24 * 60 - sleepStartMinutes + sleepEndMinutes) : 
+
+      var sleepDuration = sleepEndMinutes < sleepStartMinutes ?
+        (24 * 60 - sleepStartMinutes + sleepEndMinutes) :
         (sleepEndMinutes - sleepStartMinutes);
-      
+
       var activeDuration = activeEndMinutes - activeStartMinutes;
       var sleepHours = Math.round(sleepDuration / 60 * 10) / 10;
-      
+
       var weatherCallsPerDay = Math.floor(24 / weatherInterval);
       var transportActiveHours = Math.max(0, activeDuration / 60);
       var transportCallsPerDay = Math.floor(transportActiveHours * 60 / transportInterval);
       var totalCallsPerDay = weatherCallsPerDay + transportCallsPerDay;
-      
+
       document.getElementById('total-calls-per-day').textContent = totalCallsPerDay;
       document.getElementById('weather-calls').textContent = weatherCallsPerDay;
       document.getElementById('transport-calls').textContent = transportCallsPerDay;
       document.getElementById('sleep-hours').textContent = sleepHours;
-      
+
       var batteryInfo = document.getElementById('battery-usage-info');
       var recommendation = document.getElementById('battery-recommendation');
-      
+
       if (totalCallsPerDay <= 50) {
         batteryInfo.style.background = '#e8f5e8';
         recommendation.textContent = '🔋 Exzellent! Sehr batteriefreundliche Einstellung - maximale Laufzeit.';
@@ -709,12 +808,12 @@
         recommendation.textContent = '🔴 Hoch! Sehr häufige Updates - kurze Batterielebensdauer erwartet.';
       }
     }
-    
+
     function timeToMinutes(timeStr) {
       var parts = timeStr.split(':');
       return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
-    
+
     // Add event listeners for battery calculation
     document.getElementById('weather-interval').addEventListener('change', calculateBatteryUsage);
     document.getElementById('transport-interval').addEventListener('change', calculateBatteryUsage);
@@ -722,27 +821,27 @@
     document.getElementById('transport-active-end').addEventListener('change', calculateBatteryUsage);
     document.getElementById('sleep-start').addEventListener('change', calculateBatteryUsage);
     document.getElementById('sleep-end').addEventListener('change', calculateBatteryUsage);
-    
+
     // Calculate on page load
     setTimeout(calculateBatteryUsage, 100);
-    
+
     // Set saved configuration values on page load
     setTimeout(function() {
       var weatherInterval = "{{WEATHER_INTERVAL}}";
       if (weatherInterval && document.getElementById('weather-interval')) {
         document.getElementById('weather-interval').value = weatherInterval;
       }
-      
+
       var transportInterval = "{{TRANSPORT_INTERVAL}}";
       if (transportInterval && document.getElementById('transport-interval')) {
         document.getElementById('transport-interval').value = transportInterval;
       }
-      
+
       var weekendMode = "{{WEEKEND_MODE}}" === "checked";
       if (weekendMode && document.getElementById('weekend-config')) {
         document.getElementById('weekend-config').style.display = 'block';
       }
-      
+
       // Set saved filter chips from server template
       var savedFilters = {{SAVED_FILTERS}};
       if (savedFilters && savedFilters.length > 0) {
@@ -750,7 +849,7 @@
         allChips.forEach(function(chip) {
           chip.classList.remove('active');
         });
-        
+
         savedFilters.forEach(function(filterType) {
           var chip = document.querySelector('.chip[data-type="' + filterType + '"]');
           if (chip) {
@@ -759,6 +858,11 @@
         });
       }
     }, 150);
+
+      // Initialize display mode preview
+      document.addEventListener('DOMContentLoaded', function () {
+          updateDisplayModePreview();
+      });
   </script>
 </body>
 </html>

@@ -71,7 +71,7 @@ RTC_DATA_ATTR bool hasValidConfig = false; // Flag to track if valid config exis
 ConfigOption g_webConfigPageData;
 
 void setup() {
-#ifdef PRODUCTION
+#if PRODUCTION > 0
     // Production: Only critical errors
     esp_log_level_set("*", ESP_LOG_ERROR);
 #else
@@ -87,10 +87,33 @@ void setup() {
 
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
-        // Run operational mode - choose one of the following:
-        DeviceModeManager::showWeatherDeparture();
-        // DeviceModeManager::showGeneralWeather();
-        // DeviceModeManager::showDeparture();
+        // Get configured display mode from NVS/RTC
+        RTCConfigData& config = ConfigManager::getConfig();
+        uint8_t displayMode = config.displayMode;
+
+        ESP_LOGI(TAG, "Operating in configured display mode: %d", displayMode);
+
+        // Run operational mode based on configured display mode
+        switch (displayMode) {
+        case DISPLAY_MODE_HALF_AND_HALF:
+            ESP_LOGI(TAG, "Starting Weather + Departure half-and-half mode");
+            DeviceModeManager::showWeatherDeparture();
+            break;
+
+        case DISPLAY_MODE_WEATHER_ONLY:
+            ESP_LOGI(TAG, "Starting Weather-only full screen mode");
+            DeviceModeManager::updateWeatherFull();
+            break;
+
+        case DISPLAY_MODE_DEPARTURE_ONLY:
+            ESP_LOGI(TAG, "Starting Departure-only full screen mode");
+            DeviceModeManager::updateDepartureFull();
+            break;
+        default:
+            ESP_LOGW(TAG, "Unknown display mode %d, defaulting to half-and-half", displayMode);
+            DeviceModeManager::showWeatherDeparture();
+            break;
+        }
 
         // After operational mode completes, enter deep sleep
         DeviceModeManager::enterOperationalSleep();

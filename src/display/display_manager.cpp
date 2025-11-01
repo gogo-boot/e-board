@@ -112,11 +112,16 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
     const int16_t contentY = 0; // Start from top instead of after header
     const int16_t contentHeight = screenHeight - footerHeight;
 
-    if (weather->hourlyForecastCount > 0 && departures->departureCount > 0) {
+    bool hasWeather = weather && weather->hourlyForecastCount > 0;
+    bool hasDepartures = departures && departures->departureCount > 0;
+
+    // Use combined state for switch
+    int displayState = (hasWeather ? 1 : 0) | (hasDepartures ? 2 : 0);
+
+    switch (displayState) {
+    case 3: // Both weather and departures (hasWeather=1, hasDepartures=2, combined=3)
         // Full update - both halves without header
         ESP_LOGI(TAG, "Updating both halves without header");
-
-        bool isFullUpdate = true; // Full update for both halves
 
         // Set the display update region to the entire screen.
         // This ensures all drawing operations affect the whole display.
@@ -127,27 +132,38 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
 
             // Remove header drawing
             // Landscape: left/right split (weather left, departures right)
-            updateWeatherHalf(isFullUpdate, *weather);
-            updateDepartureHalf(isFullUpdate, *departures);
+            updateWeatherHalf(true, *weather);
+            updateDepartureHalf(true, *departures);
 
             // Draw vertical divider
             displayVerticalLine(contentY);
         } while (display.nextPage());
-    } else if (weather->hourlyForecastCount > 0) {
-        display.firstPage();
+        break;
+    case 1:
         // Partial update - weather half only
+        ESP_LOGI(TAG, "Partial update: weather half only");
+        // setPartialWindow must be called before firstPage()
+        display.setPartialWindow(0, 0, halfWidth, screenHeight);
+        display.firstPage();
         do {
+            display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
             updateWeatherHalf(false, *weather);
         } while (display.nextPage());
-    } else if (departures->departureCount > 0) {
+        break;
+    case 2:
+        // Partial update - departure half only
+        ESP_LOGI(TAG, "Partial update: departure half only");
+        // setPartialWindow must be called before firstPage()
+        display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
         display.firstPage();
         do {
-            // Partial update - departure half only
-            // updateDepartureHalf(false, *departures);
-            display.setPartialWindow(halfWidth + 1, contentHeight, halfWidth - 1,
-                                     contentHeight);
+            display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
             updateDepartureHalf(false, *departures);
         } while (display.nextPage());
+        break;
+    default:
+        ESP_LOGW(TAG, "No valid data to display");
+        break;
     }
 }
 
@@ -166,10 +182,8 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate,
     // Landscape: weather is LEFT half (full height)
     int16_t x = 0, y = 0, w = halfWidth, h = screenHeight;
 
-    if (!isFullUpate) {
-        // Use setPartialWindow(x, y, w, h) for partial updates instead.
-        display.setPartialWindow(x, y, w, h);
-    }
+    // Note: setPartialWindow is now called in displayHalfAndHalf before firstPage()
+    // so we don't need to call it here
 
     int16_t leftMargin = x + 10;
     int16_t rightMargin = x + w - 10;
@@ -186,10 +200,8 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,
     const int16_t contentY = 0; // Start from top without header
     const int16_t contentHeight = screenHeight; // Use full height
 
-    if (!isFullUpate) {
-        // // Use partial window for faster update
-        display.setPartialWindow(halfWidth, contentY, halfWidth, contentHeight);
-    }
+    // Note: setPartialWindow is now called in displayHalfAndHalf before firstPage()
+    // so we don't need to call it here
 
     DepartureDisplay::drawHalfScreenDepartureSection(
         departures, halfWidth, contentY, halfWidth, contentHeight - footerHeight);

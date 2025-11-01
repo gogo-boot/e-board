@@ -7,44 +7,47 @@
 // Complete RTC memory structure (survives deep sleep, lost on power loss)
 struct RTCConfigData {
     // Validation
-    bool isValid;                       // 1 byte
-    
+    bool isValid; // 1 byte
+
+    // Display configuration
+    uint8_t displayMode; // 1 byte (0=half_and_half, 1=weather_only, 2=departure_only)
+
     // Location data
-    float latitude;                     // 4 bytes
-    float longitude;                    // 4 bytes
-    char cityName[64];                  // 64 bytes
-    
-    // Network data  
-    char ssid[64];                      // 64 bytes
-    char ipAddress[16];                 // 16 bytes
-    
+    float latitude; // 4 bytes
+    float longitude; // 4 bytes
+    char cityName[64]; // 64 bytes
+
+    // Network data
+    char ssid[64]; // 64 bytes
+    char ipAddress[16]; // 16 bytes
+
     // Transport data
-    char selectedStopId[128];           // 128 bytes
-    char selectedStopName[128];         // 128 bytes
-    
+    char selectedStopId[128]; // 128 bytes
+    char selectedStopName[128]; // 128 bytes
+
     // Timing configuration
-    int weatherInterval;                // 4 bytes (hours)
-    int transportInterval;              // 4 bytes (minutes) 
-    char transportActiveStart[6];       // 6 bytes ("HH:MM")
-    char transportActiveEnd[6];         // 6 bytes ("HH:MM")
-    int walkingTime;                    // 4 bytes (minutes)
-    char sleepStart[6];                 // 6 bytes ("HH:MM")
-    char sleepEnd[6];                   // 6 bytes ("HH:MM")
-    
+    int weatherInterval; // 4 bytes (hours)
+    int transportInterval; // 4 bytes (minutes)
+    char transportActiveStart[6]; // 6 bytes ("HH:MM")
+    char transportActiveEnd[6]; // 6 bytes ("HH:MM")
+    int walkingTime; // 4 bytes (minutes)
+    char sleepStart[6]; // 6 bytes ("HH:MM")
+    char sleepEnd[6]; // 6 bytes ("HH:MM")
+
     // Weekend configuration
-    bool weekendMode;                   // 1 byte
-    char weekendTransportStart[6];      // 6 bytes ("HH:MM")
-    char weekendTransportEnd[6];        // 6 bytes ("HH:MM")
-    char weekendSleepStart[6];          // 6 bytes ("HH:MM") 
-    char weekendSleepEnd[6];            // 6 bytes ("HH:MM")
-    
+    bool weekendMode; // 1 byte
+    char weekendTransportStart[6]; // 6 bytes ("HH:MM")
+    char weekendTransportEnd[6]; // 6 bytes ("HH:MM")
+    char weekendSleepStart[6]; // 6 bytes ("HH:MM")
+    char weekendSleepEnd[6]; // 6 bytes ("HH:MM")
+
     // Transport filters (simplified - store as bit flags)
-    uint8_t filterFlags;                // 1 byte (8 different transport types)
-    
+    uint8_t filterFlags; // 1 byte (8 different transport types)
+
     // System state
-    bool configMode;                    // 1 byte
-    uint32_t lastUpdate;                // 4 bytes (timestamp)
-    
+    bool configMode; // 1 byte
+    uint32_t lastUpdate; // 4 bytes (timestamp)
+
     // Total: ~522 bytes (well under 8KB RTC limit)
 };
 
@@ -56,19 +59,24 @@ struct RTCConfigData {
 #define FILTER_U        (1 << 4)   // U-Bahn
 #define FILTER_TRAM     (1 << 5)   // Tram
 
+// Display mode constants
+#define DISPLAY_MODE_HALF_AND_HALF  0
+#define DISPLAY_MODE_WEATHER_ONLY   1
+#define DISPLAY_MODE_DEPARTURE_ONLY 2
+
 class ConfigManager {
 public:
     static ConfigManager& getInstance();
-    
+
     // RTC-based configuration management
     static RTCConfigData& getConfig() { return rtcConfig; }
     static bool hasValidConfig();
     static void invalidateConfig();
-    
+
     // NVS persistence (backup storage)
     bool loadFromNVS();
     bool saveToNVS();
-    
+
     // Helper functions for string conversion
     static String getSelectedStopId() { return String(rtcConfig.selectedStopId); }
     static String getSelectedStopName() { return String(rtcConfig.selectedStopName); }
@@ -83,7 +91,7 @@ public:
     static String getWeekendTransportEnd() { return String(rtcConfig.weekendTransportEnd); }
     static String getWeekendSleepStart() { return String(rtcConfig.weekendSleepStart); }
     static String getWeekendSleepEnd() { return String(rtcConfig.weekendSleepEnd); }
-    
+
     // Helper functions for setting values
     static void setLocation(float lat, float lon, const String& city);
     static void setNetwork(const String& ssid, const String& ip);
@@ -92,31 +100,37 @@ public:
     static void setActiveHours(const String& start, const String& end);
     static void setSleepHours(const String& start, const String& end);
     static void setWeekendMode(bool enabled);
-    static void setWeekendHours(const String& transStart, const String& transEnd, 
-                               const String& sleepStart, const String& sleepEnd);
-    
+    static void setWeekendHours(const String& transStart, const String& transEnd,
+                                const String& sleepStart, const String& sleepEnd);
+
+    // Display mode configuration
+    static uint8_t getDisplayMode() { return rtcConfig.displayMode; }
+    static void setDisplayMode(uint8_t mode) { rtcConfig.displayMode = mode; }
+
     // Filter management
     static void setFilterFlag(uint8_t flag, bool enabled);
     static bool getFilterFlag(uint8_t flag);
     static std::vector<String> getActiveFilters();
     static void setActiveFilters(const std::vector<String>& filters);
-    
+
     // Configuration mode management
     static bool isConfigMode() { return rtcConfig.configMode; }
     static void setConfigMode(bool mode) { rtcConfig.configMode = mode; }
-    
+
     // Check if this is first boot
     static bool isFirstBoot() { return !rtcConfig.isValid; }
-    
+
     // Public method to set defaults
     static void setDefaults();
-    
+
+    static void printConfiguration(bool fromNVS);
+
 private:
     ConfigManager() = default;
     Preferences preferences;
-    
+
     static RTCConfigData rtcConfig;
-    
+
     // Internal helper functions
     static void copyString(char* dest, const String& src, size_t maxLen);
 };

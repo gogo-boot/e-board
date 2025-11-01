@@ -4,33 +4,29 @@
 #include "config/config_manager.h"
 
 // Display orientations
-enum class DisplayOrientation
-{
+enum class DisplayOrientation {
     LANDSCAPE = 0 // Default: 0° rotation (800x480)
 };
 
 // Display modes
-enum class DisplayMode
-{
-    HALF_AND_HALF,  // Split screen: weather + departures
-    WEATHER_ONLY,   // Full screen weather
+enum class DisplayMode {
+    HALF_AND_HALF, // Split screen: weather + departures
+    WEATHER_ONLY, // Full screen weather
     DEPARTURES_ONLY // Full screen departures
 };
 
 // Display regions for partial updates
-enum class DisplayRegion
-{
+enum class DisplayRegion {
     FULL_SCREEN,
     // Landscape mode regions
-    LEFT_HALF,  // Left half in landscape (weather area)
+    LEFT_HALF, // Left half in landscape (weather area)
     RIGHT_HALF, // Right half in landscape (departure area)
     // Generic semantic regions
-    WEATHER_AREA,  // Maps to LEFT_HALF in landscape
+    WEATHER_AREA, // Maps to LEFT_HALF in landscape
     DEPARTURE_AREA // Maps to RIGHT_HALF in landscape
 };
 
-class DisplayManager
-{
+class DisplayManager {
 public:
     // Initialize display with orientation (default: landscape)
     static void init(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
@@ -39,16 +35,16 @@ public:
     static void setMode(DisplayMode mode, DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
 
     // Half and half mode - can update one or both halves
-    static void displayHalfAndHalf(const WeatherInfo *weather = nullptr,
-                                   const DepartureData *departures = nullptr);
+    static void displayHalfAndHalf(const WeatherInfo* weather = nullptr,
+                                   const DepartureData* departures = nullptr);
 
     // Full screen modes
-    static void displayWeatherFull(const WeatherInfo &weather);
-    static void displayDeparturesFull(const DepartureData &departures);
+    static void displayWeatherFull(const WeatherInfo& weather);
+    static void displayDeparturesFull(const DepartureData& departures);
 
     // Partial update functions
-    static void updateWeatherHalf(bool isFullUpate, const WeatherInfo &weather);
-    static void updateDepartureHalf(bool isFullUpate, const DepartureData &departures);
+    static void updateWeatherHalf(bool isFullUpate, const WeatherInfo& weather);
+    static void updateDepartureHalf(bool isFullUpate, const DepartureData& departures);
     static void displayVerticalLine(const int16_t contentY);
 
     // Utility functions
@@ -65,32 +61,15 @@ private:
     static int16_t halfHeight;
 
     // Internal drawing functions
-    static void drawDepartureSection(const DepartureData &departures, int16_t x, int16_t y, int16_t w, int16_t h);
     static void drawDepartureFooter(int16_t x, int16_t y);
 
-    static String getStopName(RTCConfigData &config);
+    static String getStopName(RTCConfigData& config);
 
     // Coordinate calculation helpers
     static void calculateDimensions();
-    static void getRegionBounds(DisplayRegion region, int16_t &x, int16_t &y, int16_t &w, int16_t &h);
 
-    // Font and layout helpers
-    static void setLargeFont();
-    static void setMediumFont();
-    // setSmallFont moved to public section
+    static String shortenTextToFit(const String& text, int16_t maxWidth);
 
-    // Departure-specific larger fonts
-    static void setDepartureLargeFont();
-    static void setDepartureMediumFont();
-    static void setDepartureSmallFont();
-
-    // Text width measurement helpers
-    // getTextWidth moved to public section
-    static int16_t getTextExcess(const String &text, int16_t maxWidth);
-    static String shortenTextToFit(const String &text, int16_t maxWidth);
-
-    // Text wrapping helper
-    static void printWrappedText(const String &text, int16_t x, int16_t &y,
-                                 int16_t maxWidth, int16_t maxChars, int16_t lineHeight);
-    static void drawSingleDeparture(const DepartureInfo &dep, int16_t leftMargin, int16_t rightMargin, int16_t &currentY, bool isFullScreen);
+    static void drawSingleDeparture(const DepartureInfo& dep, int16_t leftMargin, int16_t rightMargin,
+                                    int16_t& currentY, bool isFullScreen);
 };
