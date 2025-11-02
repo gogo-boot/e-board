@@ -10,8 +10,6 @@
 #include "display/display_shared.h"
 
 // Include e-paper display libraries
-#include <GxEPD2_3C.h>
-#include <GxEPD2_BW.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>
 
 #include "config/pins.h"
