@@ -42,7 +42,7 @@ struct RTCConfigData {
     char weekendSleepEnd[6]; // 6 bytes ("HH:MM")
 
     // Transport filters (simplified - store as bit flags)
-    uint8_t filterFlags; // 1 byte (8 different transport types)
+    uint16_t filterFlags; // 2 byte
 
     // System state
     bool configMode; // 1 byte
@@ -51,13 +51,31 @@ struct RTCConfigData {
     // Total: ~522 bytes (well under 8KB RTC limit)
 };
 
-// Transport filter bit flags
-#define FILTER_RE       (1 << 0)   // Regional Express
-#define FILTER_R        (1 << 1)   // Regional
-#define FILTER_S        (1 << 2)   // S-Bahn
-#define FILTER_BUS      (1 << 3)   // Bus
-#define FILTER_U        (1 << 4)   // U-Bahn
-#define FILTER_TRAM     (1 << 5)   // Tram
+/*
+ * RMV API Product Values (from official RMV HAFAS API documentation)
+ * These bit values must match exactly what RMV expects in the products parameter
+ *
+ * Regionalverkehrszug (Regional Express/Regional) = 4
+ * S-Bahn                                          = 8
+ * U-Bahn                                          = 16
+ * Straßenbahn (Tram)                             = 32
+ * Bus                                             = 64
+ * Hochflurbus (High-floor Bus)                   = 128
+ * Fähre/Schiff (Ferry/Ship)                      = 256
+ * Ast/Rufbus (Call Bus/On-demand)                = 512
+ */
+// Transport filter bit flags - MUST match RMV API product values!
+#define FILTER_R         4      // Regionalverkehrszug (Regional trains)
+#define FILTER_S         8      // S-Bahn
+#define FILTER_U         16     // U-Bahn
+#define FILTER_TRAM      32     // Straßenbahn (Tram)
+#define FILTER_BUS       64     // Bus
+#define FILTER_HIGHFLOOR 128    // Hochflurbus (High-floor Bus)
+#define FILTER_FERRY     256    // Fähre/Schiff (Ferry/Ship)
+#define FILTER_CALLBUS   512    // Ast/Rufbus (Call Bus/On-demand)
+
+// Maximum number of transport filters
+constexpr size_t MAX_TRANSPORT_FILTERS = 8;
 
 // Display mode constants
 #define DISPLAY_MODE_HALF_AND_HALF  0
@@ -108,8 +126,8 @@ public:
     static void setDisplayMode(uint8_t mode) { rtcConfig.displayMode = mode; }
 
     // Filter management
-    static void setFilterFlag(uint8_t flag, bool enabled);
-    static bool getFilterFlag(uint8_t flag);
+    static void setFilterFlag(uint16_t flag, bool enabled);
+    static bool getFilterFlag(uint16_t flag);
     static std::vector<String> getActiveFilters();
     static void setActiveFilters(const std::vector<String>& filters);
 

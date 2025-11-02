@@ -1,5 +1,6 @@
 #include "util/wifi_manager.h"
 #include "config/config_manager.h"
+#include "config/config_page_data.h"
 #include "util/util.h"
 #include <esp_log.h>
 
@@ -89,9 +90,8 @@ void MyWiFiManager::setupAPMode(WiFiManager& wm) {
              wm.getWiFiSSID().c_str(), WiFi.localIP().toString().c_str());
     configMgr.saveToNVS();
 
-    g_webConfigPageData.ssid = wm.getWiFiSSID().c_str();
-    g_webConfigPageData.ipAddress = WiFi.localIP().toString().c_str();
-
+    ConfigPageData& pageData = ConfigPageData::getInstance();
+    pageData.setIPAddress(WiFi.localIP().toString());
 
     if (MDNS.begin("mystation")) {
         ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");

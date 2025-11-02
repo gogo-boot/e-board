@@ -3,6 +3,17 @@
 #include <icons.h>
 #include <time.h>
 
+// Compass direction constants
+namespace {
+    constexpr const char* COMPASS_DIRECTIONS[] = {
+        "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+        "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
+    };
+    constexpr size_t NUM_DIRECTIONS = 16;
+    constexpr float DEGREES_PER_DIRECTION = 22.5f;
+    constexpr float DIRECTION_OFFSET = 11.25f;
+}
+
 icon_name WeatherUtil::getWeatherIcon(const int weatherCode) {
     switch (weatherCode) {
     case 0: return wi_0_day_sunny;
@@ -38,12 +49,8 @@ icon_name WeatherUtil::getWeatherIcon(const int weatherCode) {
 }
 
 String WeatherUtil::degreeToCompass(float degree) {
-    static const char* directions[] = {
-        "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
-    };
-    int idx = (int)((degree + 11.25) / 22.5);
-    idx = idx % 16;
-    return String(directions[idx]);
+    int idx = static_cast<int>((degree + DIRECTION_OFFSET) / DEGREES_PER_DIRECTION) % NUM_DIRECTIONS;
+    return String(COMPASS_DIRECTIONS[idx]);
 }
 
 String WeatherUtil::uvIndexToGrade(const float& uv) {
