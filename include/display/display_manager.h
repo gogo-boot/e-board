@@ -3,6 +3,14 @@
 #include "api/rmv_api.h"
 #include "config/config_manager.h"
 
+// Display constants - centralized configuration
+namespace DisplayConstants {
+    constexpr uint32_t SERIAL_BAUD_RATE = 115200;
+    constexpr uint16_t RESET_DURATION_MS = 10;
+    constexpr int16_t FOOTER_HEIGHT = 15;
+    constexpr int16_t MARGIN_HORIZONTAL = 10;
+}
+
 // Display orientations
 enum class DisplayOrientation {
     LANDSCAPE = 0 // Default: 0° rotation (800x480)
@@ -15,15 +23,12 @@ enum class DisplayMode {
     DEPARTURES_ONLY // Full screen departures
 };
 
-// Display regions for partial updates
-enum class DisplayRegion {
-    FULL_SCREEN,
-    // Landscape mode regions
-    LEFT_HALF, // Left half in landscape (weather area)
-    RIGHT_HALF, // Right half in landscape (departure area)
-    // Generic semantic regions
-    WEATHER_AREA, // Maps to LEFT_HALF in landscape
-    DEPARTURE_AREA // Maps to RIGHT_HALF in landscape
+// Update regions - what parts of the display need updating
+enum class UpdateRegion {
+    NONE = 0,           // No data to display
+    WEATHER_ONLY = 1,   // Only weather needs update
+    DEPARTURE_ONLY = 2, // Only departure needs update
+    BOTH = 3            // Both weather and departure need update
 };
 
 class DisplayManager {
@@ -55,6 +60,13 @@ public:
     static bool isInitialized() { return initialized; }
 
 private:
+    // Initialization modes
+    enum class InitMode {
+        LEGACY,          // Legacy init for backward compatibility
+        FULL_REFRESH,    // Clear screen and full refresh
+        PARTIAL_UPDATE   // Preserve screen content for partial updates
+    };
+
     // Internal state
     static bool initialized;
     static bool partialMode;
@@ -66,6 +78,9 @@ private:
     static int16_t halfHeight;
 
     // Internal helper methods
+    static void initInternal(DisplayOrientation orientation, InitMode mode);
+    static UpdateRegion determineUpdateRegion(const WeatherInfo* weather,
+                                              const DepartureData* departures);
     static void updateWeatherHalf(bool isFullUpdate, const WeatherInfo& weather);
     static void updateDepartureHalf(bool isFullUpdate, const DepartureData& departures);
     static void displayVerticalLine(const int16_t contentY);
