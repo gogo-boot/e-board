@@ -24,6 +24,8 @@ extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 static const char* TAG = "DISPLAY_MGR";
 
 // Static member variables
+bool DisplayManager::initialized = false;
+bool DisplayManager::partialMode = false;
 DisplayMode DisplayManager::currentMode = DisplayMode::HALF_AND_HALF;
 DisplayOrientation DisplayManager::currentOrientation =
     DisplayOrientation::LANDSCAPE;
@@ -33,9 +35,10 @@ int16_t DisplayManager::halfWidth = 0; // Will be calculated
 int16_t DisplayManager::halfHeight = 0; // Will be calculated
 
 void DisplayManager::init(DisplayOrientation orientation) {
-    ESP_LOGI(TAG, "Initializing display manager");
+    ESP_LOGI(TAG, "Initializing display manager (full refresh)");
 
     display.init(115200);
+    partialMode = false;
 
     // Initialize U8g2 for UTF-8 font support (German umlauts)
     u8g2.begin(display);
@@ -62,10 +65,70 @@ void DisplayManager::init(DisplayOrientation orientation) {
 
     setMode(DisplayMode::HALF_AND_HALF, orientation);
 
+    initialized = true;
+
     ESP_LOGI(
         TAG,
         "Display initialized - Orientation: Landscape, Active dimensions: %dx%d",
         screenWidth, screenHeight);
+}
+
+void DisplayManager::initForFullRefresh(DisplayOrientation orientation) {
+    ESP_LOGI(TAG, "Initializing display for FULL REFRESH");
+
+    // GxEPD2 init with initial=false to clear screen
+    display.init(115200, false, 10, false);
+    partialMode = false;
+
+    // Initialize U8g2 for UTF-8 font support (German umlauts)
+    u8g2.begin(display);
+    u8g2.setFontMode(1);
+    u8g2.setFontDirection(0);
+    u8g2.setForegroundColor(GxEPD_BLACK);
+    u8g2.setBackgroundColor(GxEPD_WHITE);
+
+    display.setRotation(static_cast<int>(orientation));
+    screenWidth = display.width();
+    screenHeight = display.height();
+
+    DisplayShared::init(display, u8g2, screenWidth, screenHeight);
+    TextUtils::init(display, u8g2);
+
+    calculateDimensions();
+    currentOrientation = orientation;
+    initialized = true;
+
+    ESP_LOGI(TAG, "Display initialized for full refresh - Dimensions: %dx%d",
+             screenWidth, screenHeight);
+}
+
+void DisplayManager::initForPartialUpdate(DisplayOrientation orientation) {
+    ESP_LOGI(TAG, "Initializing display for PARTIAL UPDATE");
+
+    // GxEPD2 init with initial=true to preserve screen content
+    display.init(115200, true, 10, false);
+    partialMode = true;
+
+    // Initialize U8g2 for UTF-8 font support (German umlauts)
+    u8g2.begin(display);
+    u8g2.setFontMode(1);
+    u8g2.setFontDirection(0);
+    u8g2.setForegroundColor(GxEPD_BLACK);
+    u8g2.setBackgroundColor(GxEPD_WHITE);
+
+    display.setRotation(static_cast<int>(orientation));
+    screenWidth = display.width();
+    screenHeight = display.height();
+
+    DisplayShared::init(display, u8g2, screenWidth, screenHeight);
+    TextUtils::init(display, u8g2);
+
+    calculateDimensions();
+    currentOrientation = orientation;
+    initialized = true;
+
+    ESP_LOGI(TAG, "Display initialized for partial update - Dimensions: %dx%d",
+             screenWidth, screenHeight);
 }
 
 void DisplayManager::setMode(DisplayMode mode, DisplayOrientation orientation) {
@@ -243,6 +306,77 @@ void DisplayManager::hibernate() {
     // Turn off display
     display.hibernate();
 
+    // Reset initialization flag since display is powered down
+    initialized = false;
+    partialMode = false;
+
     // You can add additional power-saving measures here
     ESP_LOGI(TAG, "Display hibernated");
 }
+
+// ===== HIGH-LEVEL REFRESH METHODS =====
+
+void DisplayManager::refreshFullScreen(const WeatherInfo* weather, const DepartureData* departures) {
+    ESP_LOGI(TAG, "=== REFRESH FULL SCREEN (Both Halves) ===");
+
+    // Initialize for full refresh (clears screen)
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
+    // Display both halves
+    displayHalfAndHalf(weather, departures);
+}
+
+void DisplayManager::refreshWeatherHalf(const WeatherInfo* weather) {
+    ESP_LOGI(TAG, "=== REFRESH WEATHER HALF (Partial Update) ===");
+
+    if (!weather) {
+        ESP_LOGW(TAG, "No weather data provided");
+        return;
+    }
+
+    // Initialize for partial update (preserves screen)
+    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
+    // Display only weather half
+    displayHalfAndHalf(weather, nullptr);
+}
+
+void DisplayManager::refreshDepartureHalf(const DepartureData* departures) {
+    ESP_LOGI(TAG, "=== REFRESH DEPARTURE HALF (Partial Update) ===");
+
+    if (!departures) {
+        ESP_LOGW(TAG, "No departure data provided");
+        return;
+    }
+
+    // Initialize for partial update (preserves screen)
+    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
+    // Display only departure half
+    displayHalfAndHalf(nullptr, departures);
+}
+
+void DisplayManager::refreshWeatherFullScreen(const WeatherInfo& weather) {
+    ESP_LOGI(TAG, "=== REFRESH WEATHER FULL SCREEN ===");
+
+    // Initialize for full refresh
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
+    // Display full screen weather
+    displayWeatherFull(weather);
+}
+
+void DisplayManager::refreshDepartureFullScreen(const DepartureData& departures) {
+    ESP_LOGI(TAG, "=== REFRESH DEPARTURE FULL SCREEN ===");
+
+    // Initialize for full refresh
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::DEPARTURES_ONLY, DisplayOrientation::LANDSCAPE);
+
+    // Display full screen departures
+    displayDeparturesFull(departures);
+}
+

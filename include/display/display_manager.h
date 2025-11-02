@@ -28,31 +28,36 @@ enum class DisplayRegion {
 
 class DisplayManager {
 public:
-    // Initialize display with orientation (default: landscape)
+    // === High-Level Refresh Methods (Centralized Control) ===
+    // These methods handle initialization + display in one call
+    static void refreshFullScreen(const WeatherInfo* weather, const DepartureData* departures);
+    static void refreshWeatherHalf(const WeatherInfo* weather);
+    static void refreshDepartureHalf(const DepartureData* departures);
+    static void refreshWeatherFullScreen(const WeatherInfo& weather);
+    static void refreshDepartureFullScreen(const DepartureData& departures);
+
+    // === Legacy Display Methods (for backward compatibility) ===
+    static void displayHalfAndHalf(const WeatherInfo* weather = nullptr,
+                                   const DepartureData* departures = nullptr);
+    static void displayWeatherFull(const WeatherInfo& weather);
+    static void displayDeparturesFull(const DepartureData& departures);
+
+    // === Initialization Methods ===
     static void init(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
+    static void initForFullRefresh(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
+    static void initForPartialUpdate(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
 
     // Set current display mode and orientation (default: landscape)
     static void setMode(DisplayMode mode, DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
 
-    // Half and half mode - can update one or both halves
-    static void displayHalfAndHalf(const WeatherInfo* weather = nullptr,
-                                   const DepartureData* departures = nullptr);
-
-    // Full screen modes
-    static void displayWeatherFull(const WeatherInfo& weather);
-    static void displayDeparturesFull(const DepartureData& departures);
-
-    // Partial update functions
-    static void updateWeatherHalf(bool isFullUpate, const WeatherInfo& weather);
-    static void updateDepartureHalf(bool isFullUpate, const DepartureData& departures);
-    static void displayVerticalLine(const int16_t contentY);
-
     // Utility functions
-    static void clearRegion(DisplayRegion region);
-    static void drawDivider();
     static void hibernate();
+    static bool isInitialized() { return initialized; }
 
 private:
+    // Internal state
+    static bool initialized;
+    static bool partialMode;
     static DisplayMode currentMode;
     static DisplayOrientation currentOrientation;
     static int16_t screenWidth;
@@ -60,7 +65,10 @@ private:
     static int16_t halfWidth;
     static int16_t halfHeight;
 
-    // Coordinate calculation helpers
+    // Internal helper methods
+    static void updateWeatherHalf(bool isFullUpdate, const WeatherInfo& weather);
+    static void updateDepartureHalf(bool isFullUpdate, const DepartureData& departures);
+    static void displayVerticalLine(const int16_t contentY);
     static void calculateDimensions();
 
     static String shortenTextToFit(const String& text, int16_t maxWidth);
