@@ -208,7 +208,6 @@ void DisplayManager::displayWeatherHalfOnly(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Partial update - weather half only");
 
     display.setPartialWindow(0, 0, halfWidth, screenHeight);
-    display.firstPage();
     do {
         display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
         updateWeatherHalf(false, weather);
@@ -219,7 +218,6 @@ void DisplayManager::displayDepartureHalfOnly(const DepartureData& departures) {
     ESP_LOGI(TAG, "Partial update - departure half only");
 
     display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
-    display.firstPage();
     do {
         display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
         updateDepartureHalf(false, departures);
