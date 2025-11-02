@@ -25,10 +25,10 @@ enum class DisplayMode {
 
 // Update regions - what parts of the display need updating
 enum class UpdateRegion {
-    NONE = 0,           // No data to display
-    WEATHER_ONLY = 1,   // Only weather needs update
+    NONE = 0, // No data to display
+    WEATHER_ONLY = 1, // Only weather needs update
     DEPARTURE_ONLY = 2, // Only departure needs update
-    BOTH = 3            // Both weather and departure need update
+    BOTH = 3 // Both weather and departure need update
 };
 
 class DisplayManager {
@@ -62,9 +62,9 @@ public:
 private:
     // Initialization modes
     enum class InitMode {
-        LEGACY,          // Legacy init for backward compatibility
-        FULL_REFRESH,    // Clear screen and full refresh
-        PARTIAL_UPDATE   // Preserve screen content for partial updates
+        LEGACY, // Legacy init for backward compatibility
+        FULL_REFRESH, // Clear screen and full refresh
+        PARTIAL_UPDATE // Preserve screen content for partial updates
     };
 
     // Internal state
@@ -81,6 +81,11 @@ private:
     static void initInternal(DisplayOrientation orientation, InitMode mode);
     static UpdateRegion determineUpdateRegion(const WeatherInfo* weather,
                                               const DepartureData* departures);
+
+    // Display update methods for each case
+    static void displayBothHalves(const WeatherInfo& weather, const DepartureData& departures);
+    static void displayWeatherHalfOnly(const WeatherInfo& weather);
+    static void displayDepartureHalfOnly(const DepartureData& departures);
     static void updateWeatherHalf(bool isFullUpdate, const WeatherInfo& weather);
     static void updateDepartureHalf(bool isFullUpdate, const DepartureData& departures);
     static void displayVerticalLine(const int16_t contentY);

@@ -23,7 +23,8 @@ extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 static const char* TAG = "DISPLAY_MGR";
 
-// Static member variables
+// ===== STATIC MEMBER VARIABLES =====
+
 bool DisplayManager::initialized = false;
 bool DisplayManager::partialMode = false;
 DisplayMode DisplayManager::currentMode = DisplayMode::HALF_AND_HALF;
@@ -100,6 +101,8 @@ void DisplayManager::initForPartialUpdate(DisplayOrientation orientation) {
     initInternal(orientation, InitMode::PARTIAL_UPDATE);
 }
 
+// ===== DISPLAY MODE & DIMENSIONS =====
+
 void DisplayManager::setMode(DisplayMode mode, DisplayOrientation orientation) {
     currentMode = mode;
     currentOrientation = orientation;
@@ -156,54 +159,20 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
         return;
     }
 
-    // Layout constants
-    const int16_t contentY = 0; // Start from top (no header)
-    const int16_t contentHeight = screenHeight - DisplayConstants::FOOTER_HEIGHT;
-
     // Determine what needs to be updated
     UpdateRegion region = determineUpdateRegion(weather, departures);
 
     switch (region) {
     case UpdateRegion::BOTH:
-        // Full update - both halves
-        ESP_LOGI(TAG, "Updating both halves");
-
-        display.setFullWindow();
-        display.firstPage();
-        do {
-            display.fillScreen(GxEPD_WHITE);
-
-            // Draw both halves
-            updateWeatherHalf(true, *weather);
-            updateDepartureHalf(true, *departures);
-
-            // Draw vertical divider
-            displayVerticalLine(contentY);
-        } while (display.nextPage());
+        displayBothHalves(*weather, *departures);
         break;
 
     case UpdateRegion::WEATHER_ONLY:
-        // Partial update - weather half only
-        ESP_LOGI(TAG, "Partial update: weather half only");
-
-        display.setPartialWindow(0, 0, halfWidth, screenHeight);
-        display.firstPage();
-        do {
-            display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
-            updateWeatherHalf(false, *weather);
-        } while (display.nextPage());
+        displayWeatherHalfOnly(*weather);
         break;
 
     case UpdateRegion::DEPARTURE_ONLY:
-        // Partial update - departure half only
-        ESP_LOGI(TAG, "Partial update: departure half only");
-
-        display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
-        display.firstPage();
-        do {
-            display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
-            updateDepartureHalf(false, *departures);
-        } while (display.nextPage());
+        displayDepartureHalfOnly(*departures);
         break;
 
     case UpdateRegion::NONE:
@@ -213,9 +182,55 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
     }
 }
 
+// ===== DISPLAY UPDATE METHODS FOR EACH CASE =====
+
+void DisplayManager::displayBothHalves(const WeatherInfo& weather,
+                                       const DepartureData& departures) {
+    ESP_LOGI(TAG, "Full update - both halves");
+
+    const int16_t contentY = 0; // Start from top (no header)
+
+    display.setFullWindow();
+    display.firstPage();
+    do {
+        display.fillScreen(GxEPD_WHITE);
+
+        // Draw both halves
+        updateWeatherHalf(true, weather);
+        updateDepartureHalf(true, departures);
+
+        // Draw vertical divider
+        displayVerticalLine(contentY);
+    } while (display.nextPage());
+}
+
+void DisplayManager::displayWeatherHalfOnly(const WeatherInfo& weather) {
+    ESP_LOGI(TAG, "Partial update - weather half only");
+
+    display.setPartialWindow(0, 0, halfWidth, screenHeight);
+    display.firstPage();
+    do {
+        display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
+        updateWeatherHalf(false, weather);
+    } while (display.nextPage());
+}
+
+void DisplayManager::displayDepartureHalfOnly(const DepartureData& departures) {
+    ESP_LOGI(TAG, "Partial update - departure half only");
+
+    display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
+    display.firstPage();
+    do {
+        display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
+        updateDepartureHalf(false, departures);
+    } while (display.nextPage());
+}
+
 void DisplayManager::displayVerticalLine(const int16_t contentY) {
     display.drawLine(halfWidth, contentY, halfWidth, screenHeight, GxEPD_BLACK);
 }
+
+// ===== HALF-CONTENT UPDATE METHODS =====
 
 void DisplayManager::updateWeatherHalf(bool isFullUpate,
                                        const WeatherInfo& weather) {
@@ -252,6 +267,8 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,
                                           DisplayConstants::FOOTER_HEIGHT);
 }
 
+// ===== FULL SCREEN DISPLAY METHODS =====
+
 void DisplayManager::displayWeatherFull(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Displaying weather only mode");
 
@@ -279,8 +296,7 @@ void DisplayManager::displayDeparturesFull(const DepartureData& departures) {
     } while (display.nextPage());
 }
 
-// Weather functions moved to WeatherDisplay class
-// Transport functions moved to TransportDisplay class
+// ===== POWER MANAGEMENT =====
 
 void DisplayManager::hibernate() {
     ESP_LOGI(TAG, "Hibernating display");
