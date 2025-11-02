@@ -14,10 +14,9 @@ public:
     static void updateWeatherFull();
     static void updateDepartureFull();
 
-    // Common operational mode functions for refactoring
+    // Common operational mode functions
     static bool setupOperationalMode();
     static bool setupConnectivityAndTime();
-    static void initializeDisplay(DisplayMode mode, DisplayOrientation orientation);
     static void enterOperationalSleep();
 
     // Helper functions for data fetching

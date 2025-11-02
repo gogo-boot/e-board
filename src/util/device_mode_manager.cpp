@@ -139,8 +139,7 @@ void DeviceModeManager::showWeatherDeparture() {
             // Fetch and display full weather screen
             WeatherInfo weather;
             if (fetchWeatherData(weather)) {
-                initializeDisplay(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
-                DisplayManager::displayWeatherFull(weather);
+                DisplayManager::refreshWeatherFullScreen(weather);
                 TimingManager::markWeatherUpdated();
                 ESP_LOGI(TAG, "Updated weather full screen (outside transport hours)");
             }
@@ -158,16 +157,13 @@ void DeviceModeManager::showWeatherDeparture() {
     ESP_LOGI(TAG, "Update requirements - Weather: %s, Transport: %s",
              needsWeatherUpdate ? "YES" : "NO", needsTransportUpdate ? "YES" : "NO");
 
-    // Initialize display for half-and-half mode
-    initializeDisplay(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
     DepartureData depart;
     WeatherInfo weather;
     bool hasTransport = false;
     bool hasWeather = false;
 
     if (needsWeatherUpdate && needsTransportUpdate) {
-        // Path: Update both weather and departure
+        // Path: Update both weather and departure - FULL REFRESH
         ESP_LOGI(TAG, "Updating both weather and departure data");
 
         if (fetchWeatherData(weather)) {
@@ -180,32 +176,32 @@ void DeviceModeManager::showWeatherDeparture() {
             TimingManager::markTransportUpdated();
         }
 
-        // Display both halves
-        DisplayManager::displayHalfAndHalf(hasWeather ? &weather : nullptr,
-                                           hasTransport ? &depart : nullptr);
+        // Display both halves using centralized method
+        DisplayManager::refreshFullScreen(hasWeather ? &weather : nullptr,
+                                          hasTransport ? &depart : nullptr);
         ESP_LOGI(TAG, "Updated both halves");
     } else if (needsTransportUpdate) {
-        // Path: Update departure half only
+        // Path: Update departure half only - PARTIAL UPDATE
         ESP_LOGI(TAG, "Updating departure data only");
 
         if (fetchTransportData(depart)) {
             hasTransport = true;
             TimingManager::markTransportUpdated();
 
-            // Partial update - departure half only
-            DisplayManager::displayHalfAndHalf(nullptr, &depart);
+            // Partial update using centralized method
+            DisplayManager::refreshDepartureHalf(&depart);
             ESP_LOGI(TAG, "Updated departure half only");
         }
     } else if (needsWeatherUpdate) {
-        // Path: Update weather half only
+        // Path: Update weather half only - PARTIAL UPDATE
         ESP_LOGI(TAG, "Updating weather data only");
 
         if (fetchWeatherData(weather)) {
             hasWeather = true;
             TimingManager::markWeatherUpdated();
 
-            // Partial update - weather half only
-            DisplayManager::displayHalfAndHalf(&weather, nullptr);
+            // Partial update using centralized method
+            DisplayManager::refreshWeatherHalf(&weather);
             ESP_LOGI(TAG, "Updated weather half only");
         }
     } else {
@@ -219,9 +215,6 @@ void DeviceModeManager::updateWeatherFull() {
     if (!setupOperationalMode()) {
         return; // setupOperationalMode already handles error case
     }
-
-    // Initialize display for weather-only mode
-    initializeDisplay(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
 
     // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
@@ -252,10 +245,10 @@ void DeviceModeManager::updateWeatherFull() {
         ESP_LOGI(TAG, "Skipping weather update - not due yet");
     }
 
-    // Display using new display manager
+    // Display using centralized refresh method
     if (hasWeather) {
         ESP_LOGI(TAG, "Displaying weather data");
-        DisplayManager::displayWeatherFull(weather);
+        DisplayManager::refreshWeatherFullScreen(weather);
     } else {
         ESP_LOGW(TAG, "No data to display");
     }
@@ -266,9 +259,6 @@ void DeviceModeManager::updateDepartureFull() {
     if (!setupOperationalMode()) {
         return; // setupOperationalMode already handles error case
     }
-
-    // Initialize display for departure-only mode (using HALF_AND_HALF for full departures)
-    initializeDisplay(DisplayMode::DEPARTURES_ONLY, DisplayOrientation::LANDSCAPE);
 
     // Setup connectivity and time
     if (!setupConnectivityAndTime()) {
@@ -308,10 +298,10 @@ void DeviceModeManager::updateDepartureFull() {
         ESP_LOGI(TAG, "Skipping transport update - not due yet");
     }
 
-    // Display using new display manager
+    // Display using centralized refresh method
     if (hasTransport) {
         ESP_LOGI(TAG, "Displaying departure data");
-        DisplayManager::displayDeparturesFull(depart);
+        DisplayManager::refreshDepartureFullScreen(depart);
     } else {
         ESP_LOGW(TAG, "No data to display");
     }
@@ -405,11 +395,6 @@ bool DeviceModeManager::setupConnectivityAndTime() {
     }
 }
 
-void DeviceModeManager::initializeDisplay(DisplayMode mode, DisplayOrientation orientation) {
-    // Initialize display manager (can be configured via config later)
-    DisplayManager::init(orientation);
-    DisplayManager::setMode(mode, orientation);
-}
 
 void DeviceModeManager::enterOperationalSleep() {
     // Save WiFi state to RTC memory before hibernating for fast reconnect after deep sleep

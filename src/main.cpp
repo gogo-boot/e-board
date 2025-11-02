@@ -32,20 +32,6 @@
 #include "config/pins.h"
 
 // GxEPD2 display library includes for GDEY075T7 (800x480)
-//IO settings
-//SCLK--GPIO18
-//MOSI--GPIO23
-#define isEPD_W21_BUSY digitalRead(Pins::EPD_BUSY)  //BUSY
-#define EPD_W21_RST_0 digitalWrite(Pins::EPD_RES,LOW)  //RES
-#define EPD_W21_RST_1 digitalWrite(Pins::EPD_RES,HIGH)
-#define EPD_W21_DC_0  digitalWrite(Pins::EPD_DC,LOW) //DC
-#define EPD_W21_DC_1  digitalWrite(Pins::EPD_DC,HIGH)
-#define EPD_W21_CS_0 digitalWrite(Pins::EPD_CS,LOW) //CS
-#define EPD_W21_CS_1 digitalWrite(Pins::EPD_CS,HIGH)
-
-#define EPD_WIDTH   800
-#define EPD_HEIGHT  480
-#define EPD_ARRAY  EPD_WIDTH*EPD_HEIGHT/8
 #include <GxEPD2_BW.h>
 #include <U8g2_for_Adafruit_GFX.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>  // Specific driver for GDEY075T7

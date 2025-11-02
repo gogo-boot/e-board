@@ -11,6 +11,32 @@
 
 static const char* TAG = "WEATHER_DISPLAY";
 
+// Weather full screen display layout constants
+namespace WeatherFullDisplayConstants {
+    constexpr int16_t SIDE_MARGIN = 10;
+    constexpr int16_t DATE_SECTION_HEIGHT = 60;
+    constexpr int16_t CITY_NAME_HEIGHT = 40;
+    constexpr int16_t WEATHER_ROW_HEIGHT = 80;
+    constexpr int16_t FORECAST_ROW_HEIGHT = 100;
+    constexpr int16_t GRAPH_TITLE_HEIGHT = 15;
+    constexpr int16_t GRAPH_SPACING = 25;
+
+    // Icon sizes
+    constexpr int16_t LARGE_ICON = 64;
+
+    // Left side column positions
+    constexpr int16_t COL1_X = 0;
+    constexpr int16_t COL2_X = 70;
+    constexpr int16_t COL3_X = 195;
+
+    // Text Y offsets within rows
+    constexpr int16_t TEXT_Y_TITLE = 20;
+    constexpr int16_t TEXT_Y_VALUE = 40;
+    constexpr int16_t TEMP_TEXT_Y = 70;
+}
+
+using namespace WeatherFullDisplayConstants;
+
 void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather) {
     // [WEATHER_DISPLAY] drawFullScreenWeatherLayout called with margins (10,790) and area (0,480)
     ESP_LOGI(TAG, "drawFullScreenWeatherLayout called");
@@ -19,8 +45,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     int16_t currentY = 0; // Start from top edge
     int16_t screenWidth = DisplayShared::getScreenWidth();
 
-    int16_t leftMargin = 10;
-    int16_t rightMargin = screenWidth - 10;
+    int16_t leftMargin = SIDE_MARGIN;
+    int16_t rightMargin = screenWidth - SIDE_MARGIN;
     int16_t screenHalfWidth = screenWidth / 2;
     int16_t screenQuaterWidth = screenWidth / 4;
     int16_t screenTenthWidth = screenWidth / 10;
@@ -33,7 +59,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     // Display current date in DD.MM.YYYY Weekday format using DateUtil
     String dateString = DateUtil::getCurrentDateString();
     TextUtils::printTextAtWithMargin(leftMargin, currentY, dateString);
-    currentY += 60; // Space after date
+    currentY += DATE_SECTION_HEIGHT; // Space after date
 
     // First Column - Weather Icon and Current Temperature
     int colY = currentY; // All columns start at same Y position
@@ -42,10 +68,11 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     // Current Weather Icon
     // Get weather icon from weather code using the new utility function
     icon_name currentWeatherIcon = WeatherUtil::getWeatherIcon(weather.weatherCode);
-    display->drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, 64), 64, 64, GxEPD_BLACK);
+    display->drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                                GxEPD_BLACK);
     // Current Weather Temperature
     TextUtils::setFont14px_margin17px();
-    TextUtils::printTextAtWithMargin(leftMargin, colY + 70, String(weather.temperature, 1) + "°C");
+    TextUtils::printTextAtWithMargin(leftMargin, colY + TEMP_TEXT_Y, String(weather.temperature, 1) + "°C");
     // Temperature low high
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     TextUtils::printTextAtWithMargin(100, colY + 20, "Temp.");
@@ -64,43 +91,47 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     int16_t thirdColumn = 195;
 
     // Sunrise Sunset
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_sunrise, 64), 64, 64, GxEPD_BLACK);
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenauf / untergang");
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, weather.dailyForecast[0].sunrise);
-    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40, weather.dailyForecast[0].sunset);
-    currentY += 80; // Move down after first row of weather info
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_sunrise, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                                GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_TITLE, "Sonnenauf / untergang");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_VALUE, weather.dailyForecast[0].sunrise);
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + TEXT_Y_VALUE, weather.dailyForecast[0].sunset);
+    currentY += WEATHER_ROW_HEIGHT; // Move down after first row of weather info
 
     // Use Util::sunshineSecondsToHHMM for sunshine duration
     // Sun-shine UN-Index
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, 64), 64, 64, GxEPD_BLACK);
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                                GxEPD_BLACK);
     String sunshineText = WeatherUtil::sunshineSecondsToHHMM(weather.dailyForecast[0].sunshineDuration);
     // Use Util::uvIndexToGrade for UV Index
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Sonnenstd.");
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, sunshineText);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_TITLE, "Sonnenstd.");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_VALUE, sunshineText);
     String uvText = WeatherUtil::uvIndexToGrade(weather.dailyForecast[0].uvIndex);
-    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, "UV Index");
-    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40, uvText);
-    currentY += 80; // Move down after first row of weather info
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + TEXT_Y_TITLE, "UV Index");
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + TEXT_Y_VALUE, uvText);
+    currentY += WEATHER_ROW_HEIGHT; // Move down after first row of weather info
 
     // precipitation mm, precipitation hours
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_61_rain, 64), 64, 64, GxEPD_BLACK);
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Niederschlag");
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 40,
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_61_rain, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                                GxEPD_BLACK);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_TITLE, "Niederschlag");
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_VALUE,
                                      String(weather.dailyForecast[0].precipitationSum, 1) + " mm");
-    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 20, "Dauer");
-    TextUtils::printTextAtWithMargin(thirdColumn, currentY + 40,
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + TEXT_Y_TITLE, "Dauer");
+    TextUtils::printTextAtWithMargin(thirdColumn, currentY + TEXT_Y_VALUE,
                                      String(weather.dailyForecast[0].precipitationHours) + " Std");
-    currentY += 80; // Move down after first row of weather info
+    currentY += WEATHER_ROW_HEIGHT; // Move down after first row of weather info
 
     // Wind speed m/s, Wind Gust m/s, Wind Direction
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, 64), 64, 64, GxEPD_BLACK);
+    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                                GxEPD_BLACK);
     String windDirectionText = WeatherUtil::degreeToCompass(weather.dailyForecast[0].windDirection);
     String windText = String(weather.dailyForecast[0].windSpeedMax, 1) + " m/s (Böe " + String(
         weather.dailyForecast[0].windGustsMax, 1) + " m/s )";
     String windText2 = windDirectionText + " (" + String(weather.dailyForecast[0].windDirection) + "°)";
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 20, "Wind " + windText2);
-    TextUtils::printTextAtWithMargin(secondColumn, currentY + 40, windText);
-    currentY += 80; // Move down after first row of weather info
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_TITLE, "Wind " + windText2);
+    TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_VALUE, windText);
+    currentY += WEATHER_ROW_HEIGHT; // Move down after first row of weather info
 
     // -----------------------------------
     // Right Side for daily forecast and weather graph
@@ -116,7 +147,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     int cityNameWidth = TextUtils::getTextWidth(fittedCityName);
     int cityNameX = rightMargin - cityNameWidth;
     TextUtils::printTextAtWithMargin(cityNameX, currentY, fittedCityName);
-    currentY += 40; // Space after city name
+    currentY += CITY_NAME_HEIGHT; // Space after city name
 
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     for (int i = 1; i < weather.dailyForecastCount; i++) {
@@ -126,7 +157,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
 
         // Draw WMO weather icon for each day using Util::getWeatherIcon
         icon_name icon = WeatherUtil::getWeatherIcon(weather.dailyForecast[i].weatherCode);
-        display->drawInvertedBitmap(screenTenthWidth * (i + 3), currentY + 15, getBitmap(icon, 64), 64, 64,
+        display->drawInvertedBitmap(screenTenthWidth * (i + 3), currentY + 15, getBitmap(icon, LARGE_ICON), LARGE_ICON,
+                                    LARGE_ICON,
                                     GxEPD_BLACK);
 
         // Show low | high temp without floating point
@@ -135,12 +167,12 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
         TextUtils::printTextAtWithMargin(screenTenthWidth * (i + 3), currentY + 75,
                                          String(tempMinInt) + " - " + String(tempMaxInt) + "°");
     }
-    currentY += 100; // Space after day labels
+    currentY += FORECAST_ROW_HEIGHT; // Space after day labels
 
     TextUtils::setFont12px_margin15px(); // Medium font for graph headers
     TextUtils::printTextAtWithMargin(screenTenthWidth * 4, currentY, "Nächste 12 Stunden");
-    currentY += 15; // Nächste 12 Stunden
-    currentY += 25; // Space after
+    currentY += GRAPH_TITLE_HEIGHT; // Nächste 12 Stunden
+    currentY += GRAPH_SPACING; // Space after
     ESP_LOGI(TAG, "Draw Weather Graph");
     // Draw the actual weather graph
     WeatherGraph::drawTemperatureAndRainGraph(weather, screenTenthWidth * 4, currentY, screenTenthWidth * 6,

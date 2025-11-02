@@ -10,8 +10,6 @@
 #include "display/display_shared.h"
 
 // Include e-paper display libraries
-#include <GxEPD2_3C.h>
-#include <GxEPD2_BW.h>
 #include <gdey/GxEPD2_750_GDEY075T7.h>
 
 #include "config/pins.h"
@@ -25,7 +23,10 @@ extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 static const char* TAG = "DISPLAY_MGR";
 
-// Static member variables
+// ===== STATIC MEMBER VARIABLES =====
+
+bool DisplayManager::initialized = false;
+bool DisplayManager::partialMode = false;
 DisplayMode DisplayManager::currentMode = DisplayMode::HALF_AND_HALF;
 DisplayOrientation DisplayManager::currentOrientation =
     DisplayOrientation::LANDSCAPE;
@@ -34,10 +35,26 @@ int16_t DisplayManager::screenHeight = 0; // Will be read from display
 int16_t DisplayManager::halfWidth = 0; // Will be calculated
 int16_t DisplayManager::halfHeight = 0; // Will be calculated
 
-void DisplayManager::init(DisplayOrientation orientation) {
-    ESP_LOGI(TAG, "Initializing display manager");
+// ===== INITIALIZATION METHODS =====
 
-    display.init(115200);
+void DisplayManager::initInternal(DisplayOrientation orientation, InitMode mode) {
+    const char* modeStr = (mode == InitMode::FULL_REFRESH)
+                              ? "FULL_REFRESH"
+                              : (mode == InitMode::PARTIAL_UPDATE)
+                              ? "PARTIAL_UPDATE"
+                              : "LEGACY";
+    ESP_LOGI(TAG, "Initializing display - Mode: %s", modeStr);
+
+    // Determine init parameters based on mode
+    bool clearScreen = (mode == InitMode::FULL_REFRESH || mode == InitMode::LEGACY);
+
+    // Init display with appropriate parameters
+    // clearScreen=true: initial=false (clears screen)
+    // clearScreen=false: initial=true (preserves content)
+    display.init(DisplayConstants::SERIAL_BAUD_RATE, !clearScreen,
+                 DisplayConstants::RESET_DURATION_MS, false);
+
+    partialMode = (mode == InitMode::PARTIAL_UPDATE);
 
     // Initialize U8g2 for UTF-8 font support (German umlauts)
     u8g2.begin(display);
@@ -46,29 +63,45 @@ void DisplayManager::init(DisplayOrientation orientation) {
     u8g2.setForegroundColor(GxEPD_BLACK);
     u8g2.setBackgroundColor(GxEPD_WHITE);
 
-    // Set rotation first to get correct dimensions
+    // Set rotation and get dimensions
     display.setRotation(static_cast<int>(orientation));
-
-    // Now get dimensions from display after rotation is set
     screenWidth = display.width();
     screenHeight = display.height();
 
-    // Initialize shared display resources once for all display components
+    // Initialize shared display resources
     DisplayShared::init(display, u8g2, screenWidth, screenHeight);
-
-    // Initialize TextUtils with shared resources
     TextUtils::init(display, u8g2);
 
-    ESP_LOGI(TAG, "Display detected - Physical dimensions: %dx%d", screenWidth,
-             screenHeight);
+    ESP_LOGI(TAG, "Display detected - Physical dimensions: %dx%d",
+             screenWidth, screenHeight);
 
-    setMode(DisplayMode::HALF_AND_HALF, orientation);
+    // Calculate layout dimensions
+    if (mode == InitMode::LEGACY) {
+        setMode(DisplayMode::HALF_AND_HALF, orientation);
+    } else {
+        calculateDimensions();
+        currentOrientation = orientation;
+    }
 
-    ESP_LOGI(
-        TAG,
-        "Display initialized - Orientation: Landscape, Active dimensions: %dx%d",
-        screenWidth, screenHeight);
+    initialized = true;
+
+    ESP_LOGI(TAG, "Display initialized - Orientation: Landscape, Dimensions: %dx%d",
+             screenWidth, screenHeight);
 }
+
+void DisplayManager::init(DisplayOrientation orientation) {
+    initInternal(orientation, InitMode::LEGACY);
+}
+
+void DisplayManager::initForFullRefresh(DisplayOrientation orientation) {
+    initInternal(orientation, InitMode::FULL_REFRESH);
+}
+
+void DisplayManager::initForPartialUpdate(DisplayOrientation orientation) {
+    initInternal(orientation, InitMode::PARTIAL_UPDATE);
+}
+
+// ===== DISPLAY MODE & DIMENSIONS =====
 
 void DisplayManager::setMode(DisplayMode mode, DisplayOrientation orientation) {
     currentMode = mode;
@@ -98,6 +131,25 @@ void DisplayManager::calculateDimensions() {
              halfWidth, screenHeight, halfWidth, halfWidth, screenHeight);
 }
 
+// ===== HELPER METHODS =====
+
+UpdateRegion DisplayManager::determineUpdateRegion(
+    const WeatherInfo* weather, const DepartureData* departures) {
+    bool hasWeather = weather && weather->hourlyForecastCount > 0;
+    bool hasDepartures = departures && departures->departureCount > 0;
+
+    if (hasWeather && hasDepartures) {
+        return UpdateRegion::BOTH;
+    }
+    if (hasWeather) {
+        return UpdateRegion::WEATHER_ONLY;
+    }
+    if (hasDepartures) {
+        return UpdateRegion::DEPARTURE_ONLY;
+    }
+    return UpdateRegion::NONE;
+}
+
 void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
                                         const DepartureData* departures) {
     ESP_LOGI(TAG, "Displaying half and half mode");
@@ -107,107 +159,113 @@ void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
         return;
     }
 
-    // Remove header - use full screen height
-    const int16_t footerHeight = 15;
-    const int16_t contentY = 0; // Start from top instead of after header
-    const int16_t contentHeight = screenHeight - footerHeight;
+    // Determine what needs to be updated
+    UpdateRegion region = determineUpdateRegion(weather, departures);
 
-    bool hasWeather = weather && weather->hourlyForecastCount > 0;
-    bool hasDepartures = departures && departures->departureCount > 0;
-
-    // Use combined state for switch
-    int displayState = (hasWeather ? 1 : 0) | (hasDepartures ? 2 : 0);
-
-    switch (displayState) {
-    case 3: // Both weather and departures (hasWeather=1, hasDepartures=2, combined=3)
-        // Full update - both halves without header
-        ESP_LOGI(TAG, "Updating both halves without header");
-
-        // Set the display update region to the entire screen.
-        // This ensures all drawing operations affect the whole display.
-        display.setFullWindow();
-        display.firstPage();
-        do {
-            display.fillScreen(GxEPD_WHITE);
-
-            // Remove header drawing
-            // Landscape: left/right split (weather left, departures right)
-            updateWeatherHalf(true, *weather);
-            updateDepartureHalf(true, *departures);
-
-            // Draw vertical divider
-            displayVerticalLine(contentY);
-        } while (display.nextPage());
+    switch (region) {
+    case UpdateRegion::BOTH:
+        displayBothHalves(*weather, *departures);
         break;
-    case 1:
-        // Partial update - weather half only
-        ESP_LOGI(TAG, "Partial update: weather half only");
-        // setPartialWindow must be called before firstPage()
-        display.setPartialWindow(0, 0, halfWidth, screenHeight);
-        display.firstPage();
-        do {
-            display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
-            updateWeatherHalf(false, *weather);
-        } while (display.nextPage());
+
+    case UpdateRegion::WEATHER_ONLY:
+        displayWeatherHalfOnly(*weather);
         break;
-    case 2:
-        // Partial update - departure half only
-        ESP_LOGI(TAG, "Partial update: departure half only");
-        // setPartialWindow must be called before firstPage()
-        display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
-        display.firstPage();
-        do {
-            display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
-            updateDepartureHalf(false, *departures);
-        } while (display.nextPage());
+
+    case UpdateRegion::DEPARTURE_ONLY:
+        displayDepartureHalfOnly(*departures);
         break;
+
+    case UpdateRegion::NONE:
     default:
         ESP_LOGW(TAG, "No valid data to display");
         break;
     }
 }
 
+// ===== DISPLAY UPDATE METHODS FOR EACH CASE =====
+
+void DisplayManager::displayBothHalves(const WeatherInfo& weather,
+                                       const DepartureData& departures) {
+    ESP_LOGI(TAG, "Full update - both halves");
+
+    const int16_t contentY = 0; // Start from top (no header)
+
+    display.setFullWindow();
+    display.firstPage();
+    do {
+        display.fillScreen(GxEPD_WHITE);
+
+        // Draw both halves
+        updateWeatherHalf(true, weather);
+        updateDepartureHalf(true, departures);
+
+        // Draw vertical divider
+        displayVerticalLine(contentY);
+    } while (display.nextPage());
+}
+
+void DisplayManager::displayWeatherHalfOnly(const WeatherInfo& weather) {
+    ESP_LOGI(TAG, "Partial update - weather half only");
+
+    display.setPartialWindow(0, 0, halfWidth, screenHeight);
+    do {
+        display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
+        updateWeatherHalf(false, weather);
+    } while (display.nextPage());
+}
+
+void DisplayManager::displayDepartureHalfOnly(const DepartureData& departures) {
+    ESP_LOGI(TAG, "Partial update - departure half only");
+
+    display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
+    do {
+        display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
+        updateDepartureHalf(false, departures);
+    } while (display.nextPage());
+}
+
 void DisplayManager::displayVerticalLine(const int16_t contentY) {
     display.drawLine(halfWidth, contentY, halfWidth, screenHeight, GxEPD_BLACK);
 }
+
+// ===== HALF-CONTENT UPDATE METHODS =====
 
 void DisplayManager::updateWeatherHalf(bool isFullUpate,
                                        const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Updating weather half");
 
-    const int16_t footerHeight = 15;
-    const int16_t contentY = 0; // Start from top without header
-    const int16_t contentHeight = screenHeight; // Use full height
+    const int16_t contentY = 0; // Start from top (no header)
+    const int16_t contentHeight = screenHeight; // Full height
 
     // Landscape: weather is LEFT half (full height)
-    int16_t x = 0, y = 0, w = halfWidth, h = screenHeight;
+    int16_t x = 0;
+    int16_t y = 0;
+    int16_t w = halfWidth;
 
-    // Note: setPartialWindow is now called in displayHalfAndHalf before firstPage()
-    // so we don't need to call it here
+    int16_t leftMargin = x + DisplayConstants::MARGIN_HORIZONTAL;
+    int16_t rightMargin = x + w - DisplayConstants::MARGIN_HORIZONTAL;
 
-    int16_t leftMargin = x + 10;
-    int16_t rightMargin = x + w - 10;
-    // Use partial window for faster update
+    // Draw weather layout
     WeatherHalfDisplay::drawHalfScreenWeatherLayout(weather, leftMargin, rightMargin, y, contentHeight);
-    WeatherHalfDisplay::drawWeatherFooter(x, screenHeight - footerHeight, 15);
+    WeatherHalfDisplay::drawWeatherFooter(x, screenHeight - DisplayConstants::FOOTER_HEIGHT,
+                                          DisplayConstants::FOOTER_HEIGHT);
 }
 
 void DisplayManager::updateDepartureHalf(bool isFullUpate,
                                          const DepartureData& departures) {
     ESP_LOGI(TAG, "Updating departure half");
 
-    const int16_t footerHeight = 15;
-    const int16_t contentY = 0; // Start from top without header
-    const int16_t contentHeight = screenHeight; // Use full height
+    const int16_t contentY = 0; // Start from top (no header)
+    const int16_t contentHeight = screenHeight - DisplayConstants::FOOTER_HEIGHT;
 
-    // Note: setPartialWindow is now called in displayHalfAndHalf before firstPage()
-    // so we don't need to call it here
-
+    // Draw departure section
     TransportDisplay::drawHalfScreenTransportSection(
-        departures, halfWidth, contentY, halfWidth, contentHeight - footerHeight);
-    TransportDisplay::drawTransportFooter(halfWidth, screenHeight - footerHeight,
-                                          footerHeight);
+        departures, halfWidth, contentY, halfWidth, contentHeight);
+    TransportDisplay::drawTransportFooter(halfWidth, screenHeight - DisplayConstants::FOOTER_HEIGHT,
+                                          DisplayConstants::FOOTER_HEIGHT);
 }
+
+// ===== FULL SCREEN DISPLAY METHODS =====
 
 void DisplayManager::displayWeatherFull(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Displaying weather only mode");
@@ -217,9 +275,9 @@ void DisplayManager::displayWeatherFull(const WeatherInfo& weather) {
 
     do {
         display.fillScreen(GxEPD_WHITE);
-        // Fix: Pass correct parameters - leftMargin, rightMargin, y, h
         WeatherFullDisplay::drawFullScreenWeatherLayout(weather);
-        WeatherFullDisplay::drawWeatherFooter(0, screenHeight - 15, 15);
+        WeatherFullDisplay::drawWeatherFooter(0, screenHeight - DisplayConstants::FOOTER_HEIGHT,
+                                              DisplayConstants::FOOTER_HEIGHT);
     } while (display.nextPage());
 }
 
@@ -236,8 +294,7 @@ void DisplayManager::displayDeparturesFull(const DepartureData& departures) {
     } while (display.nextPage());
 }
 
-// Weather functions moved to WeatherDisplay class
-// Transport functions moved to TransportDisplay class
+// ===== POWER MANAGEMENT =====
 
 void DisplayManager::hibernate() {
     ESP_LOGI(TAG, "Hibernating display");
@@ -245,6 +302,77 @@ void DisplayManager::hibernate() {
     // Turn off display
     display.hibernate();
 
+    // Reset initialization flag since display is powered down
+    initialized = false;
+    partialMode = false;
+
     // You can add additional power-saving measures here
     ESP_LOGI(TAG, "Display hibernated");
 }
+
+// ===== HIGH-LEVEL REFRESH METHODS =====
+
+void DisplayManager::refreshFullScreen(const WeatherInfo* weather, const DepartureData* departures) {
+    ESP_LOGI(TAG, "=== REFRESH FULL SCREEN (Both Halves) ===");
+
+    // Initialize for full refresh (clears screen)
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
+    // Display both halves
+    displayHalfAndHalf(weather, departures);
+}
+
+void DisplayManager::refreshWeatherHalf(const WeatherInfo* weather) {
+    ESP_LOGI(TAG, "=== REFRESH WEATHER HALF (Partial Update) ===");
+
+    if (!weather) {
+        ESP_LOGW(TAG, "No weather data provided");
+        return;
+    }
+
+    // Initialize for partial update (preserves screen)
+    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
+    // Display only weather half
+    displayHalfAndHalf(weather, nullptr);
+}
+
+void DisplayManager::refreshDepartureHalf(const DepartureData* departures) {
+    ESP_LOGI(TAG, "=== REFRESH DEPARTURE HALF (Partial Update) ===");
+
+    if (!departures) {
+        ESP_LOGW(TAG, "No departure data provided");
+        return;
+    }
+
+    // Initialize for partial update (preserves screen)
+    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
+
+    // Display only departure half
+    displayHalfAndHalf(nullptr, departures);
+}
+
+void DisplayManager::refreshWeatherFullScreen(const WeatherInfo& weather) {
+    ESP_LOGI(TAG, "=== REFRESH WEATHER FULL SCREEN ===");
+
+    // Initialize for full refresh
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
+    // Display full screen weather
+    displayWeatherFull(weather);
+}
+
+void DisplayManager::refreshDepartureFullScreen(const DepartureData& departures) {
+    ESP_LOGI(TAG, "=== REFRESH DEPARTURE FULL SCREEN ===");
+
+    // Initialize for full refresh
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+    setMode(DisplayMode::DEPARTURES_ONLY, DisplayOrientation::LANDSCAPE);
+
+    // Display full screen departures
+    displayDeparturesFull(departures);
+}
+
