@@ -18,289 +18,283 @@ RTC_DATA_ATTR uint32_t lastWeatherUpdate = 0;
 RTC_DATA_ATTR uint32_t lastTransportUpdate = 0;
 RTC_DATA_ATTR uint32_t lastOTACheck = 0;
 
-uint64_t TimingManager::getNextSleepDurationSeconds() {
-    // Get current time in seconds since Unix epoch
-    time_t now = GET_CURRENT_TIME();
-    uint32_t currentTimeSeconds = (uint32_t)now;
+// ============================================================================
+// Helper Functions for Sleep Duration Calculation
+// ============================================================================
 
-    // Get configuration
+bool TimingManager::isWeekendTime(time_t timestamp) {
     RTCConfigData& config = ConfigManager::getConfig();
-    uint8_t displayMode = config.displayMode; // 0=half_and_half, 1=weather_only, 2=departure_only
+    if (!config.weekendMode) {
+        return false;
+    }
+    struct tm timeInfo;
+    localtime_r(&timestamp, &timeInfo);
+    return (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
+}
 
-    ESP_LOGI(TAG, "Calculating sleep duration - Display mode: %d, Current time: %u", displayMode, currentTimeSeconds);
-
-    // Get last update times in seconds
-    uint32_t lastWeatherUpdateSeconds = getLastWeatherUpdate();
-    uint32_t lastDepartureUpdateSeconds = getLastTransportUpdate();
-
-    ESP_LOGI(TAG, "Last updates - Weather: %u seconds, Departure: %u seconds",
-             lastWeatherUpdateSeconds, lastDepartureUpdateSeconds);
-
-    // Calculate next update times based on display mode
-    uint32_t nextWeatherUpdateSeconds = 0;
-    uint32_t nextDepartureUpdateSeconds = 0;
-
+uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
     // Weather updates needed for weather_only (1) and half_and_half (0) modes
-    if (displayMode == 0 || displayMode == 1) {
-        uint32_t weatherIntervalSeconds = config.weatherInterval * 3600; // hours to seconds
-        if (lastWeatherUpdateSeconds == 0) {
-            nextWeatherUpdateSeconds = currentTimeSeconds; // Update immediately if never updated
-        } else {
-            nextWeatherUpdateSeconds = lastWeatherUpdateSeconds + weatherIntervalSeconds;
-        }
-        ESP_LOGI(TAG, "Weather interval: %u hours (%u seconds), Next weather update: %u",
-                 config.weatherInterval, weatherIntervalSeconds, nextWeatherUpdateSeconds);
+    if (displayMode != 0 && displayMode != 1) {
+        return 0;
     }
 
+    RTCConfigData& config = ConfigManager::getConfig();
+    uint32_t lastUpdate = getLastWeatherUpdate();
+    uint32_t intervalSeconds = config.weatherInterval * 3600; // hours to seconds
+
+    uint32_t nextUpdate = (lastUpdate == 0) ? currentTimeSeconds : lastUpdate + intervalSeconds;
+
+    ESP_LOGI(TAG, "Weather interval: %u hours (%u seconds), Next weather update: %u",
+             config.weatherInterval, intervalSeconds, nextUpdate);
+
+    return nextUpdate;
+}
+
+uint32_t TimingManager::calculateNextTransportUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
     // Departure updates needed for departure_only (2) and half_and_half (0) modes
-    if (displayMode == 0 || displayMode == 2) {
-        uint32_t departureIntervalSeconds = config.transportInterval * 60; // minutes to seconds
-        if (lastDepartureUpdateSeconds == 0) {
-            nextDepartureUpdateSeconds = currentTimeSeconds; // Update immediately if never updated
-        } else {
-            nextDepartureUpdateSeconds = lastDepartureUpdateSeconds + departureIntervalSeconds;
-        }
-        ESP_LOGI(TAG, "Departure interval: %u minutes (%u seconds), Next departure update: %u",
-                 config.transportInterval, departureIntervalSeconds, nextDepartureUpdateSeconds);
+    if (displayMode != 0 && displayMode != 2) {
+        return 0;
     }
 
-    // Calculate next OTA check time (independent of display mode)
-    uint32_t nextOTACheckSeconds = calculateNextOTACheckTime(currentTimeSeconds);
+    RTCConfigData& config = ConfigManager::getConfig();
+    uint32_t lastUpdate = getLastTransportUpdate();
+    uint32_t intervalSeconds = config.transportInterval * 60; // minutes to seconds
 
-    // Find the nearest next update time
-    uint32_t nearestUpdateSeconds = 0;
-    if (nextWeatherUpdateSeconds > 0 && nextDepartureUpdateSeconds > 0 && nextOTACheckSeconds > 0) {
-        nearestUpdateSeconds = min(min(nextWeatherUpdateSeconds, nextDepartureUpdateSeconds), nextOTACheckSeconds);
-        ESP_LOGI(TAG, "All updates needed - nearest at: %u seconds", nearestUpdateSeconds);
-    } else if (nextWeatherUpdateSeconds > 0 && nextDepartureUpdateSeconds > 0) {
-        nearestUpdateSeconds = min(nextWeatherUpdateSeconds, nextDepartureUpdateSeconds);
-        ESP_LOGI(TAG, "Weather and departure updates needed - nearest at: %u seconds", nearestUpdateSeconds);
-    } else if (nextWeatherUpdateSeconds > 0 && nextOTACheckSeconds > 0) {
-        nearestUpdateSeconds = min(nextWeatherUpdateSeconds, nextOTACheckSeconds);
-        ESP_LOGI(TAG, "Weather and OTA updates needed - nearest at: %u seconds", nearestUpdateSeconds);
-    } else if (nextDepartureUpdateSeconds > 0 && nextOTACheckSeconds > 0) {
-        nearestUpdateSeconds = min(nextDepartureUpdateSeconds, nextOTACheckSeconds);
-        ESP_LOGI(TAG, "Departure and OTA updates needed - nearest at: %u seconds", nearestUpdateSeconds);
-    } else if (nextDepartureUpdateSeconds > 0) {
-        nearestUpdateSeconds = nextDepartureUpdateSeconds;
-        ESP_LOGI(TAG, "Only departure update needed at: %u seconds", nearestUpdateSeconds);
-    } else if (nextWeatherUpdateSeconds > 0) {
-        nearestUpdateSeconds = nextWeatherUpdateSeconds;
-        ESP_LOGI(TAG, "Only weather update needed at: %u seconds", nearestUpdateSeconds);
-    } else if (nextOTACheckSeconds > 0) {
-        nearestUpdateSeconds = nextOTACheckSeconds;
-        ESP_LOGI(TAG, "Only OTA update needed at: %u seconds", nearestUpdateSeconds);
+    uint32_t nextUpdate = (lastUpdate == 0) ? currentTimeSeconds : lastUpdate + intervalSeconds;
+
+    ESP_LOGI(TAG, "Departure interval: %u minutes (%u seconds), Next departure update: %u",
+             config.transportInterval, intervalSeconds, nextUpdate);
+
+    return nextUpdate;
+}
+
+uint32_t TimingManager::findNearestUpdateTime(uint32_t weather, uint32_t transport, uint32_t ota) {
+    uint32_t nearest = 0;
+
+    // Collect all valid update times
+    if (weather > 0) nearest = weather;
+    if (transport > 0 && (nearest == 0 || transport < nearest)) nearest = transport;
+    if (ota > 0 && (nearest == 0 || ota < nearest)) nearest = ota;
+
+    // Fallback if no updates scheduled
+    if (nearest == 0) {
+        time_t now = GET_CURRENT_TIME();
+        nearest = (uint32_t)now + 60; // Wake in 1 minute
+        ESP_LOGI(TAG, "No updates configured - fallback wake in 60 seconds at: %u", nearest);
+        return nearest;
+    }
+
+    // Log what we found
+    if (weather > 0 && transport > 0 && ota > 0) {
+        ESP_LOGI(TAG, "All updates needed - nearest at: %u seconds", nearest);
+    } else if (weather > 0 && transport > 0) {
+        ESP_LOGI(TAG, "Weather and departure updates needed - nearest at: %u seconds", nearest);
+    } else if (weather > 0 && ota > 0) {
+        ESP_LOGI(TAG, "Weather and OTA updates needed - nearest at: %u seconds", nearest);
+    } else if (transport > 0 && ota > 0) {
+        ESP_LOGI(TAG, "Departure and OTA updates needed - nearest at: %u seconds", nearest);
+    } else if (transport > 0) {
+        ESP_LOGI(TAG, "Only departure update needed at: %u seconds", nearest);
+    } else if (weather > 0) {
+        ESP_LOGI(TAG, "Only weather update needed at: %u seconds", nearest);
     } else {
-        // Fallback - wake up in 1 minute
-        nearestUpdateSeconds = currentTimeSeconds + 60;
-        ESP_LOGI(TAG, "No updates configured - fallback wake in 60 seconds at: %u", nearestUpdateSeconds);
+        ESP_LOGI(TAG, "Only OTA update needed at: %u seconds", nearest);
     }
 
-    // Check if nearest update is OTA (to bypass sleep period restrictions)
-    bool isOTAUpdate = (nextOTACheckSeconds > 0 && nearestUpdateSeconds == nextOTACheckSeconds);
+    return nearest;
+}
 
-    // Check if departure update is during transport active hours
-    if (nextDepartureUpdateSeconds > 0 && nearestUpdateSeconds == nextDepartureUpdateSeconds) {
-        // Convert nearestUpdateSeconds to time of day to check transport active hours
-        struct tm timeinfo;
-        time_t nearestTime = (time_t)nearestUpdateSeconds;
-        localtime_r(&nearestTime, &timeinfo);
-        int nearestMinutesSinceMidnight = timeinfo.tm_hour * 60 + timeinfo.tm_min;
-
-        // Get transport active hours
-        String activeStart, activeEnd;
-        bool isWeekendTime = false;
-        if (config.weekendMode) {
-            time_t nearestTimeT = (time_t)nearestUpdateSeconds;
-            struct tm nearestTm;
-            localtime_r(&nearestTimeT, &nearestTm);
-            isWeekendTime = (nearestTm.tm_wday == 0 || nearestTm.tm_wday == 6);
-        }
-
-        if (isWeekendTime) {
-            activeStart = String(config.weekendTransportStart);
-            activeEnd = String(config.weekendTransportEnd);
-        } else {
-            activeStart = String(config.transportActiveStart);
-            activeEnd = String(config.transportActiveEnd);
-        }
-
-        int activeStartMinutes = parseTimeString(activeStart);
-        int activeEndMinutes = parseTimeString(activeEnd);
-
-        bool isInActiveHours = isTimeInRange(nearestMinutesSinceMidnight, activeStartMinutes, activeEndMinutes);
-
-        // Special case: if at the exact end boundary and transport interval hasn't passed yet,
-        // treat it as outside active hours
-        if (isInActiveHours && nearestMinutesSinceMidnight == activeEndMinutes &&
-            lastDepartureUpdateSeconds == 0) {
-            isInActiveHours = false;
-            ESP_LOGI(TAG, "At end boundary of active hours with no previous update - treating as inactive");
-        }
-
-        if (!isInActiveHours) {
-            ESP_LOGI(TAG, "Departure update outside transport active hours");
-
-            // Calculate next transport active period start time
-            // We need to find when transport will be active next
-            struct tm currentTm;
-            time_t currentTimeT = (time_t)currentTimeSeconds;
-            localtime_r(&currentTimeT, &currentTm);
-            int currentMinutes = currentTm.tm_hour * 60 + currentTm.tm_min;
-            bool isCurrentWeekend = config.weekendMode && (currentTm.tm_wday == 0 || currentTm.tm_wday == 6);
-
-            String nextActiveStart;
-            int nextActiveStartMinutes;
-            uint32_t nextActiveSeconds = 0;
-
-            // Check if we're currently in a weekend or weekday
-            if (isCurrentWeekend) {
-                nextActiveStart = String(config.weekendTransportStart);
-            } else {
-                nextActiveStart = String(config.transportActiveStart);
-            }
-            nextActiveStartMinutes = parseTimeString(nextActiveStart);
-
-            // Calculate seconds until next active period
-            if (currentMinutes < nextActiveStartMinutes) {
-                // Active period starts later today
-                int minutesUntilActive = nextActiveStartMinutes - currentMinutes;
-                nextActiveSeconds = currentTimeSeconds + (minutesUntilActive * 60);
-            } else {
-                // Active period starts tomorrow
-                int minutesUntilMidnight = (24 * 60) - currentMinutes;
-
-                // Determine if tomorrow is weekend or weekday
-                int nextDayOfWeek = (currentTm.tm_wday + 1) % 7;
-                bool isTomorrowWeekend = config.weekendMode && (nextDayOfWeek == 0 || nextDayOfWeek == 6);
-
-                if (isTomorrowWeekend) {
-                    nextActiveStart = String(config.weekendTransportStart);
-                } else {
-                    nextActiveStart = String(config.transportActiveStart);
-                }
-                nextActiveStartMinutes = parseTimeString(nextActiveStart);
-                nextActiveSeconds = currentTimeSeconds + ((minutesUntilMidnight + nextActiveStartMinutes) * 60);
-            }
-
-            ESP_LOGI(TAG, "Next transport active period starts at: %u seconds", nextActiveSeconds);
-
-            // Choose the earliest of: next weather update, next OTA check, or next transport active period
-            // OTA updates bypass transport inactive hours restriction
-            uint32_t candidateWakeTime = nextActiveSeconds;
-
-            if (nextWeatherUpdateSeconds > 0) {
-                candidateWakeTime = min(candidateWakeTime, nextWeatherUpdateSeconds);
-            }
-            if (nextOTACheckSeconds > 0) {
-                candidateWakeTime = min(candidateWakeTime, nextOTACheckSeconds);
-            }
-
-            nearestUpdateSeconds = candidateWakeTime;
-
-            // Update isOTAUpdate flag if OTA became the nearest
-            isOTAUpdate = (nextOTACheckSeconds > 0 && nearestUpdateSeconds == nextOTACheckSeconds);
-        }
+uint32_t TimingManager::adjustForTransportActiveHours(uint32_t nearestUpdate, uint32_t nextTransport,
+                                                      uint32_t nextWeather, uint32_t nextOTA,
+                                                      uint32_t currentTime, bool& isOTAUpdate) {
+    // Only adjust if the nearest update is a transport update
+    if (nextTransport == 0 || nearestUpdate != nextTransport) {
+        return nearestUpdate;
     }
 
-    // Check if nearest update time falls within configured deep sleep period
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Get time info for nearest update
+    struct tm timeInfo;
+    time_t updateTime = (time_t)nearestUpdate;
+    localtime_r(&updateTime, &timeInfo);
+    int updateMinutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
+
+    // Determine if this is weekend time
+    bool isWeekend = isWeekendTime(updateTime);
+
+    // Get appropriate transport active hours
+    String activeStart = isWeekend ? String(config.weekendTransportStart) : String(config.transportActiveStart);
+    String activeEnd = isWeekend ? String(config.weekendTransportEnd) : String(config.transportActiveEnd);
+
+    int activeStartMin = parseTimeString(activeStart);
+    int activeEndMin = parseTimeString(activeEnd);
+
+    bool isActive = isTimeInRange(updateMinutes, activeStartMin, activeEndMin);
+
+    // Special case: boundary check
+    if (isActive && updateMinutes == activeEndMin && getLastTransportUpdate() == 0) {
+        isActive = false;
+        ESP_LOGI(TAG, "At end boundary of active hours with no previous update - treating as inactive");
+    }
+
+    if (isActive) {
+        return nearestUpdate; // No adjustment needed
+    }
+
+    // Transport is inactive - calculate next active period
+    ESP_LOGI(TAG, "Departure update outside transport active hours");
+
+    struct tm currentTm;
+    time_t currentTimeT = (time_t)currentTime;
+    localtime_r(&currentTimeT, &currentTm);
+    int currentMinutes = currentTm.tm_hour * 60 + currentTm.tm_min;
+    bool isCurrentWeekend = config.weekendMode && (currentTm.tm_wday == 0 || currentTm.tm_wday == 6);
+
+    // Get next active start time
+    String nextActiveStart = isCurrentWeekend
+                                 ? String(config.weekendTransportStart)
+                                 : String(config.transportActiveStart);
+    int nextActiveStartMin = parseTimeString(nextActiveStart);
+
+    uint32_t nextActiveSeconds;
+    if (currentMinutes < nextActiveStartMin) {
+        // Active period starts later today
+        int minutesUntil = nextActiveStartMin - currentMinutes;
+        nextActiveSeconds = currentTime + (minutesUntil * 60);
+    } else {
+        // Active period starts tomorrow
+        int minutesUntilMidnight = (24 * 60) - currentMinutes;
+        int nextDayOfWeek = (currentTm.tm_wday + 1) % 7;
+        bool isTomorrowWeekend = config.weekendMode && (nextDayOfWeek == 0 || nextDayOfWeek == 6);
+
+        nextActiveStart = isTomorrowWeekend
+                              ? String(config.weekendTransportStart)
+                              : String(config.transportActiveStart);
+        nextActiveStartMin = parseTimeString(nextActiveStart);
+        nextActiveSeconds = currentTime + ((minutesUntilMidnight + nextActiveStartMin) * 60);
+    }
+
+    ESP_LOGI(TAG, "Next transport active period starts at: %u seconds", nextActiveSeconds);
+
+    // Choose earliest of: next active period, weather, or OTA (OTA bypasses transport restrictions)
+    uint32_t candidateWake = nextActiveSeconds;
+    if (nextWeather > 0) candidateWake = min(candidateWake, nextWeather);
+    if (nextOTA > 0) candidateWake = min(candidateWake, nextOTA);
+
+    // Update isOTAUpdate flag if OTA became nearest
+    isOTAUpdate = (nextOTA > 0 && candidateWake == nextOTA);
+
+    return candidateWake;
+}
+
+uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t currentTime, bool isOTAUpdate) {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Get update time info
     struct tm updateTimeInfo;
-    time_t updateTime = (time_t)nearestUpdateSeconds;
+    time_t updateTime = (time_t)nearestUpdate;
     localtime_r(&updateTime, &updateTimeInfo);
-    int updateMinutesSinceMidnight = updateTimeInfo.tm_hour * 60 + updateTimeInfo.tm_min;
+    int updateMinutes = updateTimeInfo.tm_hour * 60 + updateTimeInfo.tm_min;
 
     // Determine if update time is weekend
-    bool isUpdateWeekend = false;
-    if (config.weekendMode) {
-        isUpdateWeekend = (updateTimeInfo.tm_wday == 0 || updateTimeInfo.tm_wday == 6);
+    bool isUpdateWeekend = isWeekendTime(updateTime);
+
+    // Get sleep period configuration
+    String sleepStart = isUpdateWeekend ? String(config.weekendSleepStart) : String(config.sleepStart);
+    String sleepEnd = isUpdateWeekend ? String(config.weekendSleepEnd) : String(config.sleepEnd);
+
+    int sleepStartMin = parseTimeString(sleepStart);
+    int sleepEndMin = parseTimeString(sleepEnd);
+
+    // Check if update is in sleep period
+    if (!isTimeInRange(updateMinutes, sleepStartMin, sleepEndMin)) {
+        return nearestUpdate; // Not in sleep period
     }
 
-    // Get sleep period configuration based on update time's day
-    String sleepStart, sleepEnd;
-    if (isUpdateWeekend) {
-        sleepStart = String(config.weekendSleepStart);
-        sleepEnd = String(config.weekendSleepEnd);
+    ESP_LOGI(TAG, "Next update (%d:%02d) falls within sleep period (%s - %s)",
+             updateTimeInfo.tm_hour, updateTimeInfo.tm_min, sleepStart.c_str(), sleepEnd.c_str());
+
+    // OTA updates bypass sleep period
+    if (isOTAUpdate) {
+        ESP_LOGI(TAG, "OTA update scheduled during sleep period - bypassing sleep restrictions");
+        return nearestUpdate;
+    }
+
+    // Calculate sleep end time
+    uint32_t sleepEndSeconds;
+    if (sleepEndMin > updateMinutes) {
+        sleepEndSeconds = nearestUpdate + ((sleepEndMin - updateMinutes) * 60);
     } else {
-        sleepStart = String(config.sleepStart);
-        sleepEnd = String(config.sleepEnd);
+        int minutesUntilNextDay = (24 * 60) - updateMinutes;
+        sleepEndSeconds = nearestUpdate + ((minutesUntilNextDay + sleepEndMin) * 60);
     }
 
-    int sleepStartMinutes = parseTimeString(sleepStart);
-    int sleepEndMinutes = parseTimeString(sleepEnd);
+    // Check if sleep crosses weekend boundary
+    struct tm sleepEndTimeInfo;
+    time_t sleepEndTime = (time_t)sleepEndSeconds;
+    localtime_r(&sleepEndTime, &sleepEndTimeInfo);
+    bool isSleepEndWeekend = isWeekendTime(sleepEndTime);
 
-    // Check if update time is in sleep period
-    bool isUpdateInSleepPeriod = isTimeInRange(updateMinutesSinceMidnight, sleepStartMinutes, sleepEndMinutes);
+    if (isSleepEndWeekend != isUpdateWeekend) {
+        ESP_LOGI(TAG, "Sleep crosses weekend boundary - adjusting sleep end time");
 
-    if (isUpdateInSleepPeriod) {
-        ESP_LOGI(TAG, "Next update (%d:%02d) falls within sleep period (%s - %s)",
-                 updateTimeInfo.tm_hour, updateTimeInfo.tm_min, sleepStart.c_str(), sleepEnd.c_str());
+        String correctSleepEnd = isSleepEndWeekend ? String(config.weekendSleepEnd) : String(config.sleepEnd);
+        int correctSleepEndMin = parseTimeString(correctSleepEnd);
 
-        // OTA updates bypass sleep period restrictions
-        if (isOTAUpdate) {
-            ESP_LOGI(TAG, "OTA update scheduled during sleep period - bypassing sleep restrictions");
-            // Keep nearestUpdateSeconds as is - wake for OTA even during sleep
+        if (correctSleepEndMin > updateMinutes) {
+            sleepEndSeconds = nearestUpdate + ((correctSleepEndMin - updateMinutes) * 60);
         } else {
-            // Calculate sleep end time in seconds
-            uint32_t sleepEndSeconds;
-            if (sleepEndMinutes > updateMinutesSinceMidnight) {
-                // Sleep ends same day
-                sleepEndSeconds = nearestUpdateSeconds + ((sleepEndMinutes - updateMinutesSinceMidnight) * 60);
-            } else {
-                // Sleep ends next day
-                int minutesUntilNextDay = (24 * 60) - updateMinutesSinceMidnight;
-                sleepEndSeconds = nearestUpdateSeconds + ((minutesUntilNextDay + sleepEndMinutes) * 60);
-            }
+            int minutesUntilNextDay = (24 * 60) - updateMinutes;
+            sleepEndSeconds = nearestUpdate + ((minutesUntilNextDay + correctSleepEndMin) * 60);
+        }
 
-            // NOW check if the sleep END time (wake-up time) is weekend or weekday
-            // This is important for Friday->Saturday and Sunday->Monday transitions
-            struct tm sleepEndTimeInfo;
-            time_t sleepEndTime = (time_t)sleepEndSeconds;
-            localtime_r(&sleepEndTime, &sleepEndTimeInfo);
-            bool isSleepEndWeekend = false;
-            if (config.weekendMode) {
-                isSleepEndWeekend = (sleepEndTimeInfo.tm_wday == 0 || sleepEndTimeInfo.tm_wday == 6);
-            }
-
-            // If sleep end day type differs from update day type, recalculate with correct sleep end time
-            if (isSleepEndWeekend != isUpdateWeekend) {
-                ESP_LOGI(TAG, "Sleep crosses weekend boundary - adjusting sleep end time");
-
-                // Get the correct sleep end time for the wake-up day
-                String correctSleepEnd;
-                if (isSleepEndWeekend) {
-                    correctSleepEnd = String(config.weekendSleepEnd);
-                } else {
-                    correctSleepEnd = String(config.sleepEnd);
-                }
-
-                int correctSleepEndMinutes = parseTimeString(correctSleepEnd);
-                // Recalculate sleep end time with correct configuration
-                if (correctSleepEndMinutes > updateMinutesSinceMidnight) {
-                    // Sleep ends same day (shouldn't happen if we crossed boundary, but check anyway)
-                    sleepEndSeconds = nearestUpdateSeconds + ((correctSleepEndMinutes - updateMinutesSinceMidnight) *
-                        60);
-                } else {
-                    // Sleep ends next day
-                    int minutesUntilNextDay = (24 * 60) - updateMinutesSinceMidnight;
-                    sleepEndSeconds = nearestUpdateSeconds + ((minutesUntilNextDay + correctSleepEndMinutes) * 60);
-                }
-
-                ESP_LOGI(TAG, "Adjusted sleep end to %s time: %u seconds",
-                         isSleepEndWeekend ? "weekend" : "weekday", sleepEndSeconds);
-            }
-
-            nearestUpdateSeconds = sleepEndSeconds;
-            ESP_LOGI(TAG, "Final wake time: %u seconds", nearestUpdateSeconds);
-        } // End of else block for non-OTA updates
+        ESP_LOGI(TAG, "Adjusted sleep end to %s time: %u seconds",
+                 isSleepEndWeekend ? "weekend" : "weekday", sleepEndSeconds);
     }
 
-    // Calculate sleep duration in seconds
+    ESP_LOGI(TAG, "Final wake time: %u seconds", sleepEndSeconds);
+    return sleepEndSeconds;
+}
+
+// ============================================================================
+// Main Sleep Duration Calculation
+// ============================================================================
+
+uint64_t TimingManager::getNextSleepDurationSeconds() {
+    // Get current time and configuration
+    time_t now = GET_CURRENT_TIME();
+    uint32_t currentTimeSeconds = (uint32_t)now;
+    RTCConfigData& config = ConfigManager::getConfig();
+    uint8_t displayMode = config.displayMode;
+
+    ESP_LOGI(TAG, "Calculating sleep duration - Display mode: %d, Current time: %u", displayMode, currentTimeSeconds);
+    ESP_LOGI(TAG, "Last updates - Weather: %u seconds, Departure: %u seconds",
+             getLastWeatherUpdate(), getLastTransportUpdate());
+
+    // Step 1: Calculate next update times for each type
+    uint32_t nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds, displayMode);
+    uint32_t nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds, displayMode);
+    uint32_t nextOTACheck = calculateNextOTACheckTime(currentTimeSeconds);
+
+    // Step 2: Find the nearest update time
+    uint32_t nearestUpdate = findNearestUpdateTime(nextWeatherUpdate, nextTransportUpdate, nextOTACheck);
+    bool isOTAUpdate = (nextOTACheck > 0 && nearestUpdate == nextOTACheck);
+
+    // Step 3: Adjust for transport active hours (if nearest is transport)
+    nearestUpdate = adjustForTransportActiveHours(nearestUpdate, nextTransportUpdate,
+                                                  nextWeatherUpdate, nextOTACheck,
+                                                  currentTimeSeconds, isOTAUpdate);
+
+    // Step 4: Adjust for sleep period (OTA bypasses sleep)
+    nearestUpdate = adjustForSleepPeriod(nearestUpdate, currentTimeSeconds, isOTAUpdate);
+
+    // Step 5: Calculate final sleep duration with minimum threshold
     uint64_t sleepDurationSeconds;
-    if (nearestUpdateSeconds > currentTimeSeconds) {
-        sleepDurationSeconds = (uint64_t)(nearestUpdateSeconds - currentTimeSeconds);
+    if (nearestUpdate > currentTimeSeconds) {
+        sleepDurationSeconds = (uint64_t)(nearestUpdate - currentTimeSeconds);
     } else {
-        // If calculated time is in the past, wake up in minimum time
-        sleepDurationSeconds = 30; // 30 seconds minimum
+        sleepDurationSeconds = 30; // Minimum if time is in the past
     }
 
     // Apply minimum sleep duration
@@ -308,6 +302,7 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
         sleepDurationSeconds = 30;
         ESP_LOGI(TAG, "Applied minimum sleep duration: 30 seconds");
     }
+
     ESP_LOGI(TAG, "Final sleep duration: %llu seconds (%llu minutes)",
              sleepDurationSeconds, sleepDurationSeconds / 60);
 
