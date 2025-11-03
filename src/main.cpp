@@ -26,6 +26,7 @@
 #include "config/config_manager.h"
 #include "util/device_mode_manager.h"
 #include "util/battery_manager.h"
+#include "util/timing_manager.h"
 #include <SPI.h>
 #include "ota/ota_update.h"
 //EPD
@@ -123,7 +124,12 @@ void setup() {
     if (shouldRunOTAUpdate()) {
         ESP_LOGI(TAG, "Starting OTA update check...");
         check_update_task(nullptr);
-        // Note: If update is found and installed, device will restart
+
+        // Mark OTA check timestamp to prevent repeated checks
+        time_t now;
+        time(&now);
+        TimingManager::setLastOTACheck((uint32_t)now);
+ // Note: If update is found and installed, device will restart
         // If no update or update fails, execution continues normally
     }
 
