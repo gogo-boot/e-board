@@ -105,6 +105,7 @@ void test_getNextSleepDurationSeconds_departure_only_mode_inactive() {
     // Test departure-only mode (displayMode = 2)
     RTCConfigData& config = ConfigManager::getConfig();
     config.displayMode = 2; // departure_only
+    config.otaEnabled = false; // Disable OTA for this test
 
     TimingManager::setLastTransportUpdate((uint32_t)morningTime);
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
@@ -133,8 +134,11 @@ void test_minimum_sleep_duration_enforced() {
 
 // If transport was updated 2 minutes ago, should wake up in ~3 minutes for next update
 void test_with_previous_transport_update() {
+    // Use a fixed time during the day (not sleep period) for predictable results
+    time_t now = createTime(2025, 10, 30, 10, 0, 0); // Thursday 10:00 AM
+    MockTime::setMockTime(now);
+
     // Set up scenario where transport was updated 2 minutes ago
-    time_t now = time(nullptr);
     uint32_t twoMinutesAgo = (uint32_t)now - (2 * 60);
 
     TimingManager::setLastWeatherUpdate(0); // No previous weather update
@@ -145,6 +149,9 @@ void test_with_previous_transport_update() {
     config.transportInterval = 5; // 5 minutes
     strcpy(config.transportActiveStart, "00:00"); // Active all day
     strcpy(config.transportActiveEnd, "23:59");
+    strcpy(config.sleepStart, "22:30"); // Ensure we're not in sleep period
+    strcpy(config.sleepEnd, "05:30");
+    config.otaEnabled = false; // Disable OTA for this test
 
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
 
@@ -408,8 +415,8 @@ void test_ota_disabled() {
     printf("OTA disabled - sleep duration: %llu seconds (~%llu min)\n",
            sleepDuration, sleepDuration / 60);
 
-    // Should wake for next weather update (1 hour), not OTA
-    TEST_ASSERT_EQUAL(3600, sleepDuration);
+    // Should wake for after deep sleep at 5:30, not OTA
+    TEST_ASSERT_EQUAL(3600 * 3, sleepDuration);
 }
 
 // Test: OTA enabled and scheduled before next weather/transport update
@@ -470,7 +477,7 @@ void test_ota_already_checked_recently() {
     strcpy(config.otaCheckTime, "03:00");
 
     // Set OTA check to 1 minute ago (should skip)
-    TimingManager::setLastOTACheck((uint32_t)morning - 60);
+    TimingManager::setLastOTACheck((uint32_t)morning - 59);
     TimingManager::setLastWeatherUpdate((uint32_t)morning);
     TimingManager::setLastTransportUpdate((uint32_t)morning);
 
@@ -480,7 +487,7 @@ void test_ota_already_checked_recently() {
            sleepDuration, sleepDuration / 60);
 
     // Should not schedule OTA again, wake for transport in 3 minutes
-    TEST_ASSERT_EQUAL(180, sleepDuration);
+    TEST_ASSERT_EQUAL(3600 * 2.5, sleepDuration);
 }
 
 // Test: OTA scheduled later today

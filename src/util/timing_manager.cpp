@@ -185,12 +185,21 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
 
             ESP_LOGI(TAG, "Next transport active period starts at: %u seconds", nextActiveSeconds);
 
-            // Choose the earlier of: next weather update or next transport active period
+            // Choose the earliest of: next weather update, next OTA check, or next transport active period
+            // OTA updates bypass transport inactive hours restriction
+            uint32_t candidateWakeTime = nextActiveSeconds;
+
             if (nextWeatherUpdateSeconds > 0) {
-                nearestUpdateSeconds = min(nextWeatherUpdateSeconds, nextActiveSeconds);
-            } else {
-                nearestUpdateSeconds = nextActiveSeconds;
+                candidateWakeTime = min(candidateWakeTime, nextWeatherUpdateSeconds);
             }
+            if (nextOTACheckSeconds > 0) {
+                candidateWakeTime = min(candidateWakeTime, nextOTACheckSeconds);
+            }
+
+            nearestUpdateSeconds = candidateWakeTime;
+
+            // Update isOTAUpdate flag if OTA became the nearest
+            isOTAUpdate = (nextOTACheckSeconds > 0 && nearestUpdateSeconds == nextOTACheckSeconds);
         }
     }
 
