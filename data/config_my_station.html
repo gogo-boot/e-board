@@ -138,6 +138,63 @@
         border-right: none;
         border-left: 1px solid #007aff;
     }
+
+    .toggle-buttons {
+        display: flex;
+        gap: 0.5em;
+        flex-wrap: wrap;
+    }
+
+    .toggle-btn {
+        flex: 1;
+        min-width: 150px;
+        padding: 0.7em 1em;
+        border: 2px solid #007aff;
+        background: #fff;
+        color: #007aff;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.95em;
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .toggle-btn:hover {
+        background: #f0f8ff;
+    }
+
+    .toggle-btn.active {
+        background: #007aff;
+        color: #fff;
+    }
+
+    .ota-status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 0.5em;
+    }
+
+    .ota-status-indicator.enabled {
+        background: #34c759;
+    }
+
+    .ota-status-indicator.disabled {
+        background: #ff3b30;
+    }
+
+    @media (max-width: 768px) {
+      .toggle-buttons {
+        flex-direction: column;
+      }
+      .toggle-btn {
+        width: 100%;
+        min-width: unset;
+      }
+    }
   </style>
 </head>
 <body>
@@ -389,6 +446,51 @@
       </div>
     </div>
 
+    <!-- OTA Firmware Update Configuration Section -->
+    <div class="chapter">🔄 Firmware-Aktualisierung</div>
+
+    <div class="config-item">
+      <div class="label">
+        Automatische Firmware-Updates
+        <span class="tooltip">ℹ️
+          <span class="tooltiptext">Aktivieren Sie automatische Updates, um die neueste Firmware-Version zu erhalten.</span>
+        </span>
+      </div>
+      <div class="config-row">
+        <div class="toggle-buttons">
+          <div class="toggle-btn active" id="ota-enabled-btn" onclick="toggleOTA(true)">
+            <span class="ota-status-indicator enabled"></span>
+            Aktiviert
+          </div>
+          <div class="toggle-btn" id="ota-disabled-btn" onclick="toggleOTA(false)">
+            <span class="ota-status-indicator disabled"></span>
+            Deaktiviert
+          </div>
+        </div>
+      </div>
+      <div class="help-text">
+        Wenn aktiviert, prüft das Gerät täglich auf neue Firmware-Versionen und installiert diese automatisch.
+      </div>
+    </div>
+
+    <div class="config-item" id="ota-check-time-container">
+      <div class="label">
+        Prüfzeit für Updates
+        <span class="tooltip">ℹ️
+          <span class="tooltiptext">Zu welcher Uhrzeit soll täglich nach Updates gesucht werden?</span>
+        </span>
+      </div>
+      <div class="config-row">
+        <input type="time" id="ota-check-time" value="{{OTA_CHECK_TIME}}" style="width: auto; min-width: 120px;">
+      </div>
+      <div class="help-text">
+        Das Gerät prüft täglich zu dieser Uhrzeit, ob eine neue Firmware-Version verfügbar ist.
+      </div>
+      <div class="warning">
+        ⚠️ Während der Aktualisierung ist das Gerät für ca. 1-2 Minuten nicht verfügbar. Die Aktualisierung erfolgt automatisch nach erfolgreicher Prüfung.
+      </div>
+    </div>
+
     <!-- Netzwerk Section -->
     <div class="chapter">📶 Netzwerk-Information</div>
 
@@ -439,6 +541,23 @@
   </div>
 
   <script>
+    // OTA toggle functionality
+    function toggleOTA(enabled) {
+      var enabledBtn = document.getElementById('ota-enabled-btn');
+      var disabledBtn = document.getElementById('ota-disabled-btn');
+      var checkTimeContainer = document.getElementById('ota-check-time-container');
+
+      if (enabled) {
+        enabledBtn.classList.add('active');
+        disabledBtn.classList.remove('active');
+        checkTimeContainer.style.display = 'block';
+      } else {
+        enabledBtn.classList.remove('active');
+        disabledBtn.classList.add('active');
+        checkTimeContainer.style.display = 'none';
+      }
+    }
+
     // Display mode preview functionalit
     function updateDisplayModePreview() {
       const displayMode = document.getElementById('display-mode').value;
@@ -714,6 +833,10 @@
       var weekendSleepStart = document.getElementById('weekend-sleep-start').value;
       var weekendSleepEnd = document.getElementById('weekend-sleep-end').value;
 
+      // OTA configuration
+      var otaEnabled = document.getElementById('ota-enabled-btn').classList.contains('active');
+      var otaCheckTime = document.getElementById('ota-check-time').value;
+
       var config = {
         city: city,
         cityLat: cityLat,
@@ -732,7 +855,9 @@
         weekendTransportStart: weekendTransportStart,
         weekendTransportEnd: weekendTransportEnd,
         weekendSleepStart: weekendSleepStart,
-        weekendSleepEnd: weekendSleepEnd
+        weekendSleepEnd: weekendSleepEnd,
+        otaEnabled: otaEnabled,
+        otaCheckTime: otaCheckTime
       };
 
       fetch('/save_config', {
@@ -841,6 +966,10 @@
       if (weekendMode && document.getElementById('weekend-config')) {
         document.getElementById('weekend-config').style.display = 'block';
       }
+
+      // Initialize OTA configuration toggle
+      var otaEnabled = "{{OTA_ENABLED}}" === "true" || "{{OTA_ENABLED}}" === "1";
+      toggleOTA(otaEnabled);
 
       // Set saved filter chips from server template
       var savedFilters = {{SAVED_FILTERS}};

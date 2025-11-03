@@ -80,6 +80,9 @@ void handleConfigPage(WebServer& server) {
     page.replace("{{WEEKEND_TRANSPORT_END}}", config.weekendTransportEnd);
     page.replace("{{WEEKEND_SLEEP_START}}", config.weekendSleepStart);
     page.replace("{{WEEKEND_SLEEP_END}}", config.weekendSleepEnd);
+     // Replace OTA configuration values
+    page.replace("{{OTA_ENABLED}}", config.otaEnabled ? "true" : "false");
+    page.replace("{{OTA_CHECK_TIME}}", config.otaCheckTime);
 
     // Build JavaScript array for saved filters from ConfigManager
     std::vector<String> activeFilters = ConfigManager::getActiveFilters();
@@ -185,6 +188,12 @@ void handleSaveConfig(WebServer& server) {
     if (doc.containsKey("weekendSleepEnd"))
         strncpy(config.weekendSleepEnd, doc["weekendSleepEnd"].as<const char*>(),
                 sizeof(config.weekendSleepEnd) - 1);
+
+    // Handle OTA configuration
+    if (doc.containsKey("otaEnabled")) config.otaEnabled = doc["otaEnabled"].as<bool>();
+    if (doc.containsKey("otaCheckTime"))
+        strncpy(config.otaCheckTime, doc["otaCheckTime"].as<const char*>(),
+                sizeof(config.otaCheckTime) - 1);
 
     // Save config mode to NVS (persists across power loss)
     configMgr.setConfigMode(false);
