@@ -41,6 +41,10 @@ struct RTCConfigData {
     char weekendSleepStart[6]; // 6 bytes ("HH:MM")
     char weekendSleepEnd[6]; // 6 bytes ("HH:MM")
 
+    // OTA configuration
+    bool otaEnabled; // 1 byte
+    char otaCheckTime[6]; // 6 bytes ("HH:MM")
+
     // Transport filters (simplified - store as bit flags)
     uint16_t filterFlags; // 2 byte
 
@@ -48,7 +52,7 @@ struct RTCConfigData {
     bool configMode; // 1 byte
     uint32_t lastUpdate; // 4 bytes (timestamp)
 
-    // Total: ~522 bytes (well under 8KB RTC limit)
+    // Total: ~529 bytes (well under 8KB RTC limit)
 };
 
 /*

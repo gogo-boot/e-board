@@ -31,5 +31,9 @@ struct ConfigOption {
     String weekendTransportEnd = "20:00"; // Weekend transport active end
     String weekendSleepStart = "23:00"; // Weekend sleep start
     String weekendSleepEnd = "07:00"; // Weekend sleep end
+
+    // OTA firmware update configuration
+    bool otaEnabled = true; // Enable automatic OTA firmware updates (default: enabled)
+    String otaCheckTime = "03:00"; // Time to check for OTA updates daily (default: 3:00 AM)
 };
 

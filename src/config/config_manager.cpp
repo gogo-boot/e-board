@@ -27,6 +27,8 @@ RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
     "20:00", // weekendTransportEnd
     "23:00", // weekendSleepStart
     "07:00", // weekendSleepEnd
+    true, // otaEnabled - default enabled
+    "03:00", // otaCheckTime - default 3:00 AM
     FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY | FILTER_CALLBUS,
     // filterFlags - Default filters
     true, // configMode
@@ -120,6 +122,11 @@ bool ConfigManager::loadFromNVS() {
     String wSleepEnd = preferences.getString("wSleepEnd", "07:00");
     copyString(rtcConfig.weekendSleepEnd, wSleepEnd, sizeof(rtcConfig.weekendSleepEnd));
 
+    // Load OTA configuration
+    rtcConfig.otaEnabled = preferences.getBool("otaEnabled", true);
+    String otaTime = preferences.getString("otaCheckTime", "03:00");
+    copyString(rtcConfig.otaCheckTime, otaTime, sizeof(rtcConfig.otaCheckTime));
+
     // Load transport filters
     size_t filterCount = preferences.getUInt("filterCount", 3);
     rtcConfig.filterFlags = 0; // Reset flags
@@ -198,6 +205,10 @@ bool ConfigManager::saveToNVS() {
     preferences.putString("wTransEnd", rtcConfig.weekendTransportEnd);
     preferences.putString("wSleepStart", rtcConfig.weekendSleepStart);
     preferences.putString("wSleepEnd", rtcConfig.weekendSleepEnd);
+
+    // Save OTA configuration
+    preferences.putBool("otaEnabled", rtcConfig.otaEnabled);
+    preferences.putString("otaCheckTime", rtcConfig.otaCheckTime);
 
     // Save transport filters
     std::vector<String> filters = getActiveFilters();

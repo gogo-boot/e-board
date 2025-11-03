@@ -39,10 +39,24 @@ public:
     static uint32_t getLastTransportUpdate();
     static void setLastWeatherUpdate(uint32_t timestamp);
     static void setLastTransportUpdate(uint32_t timestamp);
+    // OTA update timestamp management (public for testing)
+    static uint32_t getLastOTACheck();
+    static void setLastOTACheck(uint32_t timestamp);
 
 private:
     // Helper functions
     static int parseTimeString(const String& timeStr); // Convert "HH:MM" to minutes since midnight
     static int getCurrentMinutesSinceMidnight();
     static bool isTimeInRange(int currentMinutes, int startMinutes, int endMinutes);
+    static uint32_t calculateNextOTACheckTime(uint32_t currentTimeSeconds);
+
+    // Sleep duration calculation helpers
+    static uint32_t calculateNextWeatherUpdate(uint32_t currentTimeSeconds, uint8_t displayMode);
+    static uint32_t calculateNextTransportUpdate(uint32_t currentTimeSeconds, uint8_t displayMode);
+    static uint32_t findNearestUpdateTime(uint32_t weather, uint32_t transport, uint32_t ota);
+    static uint32_t adjustForTransportActiveHours(uint32_t nearestUpdate, uint32_t nextTransport, uint32_t nextWeather,
+                                                  uint32_t nextOTA,
+                                                  uint32_t currentTime, bool& isOTAUpdate);
+    static uint32_t adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t currentTime, bool isOTAUpdate);
+    static bool isWeekendTime(time_t timestamp);
 };

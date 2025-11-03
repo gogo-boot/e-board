@@ -26,6 +26,7 @@
 #include "config/config_manager.h"
 #include "util/device_mode_manager.h"
 #include "util/battery_manager.h"
+#include "util/timing_manager.h"
 #include <SPI.h>
 #include "ota/ota_update.h"
 //EPD
@@ -37,6 +38,7 @@
 #include <gdey/GxEPD2_750_GDEY075T7.h>  // Specific driver for GDEY075T7
 
 #include "util/wifi_manager.h"
+#include "util/time_manager.h"
 
 // Create display instance for GDEY075T7 (800x480 resolution)
 GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(
@@ -46,6 +48,53 @@ GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(
 U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 static const char* TAG = "MAIN";
+
+/**
+ * Check if OTA update should run based on configuration
+ * @return true if OTA is enabled and current time is within 1 minute of configured check time
+ */
+bool shouldRunOTAUpdate() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Check if OTA is enabled
+    if (!config.otaEnabled) {
+        ESP_LOGD(TAG, "OTA automatic updates are disabled");
+        return false;
+    }
+
+    // Get current time
+    struct tm timeinfo = {};
+    if (!TimeManager::getCurrentLocalTime(timeinfo)) {
+        ESP_LOGW(TAG, "Failed to get current time for OTA check");
+        return false;
+    }
+
+    // Parse configured OTA check time (format: "HH:MM")
+    int configHour = 0;
+    int configMinute = 0;
+    if (sscanf(config.otaCheckTime, "%d:%d", &configHour, &configMinute) != 2) {
+        ESP_LOGW(TAG, "Invalid OTA check time format: %s", config.otaCheckTime);
+        return false;
+    }
+
+    // Get current time
+    int currentHour = timeinfo.tm_hour;
+    int currentMinute = timeinfo.tm_min;
+
+    // Check if current time is within 1 minute tolerance of configured time
+    bool isTimeMatch = (currentHour == configHour &&
+        abs(currentMinute - configMinute) <= 1);
+
+    if (isTimeMatch) {
+        ESP_LOGI(TAG, "OTA update time matched! Configured: %s, Current: %02d:%02d", config.otaCheckTime, currentHour,
+                 currentMinute);
+        return true;
+    }
+
+    ESP_LOGD(TAG, "OTA update time not matched. Configured: %s, Current: %02d:%02d",
+             config.otaCheckTime, currentHour, currentMinute);
+    return false;
+}
 
 // --- Globals (shared across modules) ---
 WebServer server(80);
@@ -70,6 +119,19 @@ void setup() {
 
     // Initialize battery manager (only available on ESP32-S3)
     BatteryManager::init();
+
+    // Check if OTA update should run based on configuration
+    if (shouldRunOTAUpdate()) {
+        ESP_LOGI(TAG, "Starting OTA update check...");
+        check_update_task(nullptr);
+
+        // Mark OTA check timestamp to prevent repeated checks
+        time_t now;
+        time(&now);
+        TimingManager::setLastOTACheck((uint32_t)now);
+ // Note: If update is found and installed, device will restart
+        // If no update or update fails, execution continues normally
+    }
 
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
@@ -103,10 +165,6 @@ void setup() {
 
         // After operational mode completes, enter deep sleep
         DeviceModeManager::enterOperationalSleep();
-
-        // start the check update task
-        // check_update_task(NULL);
-        // xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
     } else {
         DeviceModeManager::runConfigurationMode();
     }

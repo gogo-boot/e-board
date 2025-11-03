@@ -27,7 +27,10 @@ RTCConfigData ConfigManager::rtcConfig = {
     "20:00", // weekendTransportEnd
     "23:00", // weekendSleepStart
     "07:00", // weekendSleepEnd
-    FILTER_RE | FILTER_S | FILTER_BUS, // filterFlags
+    true, // otaEnabled
+    "03:00", // otaCheckTime
+    FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY | FILTER_CALLBUS,
+    // filterFlags
     false, // configMode
     0 // lastUpdate
 };
@@ -99,7 +102,7 @@ void ConfigManager::setWeekendHours(const String& transStart, const String& tran
     copyString(rtcConfig.weekendSleepEnd, sleepEnd, sizeof(rtcConfig.weekendSleepEnd));
 }
 
-void ConfigManager::setFilterFlag(uint8_t flag, bool enabled) {
+void ConfigManager::setFilterFlag(uint16_t flag, bool enabled) {
     if (enabled) {
         rtcConfig.filterFlags |= flag;
     } else {
@@ -107,13 +110,12 @@ void ConfigManager::setFilterFlag(uint8_t flag, bool enabled) {
     }
 }
 
-bool ConfigManager::getFilterFlag(uint8_t flag) {
+bool ConfigManager::getFilterFlag(uint16_t flag) {
     return (rtcConfig.filterFlags & flag) != 0;
 }
 
 std::vector<String> ConfigManager::getActiveFilters() {
     std::vector<String> filters;
-    if (rtcConfig.filterFlags & FILTER_RE) filters.push_back("RE");
     if (rtcConfig.filterFlags & FILTER_R) filters.push_back("R");
     if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S-Bahn");
     if (rtcConfig.filterFlags & FILTER_BUS) filters.push_back("Bus");
@@ -125,8 +127,7 @@ std::vector<String> ConfigManager::getActiveFilters() {
 void ConfigManager::setActiveFilters(const std::vector<String>& filters) {
     rtcConfig.filterFlags = 0;
     for (const String& filter : filters) {
-        if (filter == "RE") rtcConfig.filterFlags |= FILTER_RE;
-        else if (filter == "R") rtcConfig.filterFlags |= FILTER_R;
+        if (filter == "R") rtcConfig.filterFlags |= FILTER_R;
         else if (filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
         else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
         else if (filter == "U") rtcConfig.filterFlags |= FILTER_U;
@@ -149,7 +150,7 @@ void ConfigManager::setDefaults() {
     std::strcpy(rtcConfig.weekendTransportEnd, "20:00");
     std::strcpy(rtcConfig.weekendSleepStart, "23:00");
     std::strcpy(rtcConfig.weekendSleepEnd, "07:00");
-    rtcConfig.filterFlags = FILTER_RE | FILTER_S | FILTER_BUS;
+    rtcConfig.filterFlags = FILTER_S | FILTER_BUS;
     rtcConfig.configMode = false;
 }
 

@@ -51,9 +51,14 @@ void setUp(void) {
     strcpy(config.weekendSleepStart, "23:00");
     strcpy(config.weekendSleepEnd, "07:00");
 
+    // OTA configuration
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00");
+
     // Reset RTC timestamp variables to zero (no previous updates)
     TimingManager::setLastWeatherUpdate(0);
     TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastOTACheck(0);
 }
 
 void tearDown(void) {
@@ -100,6 +105,7 @@ void test_getNextSleepDurationSeconds_departure_only_mode_inactive() {
     // Test departure-only mode (displayMode = 2)
     RTCConfigData& config = ConfigManager::getConfig();
     config.displayMode = 2; // departure_only
+    config.otaEnabled = false; // Disable OTA for this test
 
     TimingManager::setLastTransportUpdate((uint32_t)morningTime);
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
@@ -128,8 +134,11 @@ void test_minimum_sleep_duration_enforced() {
 
 // If transport was updated 2 minutes ago, should wake up in ~3 minutes for next update
 void test_with_previous_transport_update() {
+    // Use a fixed time during the day (not sleep period) for predictable results
+    time_t now = createTime(2025, 10, 30, 10, 0, 0); // Thursday 10:00 AM
+    MockTime::setMockTime(now);
+
     // Set up scenario where transport was updated 2 minutes ago
-    time_t now = time(nullptr);
     uint32_t twoMinutesAgo = (uint32_t)now - (2 * 60);
 
     TimingManager::setLastWeatherUpdate(0); // No previous weather update
@@ -140,6 +149,9 @@ void test_with_previous_transport_update() {
     config.transportInterval = 5; // 5 minutes
     strcpy(config.transportActiveStart, "00:00"); // Active all day
     strcpy(config.transportActiveEnd, "23:59");
+    strcpy(config.sleepStart, "22:30"); // Ensure we're not in sleep period
+    strcpy(config.sleepEnd, "05:30");
+    config.otaEnabled = false; // Disable OTA for this test
 
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
 
@@ -382,6 +394,237 @@ void test_sleep_duration_half_half_deep_sleep() {
     TEST_ASSERT_EQUAL(3600 * 7.5L, sleepDuration);
 }
 
+// ============================================================================
+// OTA Update Tests
+// ============================================================================
+
+// Test: OTA disabled - should not affect sleep calculations
+void test_ota_disabled() {
+    time_t morning = createTime(2025, 10, 30, 2, 30, 0); // 2:30 AM (30 min before OTA time)
+    MockTime::setMockTime(morning);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = false; // Disable OTA
+    strcpy(config.otaCheckTime, "03:00");
+
+    TimingManager::setLastWeatherUpdate((uint32_t)morning);
+    TimingManager::setLastTransportUpdate((uint32_t)morning);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA disabled - sleep duration: %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    // Should wake for after deep sleep at 5:30, not OTA
+    TEST_ASSERT_EQUAL(3600 * 3, sleepDuration);
+}
+
+// Test: OTA enabled and scheduled before next weather/transport update
+void test_ota_enabled_before_other_updates() {
+    time_t earlyMorning = createTime(2025, 10, 30, 2, 45, 0); // 2:45 AM (15 min before OTA)
+    MockTime::setMockTime(earlyMorning);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00");
+    config.weatherInterval = 3; // 3 hours
+
+    TimingManager::setLastWeatherUpdate((uint32_t)earlyMorning); // Weather just updated
+    TimingManager::setLastTransportUpdate((uint32_t)earlyMorning); // Transport just updated
+    TimingManager::setLastOTACheck(0); // No previous OTA check
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA check in 15 minutes - sleep duration: %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    // Should wake in 15 minutes for OTA (900 seconds)
+    TEST_ASSERT_EQUAL(900, sleepDuration);
+}
+
+// Test: OTA scheduled during deep sleep period - should bypass sleep
+void test_ota_during_deep_sleep_bypasses_sleep() {
+    time_t lateNight = createTime(2025, 10, 30, 23, 0, 0); // 11:00 PM (deep sleep period)
+    MockTime::setMockTime(lateNight);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00"); // OTA at 3:00 AM (during sleep 22:30 - 05:30)
+    strcpy(config.sleepStart, "22:30");
+    strcpy(config.sleepEnd, "05:30");
+    config.weatherInterval = 10; // 10 hours (won't wake for weather)
+
+    TimingManager::setLastWeatherUpdate((uint32_t)lateNight);
+    TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastOTACheck(0);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA at 3 AM during sleep - sleep duration: %llu seconds (~%llu hours)\n",
+           sleepDuration, sleepDuration / 3600);
+
+    // Should wake at 3:00 AM for OTA (4 hours = 14400 seconds), not at sleep end (5:30 AM)
+    TEST_ASSERT_EQUAL(4 * 3600, sleepDuration);
+}
+
+// Test: OTA check already performed recently - should skip
+void test_ota_already_checked_recently() {
+    time_t morning = createTime(2025, 10, 30, 3, 0, 0); // Exactly OTA time
+    MockTime::setMockTime(morning);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00");
+
+    // Set OTA check to 1 minute ago (should skip)
+    TimingManager::setLastOTACheck((uint32_t)morning - 59);
+    TimingManager::setLastWeatherUpdate((uint32_t)morning);
+    TimingManager::setLastTransportUpdate((uint32_t)morning);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA already checked 1 min ago - sleep duration: %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    // Should not schedule OTA again, wake for transport in 3 minutes
+    TEST_ASSERT_EQUAL(3600 * 2.5, sleepDuration);
+}
+
+// Test: OTA scheduled later today
+void test_ota_scheduled_later_today() {
+    time_t morning = createTime(2025, 10, 30, 1, 0, 0); // 1:00 AM
+    MockTime::setMockTime(morning);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00"); // OTA at 3:00 AM (2 hours later)
+    config.weatherInterval = 10; // 10 hours (won't interfere)
+
+    TimingManager::setLastWeatherUpdate((uint32_t)morning);
+    TimingManager::setLastTransportUpdate((uint32_t)morning);
+    TimingManager::setLastOTACheck(0);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA in 2 hours - sleep duration: %llu seconds (~%llu hours)\n",
+           sleepDuration, sleepDuration / 3600);
+
+    // Should wake in 2 hours for OTA
+    TEST_ASSERT_EQUAL(2 * 3600, sleepDuration);
+}
+
+// Test: OTA scheduled tomorrow (past today's OTA time)
+void test_ota_scheduled_tomorrow() {
+    time_t afternoon = createTime(2025, 10, 30, 15, 0, 0); // 3:00 PM
+    MockTime::setMockTime(afternoon);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00"); // Already passed today, next is tomorrow
+    config.weatherInterval = 1; // 1 hour
+    config.displayMode = 1; // weather only
+
+    TimingManager::setLastWeatherUpdate((uint32_t)afternoon);
+    TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastOTACheck(0);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA tomorrow at 3 AM - sleep duration: %llu seconds (~%llu hours)\n",
+           sleepDuration, sleepDuration / 3600);
+
+    // Should wake in 1 hour for weather (sooner than tomorrow's OTA at 12 hours)
+    TEST_ASSERT_EQUAL(3600, sleepDuration);
+}
+
+// Test: OTA and weather update at same approximate time
+void test_ota_and_weather_coincide() {
+    time_t earlyMorning = createTime(2025, 10, 30, 2, 0, 0); // 2:00 AM
+    MockTime::setMockTime(earlyMorning);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00"); // OTA at 3:00 AM
+    config.weatherInterval = 1; // 1 hour
+    config.displayMode = 1; // weather only
+
+    // Weather was updated at 2:00 AM, next update at 3:00 AM (same as OTA)
+    TimingManager::setLastWeatherUpdate((uint32_t)earlyMorning);
+    TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastOTACheck(0);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA and weather both at 3 AM - sleep duration: %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    // Should wake in 1 hour (both OTA and weather scheduled)
+    TEST_ASSERT_EQUAL(3600, sleepDuration);
+}
+
+// Test: OTA during transport inactive hours (should still wake)
+void test_ota_during_transport_inactive_hours() {
+    time_t lateNight = createTime(2025, 10, 30, 2, 30, 0); // 2:30 AM (transport inactive)
+    MockTime::setMockTime(lateNight);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00");
+    strcpy(config.transportActiveStart, "06:00");
+    strcpy(config.transportActiveEnd, "09:00");
+    config.displayMode = 2; // departure only
+    config.weatherInterval = 10; // won't interfere
+
+    TimingManager::setLastWeatherUpdate(0);
+    TimingManager::setLastTransportUpdate((uint32_t)lateNight);
+    TimingManager::setLastOTACheck(0);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+    printf("OTA at 3 AM (transport inactive) - sleep duration: %llu seconds (~%llu min)\n",
+           sleepDuration, sleepDuration / 60);
+
+    // Should wake in 30 minutes for OTA, not wait until transport active hours
+    TEST_ASSERT_EQUAL(30 * 60, sleepDuration);
+}
+
+// Test: OTA on weekend
+void test_ota_on_weekend() {
+    time_t saturdayNight = createTime(2025, 11, 1, 23, 0, 0); // Saturday 11:00 PM
+    MockTime::setMockTime(saturdayNight);
+
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.otaEnabled = true;
+    strcpy(config.otaCheckTime, "03:00");
+    config.weekendMode = true;
+    strcpy(config.weekendSleepStart, "23:00");
+    strcpy(config.weekendSleepEnd, "07:00");
+    config.weatherInterval = 10;
+
+    TimingManager::setLastWeatherUpdate((uint32_t)saturdayNight);
+    TimingManager::setLastTransportUpdate(0);
+    TimingManager::setLastOTACheck(0);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    printf("OTA at 3 AM on Sunday (weekend sleep) - sleep duration: %llu seconds (~%llu hours)\n",
+           sleepDuration, sleepDuration / 3600);
+
+    // Should wake at 3:00 AM for OTA (4 hours), not at weekend sleep end (7:00 AM)
+    TEST_ASSERT_EQUAL(4 * 3600, sleepDuration);
+}
+
+// Test: Verify OTA timestamp getters/setters
+void test_ota_timestamp_management() {
+    time_t now = time(nullptr);
+    uint32_t testTimestamp = (uint32_t)now - 500;
+
+    TimingManager::setLastOTACheck(testTimestamp);
+    uint32_t retrieved = TimingManager::getLastOTACheck();
+
+    TEST_ASSERT_EQUAL_UINT32(testTimestamp, retrieved);
+    printf("OTA timestamp setters/getters verified successfully\n");
+}
+
 int main() {
     UNITY_BEGIN();
 
@@ -409,6 +652,18 @@ int main() {
     RUN_TEST(test_sleep_duration_half_half_weather_transport_inactive_updated_now);
     RUN_TEST(test_sleep_duration_half_half_weather_trasport_inactive_transport_not_updated);
     RUN_TEST(test_sleep_duration_half_half_deep_sleep);
+
+    // OTA update tests
+    RUN_TEST(test_ota_disabled);
+    RUN_TEST(test_ota_enabled_before_other_updates);
+    RUN_TEST(test_ota_during_deep_sleep_bypasses_sleep);
+    RUN_TEST(test_ota_already_checked_recently);
+    RUN_TEST(test_ota_scheduled_later_today);
+    RUN_TEST(test_ota_scheduled_tomorrow);
+    RUN_TEST(test_ota_and_weather_coincide);
+    RUN_TEST(test_ota_during_transport_inactive_hours);
+    RUN_TEST(test_ota_on_weekend);
+    RUN_TEST(test_ota_timestamp_management);
 
     return UNITY_END();
 }

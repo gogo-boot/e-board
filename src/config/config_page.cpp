@@ -80,6 +80,9 @@ void handleConfigPage(WebServer& server) {
     page.replace("{{WEEKEND_TRANSPORT_END}}", config.weekendTransportEnd);
     page.replace("{{WEEKEND_SLEEP_START}}", config.weekendSleepStart);
     page.replace("{{WEEKEND_SLEEP_END}}", config.weekendSleepEnd);
+    // Replace OTA configuration values
+    page.replace("{{OTA_ENABLED}}", config.otaEnabled ? "true" : "false");
+    page.replace("{{OTA_CHECK_TIME}}", config.otaCheckTime);
 
     // Build JavaScript array for saved filters from ConfigManager
     std::vector<String> activeFilters = ConfigManager::getActiveFilters();
@@ -186,6 +189,12 @@ void handleSaveConfig(WebServer& server) {
         strncpy(config.weekendSleepEnd, doc["weekendSleepEnd"].as<const char*>(),
                 sizeof(config.weekendSleepEnd) - 1);
 
+    // Handle OTA configuration
+    if (doc.containsKey("otaEnabled")) config.otaEnabled = doc["otaEnabled"].as<bool>();
+    if (doc.containsKey("otaCheckTime"))
+        strncpy(config.otaCheckTime, doc["otaCheckTime"].as<const char*>(),
+                sizeof(config.otaCheckTime) - 1);
+
     // Save config mode to NVS (persists across power loss)
     configMgr.setConfigMode(false);
 
@@ -203,7 +212,14 @@ void handleSaveConfig(WebServer& server) {
 
     server.send(200, "application/json", "{\"status\":\"ok\"}");
 
-    enterDeepSleep(1 * 1000000); // Enter deep sleep for 1 seconds
+    /*
+    *The deep sleep after saving configuration serves several purposes:
+    Apply new settings cleanly: After saving configuration changes (WiFi credentials, station settings, schedules, etc.), the device needs to restart to properly initialize with the new configuration.
+    Mode transition: The code switches from AP (Access Point) mode to STA (Station) mode on line 209. Deep sleep followed by wake-up ensures a clean transition and proper connection to the configured WiFi network.
+    Reset state: Deep sleep is a common pattern in ESP32 development to reset the device state and start fresh with the updated configuration from NVS (Non-Volatile Storage).
+    The 1-second sleep is intentionally brief - just long enough to ensure the HTTP response is sent to the client before the device resets. When it wakes up, it will load the newly saved configuration from NVS and operate in normal mode rather than configuration mode.
+    */
+    enterDeepSleep(1); // Enter deep sleep for 1 seconds
 }
 
 // AJAX handler to resolve station/stop name (GET /api/stop?q=...)
