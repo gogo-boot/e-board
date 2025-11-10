@@ -52,7 +52,12 @@ struct RTCConfigData {
     bool configMode; // 1 byte
     uint32_t lastUpdate; // 4 bytes (timestamp)
 
-    // Total: ~529 bytes (well under 8KB RTC limit)
+    // Temporary button mode (ESP32-S3 only)
+    bool inTemporaryMode; // 1 byte - flag if we're in temporary mode
+    uint8_t temporaryDisplayMode; // 1 byte - temporary override mode (0xFF = none)
+    uint32_t temporaryModeStartTime; // 4 bytes - when temporary mode started (epoch time)
+
+    // Total: ~535 bytes (well under 8KB RTC limit)
 };
 
 /*

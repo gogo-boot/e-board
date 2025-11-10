@@ -26,7 +26,10 @@
 #include "config/config_manager.h"
 #include "util/device_mode_manager.h"
 #include "util/battery_manager.h"
+#include "util/button_manager.h"
 #include "util/timing_manager.h"
+#include "util/sleep_utils.h"
+#include "display/display_manager.h"
 #include <SPI.h>
 #include "ota/ota_update.h"
 //EPD
@@ -108,7 +111,7 @@ void setup() {
     esp_log_level_set("*", ESP_LOG_ERROR);
 #else
     Serial.begin(115200);
-    delay(1000);
+    delay(5000);
     // Development: Full logging
     esp_log_level_set("*", ESP_LOG_DEBUG);
 #endif
@@ -117,9 +120,57 @@ void setup() {
     // esp_log_level_set("*", ESP_LOG_DEBUG); // Set global log level
     ESP_LOGI(TAG, "System starting...");
 
+    // DIAGNOSTIC: Print wakeup cause
+    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+    ESP_LOGI(TAG, "=== Wakeup Cause: %d ===", wakeup_reason);
+    switch (wakeup_reason) {
+    case ESP_SLEEP_WAKEUP_UNDEFINED:
+        ESP_LOGI(TAG, "  → Power on or reset (not from deep sleep)");
+        break;
+    case ESP_SLEEP_WAKEUP_EXT0:
+        ESP_LOGI(TAG, "  → EXT0 (single GPIO RTC_IO)");
+        break;
+    case ESP_SLEEP_WAKEUP_EXT1:
+        ESP_LOGI(TAG, "  → EXT1 (multiple GPIO RTC_CNTL)");
+        ESP_LOGI(TAG, "  → Wakeup pin mask: 0x%llx", esp_sleep_get_ext1_wakeup_status());
+        break;
+    case ESP_SLEEP_WAKEUP_TIMER:
+        ESP_LOGI(TAG, "  → Timer wakeup");
+        break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD:
+        ESP_LOGI(TAG, "  → Touchpad");
+        break;
+    case ESP_SLEEP_WAKEUP_ULP:
+        ESP_LOGI(TAG, "  → ULP program");
+        break;
+    default:
+        ESP_LOGI(TAG, "  → Unknown: %d", wakeup_reason);
+        break;
+    }
+
     // Initialize battery manager (only available on ESP32-S3)
     BatteryManager::init();
 
+    // Initialize button manager (ESP32-S3 only)
+    ButtonManager::init();
+
+    // Check if device was woken by button press (temporary display mode)
+    // int8_t buttonMode = ButtonManager::getWakeupButtonMode();
+    // if (buttonMode >= 0) {
+    //     ESP_LOGI(TAG, "Woken by button press! Temporary display mode: %d", buttonMode);
+    //
+    //     // Store temporary mode information in RTC memory
+    //     RTCConfigData& config = ConfigManager::getConfig();
+    //     config.inTemporaryMode = true;
+    //     config.temporaryDisplayMode = buttonMode;
+    //
+    //     // Sleep for 2 minutes with button wakeup enabled
+    //     ESP_LOGI(TAG, "Entering 2-minute sleep for temporary mode (buttons still active)");
+    //
+    //     // enterDeepSleepWithButtonWakeup(ButtonManager::TEMPORARY_MODE_TIMEOUT);
+    //     // Device will restart after wakeup
+    // }
+    //
     // Check if OTA update should run based on configuration
     if (shouldRunOTAUpdate()) {
         ESP_LOGI(TAG, "Starting OTA update check...");
@@ -129,15 +180,18 @@ void setup() {
         time_t now;
         time(&now);
         TimingManager::setLastOTACheck((uint32_t)now);
- // Note: If update is found and installed, device will restart
+        // Note: If update is found and installed, device will restart
         // If no update or update fails, execution continues normally
     }
+
+    // Check if device was woken by button press (temporary display mode)
+    int8_t buttonMode = ButtonManager::getWakeupButtonMode();
 
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
         // Get configured display mode from NVS/RTC
         RTCConfigData& config = ConfigManager::getConfig();
-        uint8_t displayMode = config.displayMode;
+        uint8_t displayMode = buttonMode >= 0 ? buttonMode : config.displayMode;
 
         ESP_LOGI(TAG, "Operating in configured display mode: %d", displayMode);
 

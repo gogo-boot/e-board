@@ -406,6 +406,8 @@ void DeviceModeManager::enterOperationalSleep() {
 
     // Calculate sleep time using TimingManager based on configured intervals
     uint64_t sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
+
+    // On other boards, use regular timer-only deep sleep
     enterDeepSleep(sleepTimeSeconds);
 }
 
