@@ -26,6 +26,7 @@ static const char* TAG = "DEVICE_MODE";
 extern WebServer server;
 
 ConfigManager& configMgr = ConfigManager::getInstance();
+RTCConfigData& config = ConfigManager::getConfig();
 
 // The parameter hasValidConfig will be set to true if the configuration is
 // valid the parameter is used to fast path the configuration mode without
@@ -43,7 +44,6 @@ bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
     }
 
     // Validate critical configuration fields
-    RTCConfigData& config = ConfigManager::getConfig();
     bool hasStopId = strlen(config.selectedStopId) > 0;
     bool hasSSID = strlen(config.ssid) > 0;
     bool hasLocation = (config.latitude != 0.0 && config.longitude != 0.0);
@@ -127,15 +127,16 @@ void DeviceModeManager::showWeatherDeparture() {
 
     // === FLOWCHART IMPLEMENTATION ===
     // Step 1: Check if Departure is in Active Time
+
     bool isTransportActiveTime = TimingManager::isTransportActiveTime();
     ESP_LOGI(TAG, "Transport active time: %s", isTransportActiveTime ? "YES" : "NO");
 
-    if (!isTransportActiveTime) {
+    if (!config.inTemporaryMode && !isTransportActiveTime) {
         // Path: Outside active time -> Check if time to update weather
         bool needsWeatherUpdate = TimingManager::isTimeForWeatherUpdate();
         ESP_LOGI(TAG, "Outside transport hours - weather update needed: %s", needsWeatherUpdate ? "YES" : "NO");
 
-        if (needsWeatherUpdate) {
+        if (!config.inTemporaryMode && needsWeatherUpdate) {
             // Fetch and display full weather screen
             WeatherInfo weather;
             if (fetchWeatherData(weather)) {
@@ -162,7 +163,7 @@ void DeviceModeManager::showWeatherDeparture() {
     bool hasTransport = false;
     bool hasWeather = false;
 
-    if (needsWeatherUpdate && needsTransportUpdate) {
+    if (config.inTemporaryMode || (needsWeatherUpdate && needsTransportUpdate)) {
         // Path: Update both weather and departure - FULL REFRESH
         ESP_LOGI(TAG, "Updating both weather and departure data");
 
@@ -180,7 +181,7 @@ void DeviceModeManager::showWeatherDeparture() {
         DisplayManager::refreshFullScreen(hasWeather ? &weather : nullptr,
                                           hasTransport ? &depart : nullptr);
         ESP_LOGI(TAG, "Updated both halves");
-    } else if (needsTransportUpdate) {
+    } else if (config.inTemporaryMode || needsTransportUpdate) {
         // Path: Update departure half only - PARTIAL UPDATE
         ESP_LOGI(TAG, "Updating departure data only");
 
@@ -192,7 +193,7 @@ void DeviceModeManager::showWeatherDeparture() {
             DisplayManager::refreshDepartureHalf(&depart);
             ESP_LOGI(TAG, "Updated departure half only");
         }
-    } else if (needsWeatherUpdate) {
+    } else if (config.inTemporaryMode || needsWeatherUpdate) {
         // Path: Update weather half only - PARTIAL UPDATE
         ESP_LOGI(TAG, "Updating weather data only");
 
@@ -229,7 +230,7 @@ void DeviceModeManager::updateWeatherFull() {
     bool hasWeather = false;
 
     // Fetch weather data only if needed
-    if (needsWeatherUpdate) {
+    if (config.inTemporaryMode || needsWeatherUpdate) {
         ConfigPageData& pageData = ConfigPageData::getInstance();
         ESP_LOGI(TAG, "Fetching weather for location: (%.6f, %.6f)",
                  pageData.getLatitude(), pageData.getLongitude());
@@ -270,12 +271,11 @@ void DeviceModeManager::updateDepartureFull() {
     bool isActiveTime = TimingManager::isTransportActiveTime();
 
     // Mode-specific data fetching and display
-    RTCConfigData& config = ConfigManager::getConfig();
     DepartureData depart;
     bool hasTransport = false;
 
     // Fetch departure data only if needed and in active hours
-    if (needsTransportUpdate && isActiveTime) {
+    if (config.inTemporaryMode || (needsTransportUpdate && isActiveTime)) {
         String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
 
         if (stopIdToUse.length() > 0) {
@@ -326,7 +326,6 @@ bool DeviceModeManager::setupOperationalMode() {
     }
 
     // Set coordinates from saved config
-    RTCConfigData& config = ConfigManager::getConfig();
     ConfigPageData& pageData = ConfigPageData::getInstance();
     pageData.setLocation(config.latitude, config.longitude, config.cityName);
     ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)", config.cityName,
@@ -428,7 +427,6 @@ bool DeviceModeManager::fetchWeatherData(WeatherInfo& weather) {
 }
 
 bool DeviceModeManager::fetchTransportData(DepartureData& depart) {
-    RTCConfigData& config = ConfigManager::getConfig();
     String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";
 
     if (stopIdToUse.length() == 0) {

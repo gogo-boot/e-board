@@ -186,7 +186,14 @@ void setup() {
 
     // Check if device was woken by button press (temporary display mode)
     int8_t buttonMode = ButtonManager::getWakeupButtonMode();
+    if (buttonMode >= 0) {
+        ESP_LOGI(TAG, "Woken by button press! Temporary display mode: %d", buttonMode);
 
+        // Store temporary mode information in RTC memory
+        RTCConfigData& config = ConfigManager::getConfig();
+        config.inTemporaryMode = true;
+        config.temporaryDisplayMode = buttonMode;
+    }
     // Determine device mode based on saved configuration
     if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
         // Get configured display mode from NVS/RTC

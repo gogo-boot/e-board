@@ -4,9 +4,9 @@
 #include "config/config_manager.h"
 
 static const char* TAG = "WEATHER";
-RTCConfigData& config = ConfigManager::getConfig();
 
 void printWeatherInfo(const WeatherInfo& weather) {
+    RTCConfigData& config = ConfigManager::getConfig();
     ESP_LOGI(TAG, "--- WeatherInfo ---");
     ESP_LOGI(TAG, "City: %s", config.cityName);
     ESP_LOGI(TAG, "Current: %.1f°C, %.1f mm, Weather Code: %d", weather.temperature,
