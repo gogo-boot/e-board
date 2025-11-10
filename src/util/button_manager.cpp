@@ -65,27 +65,6 @@ void ButtonManager::init() {
 #endif
 }
 
-bool ButtonManager::isButtonPressed(int buttonPin) {
-#ifdef BOARD_ESP32_S3
-    if (digitalRead(buttonPin) == LOW) {
-        // Debounce delay
-        delay(DEBOUNCE_DELAY_MS);
-
-        // Verify button is still pressed
-        if (digitalRead(buttonPin) == LOW) {
-            ESP_LOGI(TAG, "Button press detected on GPIO %d", buttonPin);
-
-            // Wait for button release to avoid multiple triggers
-            while (digitalRead(buttonPin) == LOW) {
-                delay(10);
-            }
-            return true;
-        }
-    }
-#endif
-    return false;
-}
-
 int8_t ButtonManager::getWakeupButtonMode() {
 #ifdef BOARD_ESP32_S3
     // Check if wakeup was caused by EXT1 (button press)
@@ -141,14 +120,6 @@ void ButtonManager::enableButtonWakeup() {
                  result, esp_err_to_name(result));
         ESP_LOGE(TAG, "  This usually means one or more GPIOs don't support RTC!");
     }
-#endif
-}
-
-bool ButtonManager::wasWokenByButton() {
-#ifdef BOARD_ESP32_S3
-    return esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT1;
-#else
-    return false;
 #endif
 }
 
