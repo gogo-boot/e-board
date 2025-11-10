@@ -1,5 +1,6 @@
 #include "util/time_manager.h"
 #include "util/sleep_utils.h"
+#include "util/button_manager.h"
 #include <WiFi.h>
 #include <esp_sleep.h>
 #include <esp_log.h>
@@ -33,33 +34,30 @@ void printWakeupReason() {
     }
 }
 
-// Enhanced deep sleep function with multiple wakeup options
+// Deep sleep with both timer and button wakeup enabled (ESP32-S3 only)
 void enterDeepSleep(uint64_t sleepTimeSeconds) {
     if (sleepTimeSeconds <= 0) {
         ESP_LOGE(TAG, "Invalid sleep time: %llu, not entering deep sleep!", sleepTimeSeconds);
         return;
     }
 
-    // Setup time synchronization after WiFi connection
+    // Setup time synchronization if needed
     if (!TimeManager::isTimeSet()) {
         ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
         TimeManager::setupNTPTime();
     }
-
     ESP_LOGI(TAG, "Entering deep sleep for %u seconds (%llu minutes)",
              sleepTimeSeconds, sleepTimeSeconds / 60);
 
     // Configure timer wakeup
     esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000ULL); // Convert seconds to microseconds
 
-    // Optional: Configure GPIO wakeup (e.g., for user button)
-    // esp_sleep_enable_ext0_wakeup(GPIO_NUM_9, 0); // Wake on low signal on GPIO 9
-
-    // can cause issues after deep sleep, especially if the serial monitor is not actively reading data.
-    // It can cause the ESP32 to block on the Serial.flush() call if the serial port is not properly re-established after deep sleep.
-    // Flush serial output
-    // Serial.flush();
+#ifdef BOARD_ESP32_S3
+    // Enable button wakeup (EXT1)
+    ButtonManager::enableButtonWakeup();
+#endif
 
     // Enter deep sleep
     esp_deep_sleep_start();
 }
+
