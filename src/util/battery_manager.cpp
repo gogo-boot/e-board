@@ -37,11 +37,6 @@ void BatteryManager::init() {
     analogReadResolution(12); // 12-bit resolution (0-4095)
     analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db); // Full range: 0-3.6V
     batteryInitialized = true;
-
-    // Log initial battery status
-    float voltage = getBatteryVoltage();
-    int percentage = getBatteryPercentage();
-    ESP_LOGI(TAG, "Battery initialized - Voltage: %.2fV, Percentage: %d%%", voltage, percentage);
 #else
     ESP_LOGW(TAG, "Battery monitoring not available on this board");
 #endif
@@ -96,7 +91,9 @@ int BatteryManager::getBatteryPercentage() {
         return -1;
     }
 
-    return (int)(voltageToPercentage(voltage));
+    int percentage = (int)(voltageToPercentage(voltage));
+    ESP_LOGI(TAG, "Battery initialized - Voltage: %.2fV, Percentage: %d%%", voltage, percentage);
+    return percentage;
 #else
     return -1;
 #endif
