@@ -81,6 +81,23 @@ void MyWiFiManager::setupAPMode(WiFiManager& wm) {
     }
     ESP_LOGI(TAG, "WiFi connected!");
 
+    // Verify internet access after WiFi connection
+    if (!hasInternetAccess()) {
+        ESP_LOGE(TAG, "WiFi connected but internet is not accessible");
+        RTCConfigData& config = ConfigManager::getConfig();
+        config.wifiConfigured = false;
+
+        // Disconnect and clear credentials
+        WiFi.disconnect();
+        ESP_LOGE(TAG, "Please check your internet connection and try again");
+        return;
+    }
+
+    // WiFi and internet validation successful - mark as configured
+    RTCConfigData& config = ConfigManager::getConfig();
+    config.wifiConfigured = true;
+    ESP_LOGI(TAG, "WiFi and internet validation successful");
+
     // Update configuration with new network info
     ConfigManager::setNetwork(wm.getWiFiSSID(), WiFi.localIP().toString());
 
@@ -215,4 +232,96 @@ void MyWiFiManager::clearWiFiCache() {
     memset(cached_ssid, 0, sizeof(cached_ssid));
     wifi_cache_timestamp = 0;
     ESP_LOGI(TAG, "WiFi cache cleared");
+}
+
+bool MyWiFiManager::hasInternetAccess() {
+    ESP_LOGI(TAG, "Checking internet connectivity...");
+
+    // Method 1: DNS lookup test
+    IPAddress dnsResult;
+    if (WiFi.hostByName("www.google.com", dnsResult) != 1) {
+        ESP_LOGW(TAG, "DNS lookup failed");
+        return false;
+    }
+    ESP_LOGI(TAG, "DNS lookup successful: %s", dnsResult.toString().c_str());
+
+    // Method 2: HTTP ping to reliable endpoint
+    WiFiClient client;
+    const char* testHost = "www.google.com";
+    const int testPort = 80;
+
+    ESP_LOGI(TAG, "Attempting HTTP connection to %s:%d", testHost, testPort);
+    if (!client.connect(testHost, testPort, 5000)) {
+        // 5 second timeout
+        ESP_LOGW(TAG, "Connection to test host failed");
+        return false;
+    }
+
+    // Send simple HTTP HEAD request
+    client.println("HEAD / HTTP/1.1");
+    client.print("Host: ");
+    client.println(testHost);
+    client.println("Connection: close");
+    client.println();
+
+    // Wait for response
+    unsigned long timeout = millis();
+    while (client.available() == 0) {
+        if (millis() - timeout > 5000) {
+            ESP_LOGW(TAG, "HTTP request timeout");
+            client.stop();
+            return false;
+        }
+        delay(10);
+    }
+
+    // Read first line of response
+    String line = client.readStringUntil('\r');
+    client.stop();
+
+    // Check for valid HTTP response
+    if (line.indexOf("HTTP/1.") != -1) {
+        ESP_LOGI(TAG, "Internet access confirmed: %s", line.c_str());
+        return true;
+    }
+
+    ESP_LOGW(TAG, "Invalid HTTP response: %s", line.c_str());
+    return false;
+}
+
+bool MyWiFiManager::validateWifiAndInternet(const String& ssid, const String& password) {
+    ESP_LOGI(TAG, "=== Starting WiFi and Internet Validation ===");
+    ESP_LOGI(TAG, "SSID: %s", ssid.c_str());
+
+    // Step 1: Try to connect to WiFi
+    WiFi.begin(ssid.c_str(), password.c_str());
+
+    int attempts = 0;
+    const int maxAttempts = 20; // 10 seconds timeout
+
+    while (WiFi.status() != WL_CONNECTED && attempts < maxAttempts) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+    }
+    Serial.println();
+
+    if (WiFi.status() != WL_CONNECTED) {
+        ESP_LOGE(TAG, "WiFi connection failed after %d attempts", attempts);
+        return false;
+    }
+
+    ESP_LOGI(TAG, "WiFi connected successfully");
+    ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
+    ESP_LOGI(TAG, "Signal strength: %d dBm", WiFi.RSSI());
+
+    // Step 2: Verify internet access
+    if (!hasInternetAccess()) {
+        ESP_LOGE(TAG, "Internet access verification failed");
+        WiFi.disconnect();
+        return false;
+    }
+
+    ESP_LOGI(TAG, "=== WiFi and Internet Validation: SUCCESS ===");
+    return true;
 }

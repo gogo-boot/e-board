@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include "display/display_manager.h" // Include for DisplayMode and DisplayOrientation
+#include "config/config_struct.h" // Include for ConfigPhase enum
 
 // Forward declarations for data structures
 struct WeatherInfo;
@@ -13,6 +14,11 @@ public:
     static void showWeatherDeparture();
     static void updateWeatherFull();
     static void updateDepartureFull();
+
+    // Configuration phase management
+    static ConfigPhase getCurrentPhase();
+    static void showPhaseInstructions(ConfigPhase phase);
+    static void showWifiErrorPage();
 
     // Common operational mode functions
     static bool setupOperationalMode();

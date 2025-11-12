@@ -30,6 +30,7 @@
 #include "util/timing_manager.h"
 #include "util/sleep_utils.h"
 #include "display/display_manager.h"
+#include "util/wifi_manager.h"
 #include <SPI.h>
 #include "ota/ota_update.h"
 //EPD
@@ -195,39 +196,81 @@ void setup() {
         config.temporaryDisplayMode = buttonMode;
     }
     // Determine device mode based on saved configuration
-    if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
-        // Get configured display mode from NVS/RTC
-        RTCConfigData& config = ConfigManager::getConfig();
-        uint8_t displayMode = buttonMode >= 0 ? buttonMode : config.displayMode;
+    ConfigPhase phase = DeviceModeManager::getCurrentPhase();
 
-        ESP_LOGI(TAG, "Operating in configured display mode: %d", displayMode);
-
-        // Run operational mode based on configured display mode
-        switch (displayMode) {
-        case DISPLAY_MODE_HALF_AND_HALF:
-            ESP_LOGI(TAG, "Starting Weather + Departure half-and-half mode");
-            DeviceModeManager::showWeatherDeparture();
-            break;
-
-        case DISPLAY_MODE_WEATHER_ONLY:
-            ESP_LOGI(TAG, "Starting Weather-only full screen mode");
-            DeviceModeManager::updateWeatherFull();
-            break;
-
-        case DISPLAY_MODE_DEPARTURE_ONLY:
-            ESP_LOGI(TAG, "Starting Departure-only full screen mode");
-            DeviceModeManager::updateDepartureFull();
-            break;
-        default:
-            ESP_LOGW(TAG, "Unknown display mode %d, defaulting to half-and-half", displayMode);
-            DeviceModeManager::showWeatherDeparture();
-            break;
-        }
-
-        // After operational mode completes, enter deep sleep
-        DeviceModeManager::enterOperationalSleep();
-    } else {
+    switch (phase) {
+    case PHASE_WIFI_SETUP:
+        ESP_LOGI(TAG, "Phase 1: WiFi Setup Required");
+        DeviceModeManager::showPhaseInstructions(PHASE_WIFI_SETUP);
         DeviceModeManager::runConfigurationMode();
+        break;
+
+    case PHASE_APP_SETUP: {
+        ESP_LOGI(TAG, "Phase 2: Application Setup Required");
+
+        // Verify WiFi still works and has internet before proceeding
+        RTCConfigData& config = ConfigManager::getConfig();
+
+        // Try to connect with stored credentials
+        MyWiFiManager::reconnectWiFi();
+
+        if (MyWiFiManager::isConnected() && MyWiFiManager::hasInternetAccess()) {
+            DeviceModeManager::showPhaseInstructions(PHASE_APP_SETUP);
+            DeviceModeManager::runConfigurationMode();
+        } else {
+            // WiFi/Internet connection failed - revert to Phase 1
+            ESP_LOGE(TAG, "WiFi validation failed - reverting to Phase 1");
+            config.wifiConfigured = false;
+            ConfigManager& configMgr = ConfigManager::getInstance();
+            configMgr.saveToNVS();
+            DeviceModeManager::showWifiErrorPage();
+            DeviceModeManager::showPhaseInstructions(PHASE_WIFI_SETUP);
+            DeviceModeManager::runConfigurationMode();
+        }
+    }
+    break;
+
+    case PHASE_COMPLETE: {
+        ESP_LOGI(TAG, "Phase 3: All configured - Running operational mode");
+
+        // Verify WiFi still works before entering operational mode
+        if (hasValidConfig || DeviceModeManager::hasValidConfiguration(hasValidConfig)) {
+            // Get configured display mode from NVS/RTC
+            RTCConfigData& config = ConfigManager::getConfig();
+            uint8_t displayMode = buttonMode >= 0 ? buttonMode : config.displayMode;
+
+            ESP_LOGI(TAG, "Operating in configured display mode: %d", displayMode);
+
+            // Run operational mode based on configured display mode
+            switch (displayMode) {
+            case DISPLAY_MODE_HALF_AND_HALF:
+                ESP_LOGI(TAG, "Starting Weather + Departure half-and-half mode");
+                DeviceModeManager::showWeatherDeparture();
+                break;
+
+            case DISPLAY_MODE_WEATHER_ONLY:
+                ESP_LOGI(TAG, "Starting Weather-only full screen mode");
+                DeviceModeManager::updateWeatherFull();
+                break;
+
+            case DISPLAY_MODE_DEPARTURE_ONLY:
+                ESP_LOGI(TAG, "Starting Departure-only full screen mode");
+                DeviceModeManager::updateDepartureFull();
+                break;
+            default:
+                ESP_LOGW(TAG, "Unknown display mode %d, defaulting to half-and-half", displayMode);
+                DeviceModeManager::showWeatherDeparture();
+                break;
+            }
+
+            // After operational mode completes, enter deep sleep
+            DeviceModeManager::enterOperationalSleep();
+        } else {
+            // Configuration became invalid - go back to configuration
+            DeviceModeManager::runConfigurationMode();
+        }
+    }
+    break;
     }
 }
 
