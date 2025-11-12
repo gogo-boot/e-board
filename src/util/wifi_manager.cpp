@@ -289,12 +289,11 @@ bool MyWiFiManager::hasInternetAccess() {
     return false;
 }
 
-bool MyWiFiManager::validateWifiAndInternet(const String& ssid, const String& password) {
+bool MyWiFiManager::validateWifiAndInternet() {
     ESP_LOGI(TAG, "=== Starting WiFi and Internet Validation ===");
-    ESP_LOGI(TAG, "SSID: %s", ssid.c_str());
 
     // Step 1: Try to connect to WiFi
-    WiFi.begin(ssid.c_str(), password.c_str());
+    WiFi.begin(); // No parameters = use stored credentials with full scan
 
     int attempts = 0;
     const int maxAttempts = 20; // 10 seconds timeout
@@ -323,5 +322,4 @@ bool MyWiFiManager::validateWifiAndInternet(const String& ssid, const String& pa
     }
 
     ESP_LOGI(TAG, "=== WiFi and Internet Validation: SUCCESS ===");
-    return true;
 }
