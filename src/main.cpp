@@ -195,6 +195,14 @@ void setup() {
         config.inTemporaryMode = true;
         config.temporaryDisplayMode = buttonMode;
     }
+
+    // Load configuration from NVS to RTC memory
+    // This is critical for phase detection to work correctly!
+    ConfigManager& configMgr = ConfigManager::getInstance();
+    configMgr.loadFromNVS(); // ✅ Load wifiConfigured flag from NVS
+    ESP_LOGI(TAG, "Configuration loaded from NVS - wifiConfigured: %d",
+             ConfigManager::getConfig().wifiConfigured);
+
     // Determine device mode based on saved configuration
     ConfigPhase phase = DeviceModeManager::getCurrentPhase();
 

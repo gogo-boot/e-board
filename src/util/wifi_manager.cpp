@@ -115,6 +115,14 @@ void MyWiFiManager::setupAPMode(WiFiManager& wm) {
     } else {
         ESP_LOGW(TAG, "mDNS responder failed to start");
     }
+
+    // Restart device to transition to Phase 2 (Application Setup)
+    ESP_LOGI(TAG, "==========================================");
+    ESP_LOGI(TAG, "WiFi Setup Complete!");
+    ESP_LOGI(TAG, "Restarting device to enter Phase 2...");
+    ESP_LOGI(TAG, "==========================================");
+    delay(2000); // Give time for logs to be sent
+    ESP.restart();
 }
 
 bool MyWiFiManager::isConnected() {
@@ -322,4 +330,5 @@ bool MyWiFiManager::validateWifiAndInternet() {
     }
 
     ESP_LOGI(TAG, "=== WiFi and Internet Validation: SUCCESS ===");
+    return true;
 }

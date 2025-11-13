@@ -72,11 +72,26 @@ void DeviceModeManager::runConfigurationMode() {
     // Set configuration mode flag
     ConfigManager::setConfigMode(true);
 
-    ConfigManager::setDefaults();
+    // Check current phase to determine configuration mode
+    ConfigPhase phase = getCurrentPhase();
 
-    // Setup WiFi with access point for configuration
-    WiFiManager wm;
-    MyWiFiManager::setupAPMode(wm);
+    if (phase == PHASE_WIFI_SETUP) {
+        // Phase 1: Setup WiFi with access point
+        ESP_LOGI(TAG, "Phase 1 Configuration: Setting up WiFi AP");
+         // Only set defaults in Phase 1 (fresh setup)
+        ConfigManager::setDefaults();
+
+        WiFiManager wm;
+        MyWiFiManager::setupAPMode(wm);
+    } else {
+        // Phase 2 or later: WiFi already configured, just ensure connection
+        ESP_LOGI(TAG, "Phase 2+ Configuration: Using existing WiFi connection");
+        // WiFi should already be connected from main.cpp validation
+        if (!MyWiFiManager::isConnected()) {
+            ESP_LOGW(TAG, "WiFi not connected, attempting reconnect...");
+            MyWiFiManager::reconnectWiFi();
+        }
+    }
 
     // Setup time synchronization
     TimeManager::setupNTPTime();
