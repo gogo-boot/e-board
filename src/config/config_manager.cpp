@@ -129,7 +129,7 @@ bool ConfigManager::loadFromNVS() {
     copyString(rtcConfig.otaCheckTime, otaTime, sizeof(rtcConfig.otaCheckTime));
 
     // Load transport filters
-    size_t filterCount = preferences.getUInt("filterCount", 3);
+    size_t filterCount = preferences.getUInt("filterCount", 8);
     rtcConfig.filterFlags = 0; // Reset flags
     for (size_t i = 0; i < filterCount && i < MAX_TRANSPORT_FILTERS; i++) {
         String key = "filter" + String(i);
