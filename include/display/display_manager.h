@@ -41,6 +41,11 @@ public:
     static void refreshWeatherFullScreen(const WeatherInfo& weather);
     static void refreshDepartureFullScreen(const DepartureData& departures);
 
+    // === Configuration Mode Display ===
+    // Display setup instructions for configuration phases (in German)
+    static void displayPhase1WifiSetup(); // Phase 1: WiFi configuration
+    static void displayPhase2AppSetup(); // Phase 2: Application configuration
+
     // === Legacy Display Methods (for backward compatibility) ===
     static void displayHalfAndHalf(const WeatherInfo* weather = nullptr,
                                    const DepartureData* departures = nullptr);

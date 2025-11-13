@@ -8,6 +8,7 @@
 #include "display/weather_general_half.h"
 #include "display/weather_general_full.h"
 #include "display/display_shared.h"
+#include "util/util.h"
 
 // Include e-paper display libraries
 #include <gdey/GxEPD2_750_GDEY075T7.h>
@@ -375,4 +376,148 @@ void DisplayManager::refreshDepartureFullScreen(const DepartureData& departures)
     // Display full screen departures
     displayDeparturesFull(departures);
 }
+
+// ===== CONFIGURATION MODE DISPLAY =====
+
+void DisplayManager::displayPhase1WifiSetup() {
+    ESP_LOGI(TAG, "=== DISPLAYING PHASE 1: WIFI SETUP (GERMAN) ===");
+
+    // Get dynamic SSID with hardware ID
+    String apSSID = Util::getUniqueSSID("MyStation");
+    ESP_LOGI(TAG, "AP SSID: %s", apSSID.c_str());
+
+    // Initialize for full refresh (clears screen)
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+
+    // Start display update
+    display.setFullWindow();
+    display.firstPage();
+    do {
+        display.fillScreen(GxEPD_WHITE);
+
+        // Set up fonts
+        u8g2.setFont(u8g2_font_helvB18_tf); // Bold 18pt for title
+        u8g2.setForegroundColor(GxEPD_BLACK);
+        u8g2.setBackgroundColor(GxEPD_WHITE);
+
+        int16_t y = 40; // Start position from top
+        const int16_t lineHeight = 35; // Spacing between lines
+        const int16_t margin = 20; // Left margin
+
+        // Draw title
+        u8g2.setCursor(margin, y);
+        u8g2.print("EINRICHTUNG - Schritt 1/2 : WiFi-Konfiguration");
+
+        // Draw underline for title
+        display.drawFastHLine(margin, y + 5, screenWidth - (2 * margin), GxEPD_BLACK);
+
+        y += lineHeight + 10; // Extra space after title
+
+        // Draw instruction lines in German
+        u8g2.setFont(u8g2_font_helvR14_tf); // Regular 14pt for content
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("1. Schalten Sie MyStation an");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("2. Verbinden Sie sich mit WiFi-AP: " + apSSID + "");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print(
+            "3. Geben Sie http://10.0.1.1 in Ihren Internetbrowser ein");
+        y += lineHeight;
+
+        u8g2.setCursor(margin + 20, y);
+        u8g2.print(", falls die Seite nicht automatisch angezeigt wird.");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("4. Wählen Sie Ihr WLAN aus");
+        y += lineHeight;
+
+        u8g2.setCursor(margin + 20, y);
+        u8g2.print("und geben Sie Ihre WLAN-Zugangsdaten ein");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("5. System prüft Internetverbindung");
+        y += lineHeight;
+    } while (display.nextPage());
+
+    ESP_LOGI(TAG, "Phase 1 WiFi setup instructions displayed");
+}
+
+void DisplayManager::displayPhase2AppSetup() {
+    ESP_LOGI(TAG, "=== DISPLAYING PHASE 2: APP SETUP (GERMAN) ===");
+
+    // Get dynamic SSID with hardware ID
+    String apSSID = Util::getUniqueSSID("MyStation");
+
+    // Initialize for full refresh (clears screen)
+    initForFullRefresh(DisplayOrientation::LANDSCAPE);
+
+    // Start display update
+    display.setFullWindow();
+    display.firstPage();
+    do {
+        display.fillScreen(GxEPD_WHITE);
+
+        // Set up fonts
+        u8g2.setFont(u8g2_font_helvB18_tf); // Bold 18pt for title
+        u8g2.setForegroundColor(GxEPD_BLACK);
+        u8g2.setBackgroundColor(GxEPD_WHITE);
+
+        int16_t y = 40; // Start position from top
+        const int16_t lineHeight = 35; // Spacing between lines
+        const int16_t margin = 20; // Left margin
+
+        // Draw title
+        u8g2.setCursor(margin, y);
+        u8g2.print("EINRICHTUNG - Schritt 2/2 : MyStation-Anwendungskonfiguration");
+
+        // Draw underline for title
+        display.drawFastHLine(margin, y + 5, screenWidth - (2 * margin), GxEPD_BLACK);
+
+        y += lineHeight + 10; // Extra space after title
+
+        // Draw instruction lines in German
+        u8g2.setFont(u8g2_font_helvR14_tf); // Regular 14pt for content
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("1. Verbinden Sie sich erneut mit Ihrem WLAN (nicht mit dem " + apSSID + " WLAN)");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print(
+            "2. Scannen Sie den QR-Code oder geben Sie die der angezeigte URL in Ihren Internetbrowser ein.");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("3. Konfigurieren Sie MyStation im Webbrowser");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("4. Speichern Sie die Konfiguration und warten Sie etwa 10 Sekunden. ");
+        y += lineHeight;
+
+        y += 10; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("MyStation startet automatisch neu");
+        y += lineHeight;
+    } while (display.nextPage());
+
+    ESP_LOGI(TAG, "Phase 2 app setup instructions displayed");
+}
+
 

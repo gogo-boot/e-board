@@ -17,6 +17,7 @@
 #include "util/sleep_utils.h"
 #include "util/time_manager.h"
 #include "util/timing_manager.h"
+#include "util/util.h"
 #include "util/weather_print.h"
 #include "util/wifi_manager.h"
 
@@ -474,25 +475,23 @@ ConfigPhase DeviceModeManager::getCurrentPhase() {
 }
 
 void DeviceModeManager::showPhaseInstructions(ConfigPhase phase) {
-    // This function can be enhanced to display on e-paper
-    // For now, we'll log the instructions
+    // Display instructions on e-paper and log them
 
     switch (phase) {
-    case PHASE_WIFI_SETUP:
-        ESP_LOGI(TAG, "=== SETUP - Step 1/2: WiFi Configuration ===");
-        ESP_LOGI(TAG, "1. Connect to WiFi AP: 'MyStation-XXXX'");
-        ESP_LOGI(TAG, "2. Open browser: http://192.168.4.1");
-        ESP_LOGI(TAG, "3. Enter your WiFi credentials");
-        ESP_LOGI(TAG, "4. System will verify internet connectivity");
-        break;
+    case PHASE_WIFI_SETUP: {
+        ESP_LOGI(TAG, "=== SETUP - Schritt 1/2: WiFi-Konfiguration ===");
+
+        // Display Phase 1 instructions on e-paper (in German)
+        DisplayManager::displayPhase1WifiSetup();
+    }
+    break;
 
     case PHASE_APP_SETUP:
-        ESP_LOGI(TAG, "=== SETUP - Step 2/2: Station Configuration ===");
-        ESP_LOGI(TAG, "WiFi: Connected ✓");
-        ESP_LOGI(TAG, "1. Open browser: http://192.168.4.1 or http://mystation.local");
-        ESP_LOGI(TAG, "2. Select your transport station");
-        ESP_LOGI(TAG, "3. Configure display settings and intervals");
-        ESP_LOGI(TAG, "4. Save configuration to begin operation");
+        ESP_LOGI(TAG, "=== SETUP - Schritt 2/2: Stations-Konfiguration ===");
+
+        // Display Phase 2 instructions on e-paper (in German)
+        DisplayManager::displayPhase2AppSetup();
+
         break;
 
     case PHASE_COMPLETE:
@@ -506,13 +505,11 @@ void DeviceModeManager::showWifiErrorPage() {
     ESP_LOGE(TAG, "=== INTERNET ACCESS ERROR ===");
     ESP_LOGE(TAG, "WiFi connected but internet is not accessible");
     ESP_LOGE(TAG, "");
-    ESP_LOGE(TAG, "Please check:");
-    ESP_LOGE(TAG, "  - WiFi credentials are correct");
-    ESP_LOGE(TAG, "  - Router is connected to internet");
-    ESP_LOGE(TAG, "  - Internet service is active");
-    ESP_LOGE(TAG, "");
-    ESP_LOGE(TAG, "Returning to WiFi setup phase...");
 
-    // TODO: Display on e-paper when display manager is available
-    delay(5000);
+    // Also log to serial
+    ESP_LOGI(TAG, "WiFi: Connected ✓");
+    ESP_LOGI(TAG, "1. Open browser: http://192.168.4.1 or http://mystation.local");
+    ESP_LOGI(TAG, "2. Select your transport station");
+    ESP_LOGI(TAG, "3. Configure display settings and intervals");
+    ESP_LOGI(TAG, "4. Save configuration to begin operation");
 }
