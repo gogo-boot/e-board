@@ -28,6 +28,7 @@
 #include "util/battery_manager.h"
 #include "util/button_manager.h"
 #include "util/timing_manager.h"
+#include "util/factory_reset.h"
 #include "util/sleep_utils.h"
 #include "display/display_manager.h"
 #include "util/wifi_manager.h"
@@ -143,6 +144,16 @@ void setup() {
     default:
         ESP_LOGI(TAG, "  → Unknown: %d", wakeup_reason);
         break;
+    }
+
+    // **CHECK FOR FACTORY RESET ON EVERY BOOT**
+    // This works for both wake-up from deep sleep AND hard reset
+    if (FactoryReset::checkFactoryResetButton()) {
+        // Initialize NVS before factory reset
+        nvs_flash_init();
+        // Button was held for 5 seconds, perform factory reset
+        FactoryReset::performFactoryReset();
+        // Note: performFactoryReset() calls ESP.restart(), so we never reach here
     }
 
     // Initialize battery manager (only available on ESP32-S3)

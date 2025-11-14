@@ -71,6 +71,16 @@ void MyWiFiManager::setupAPMode(WiFiManager& wm) {
     wm.setMinimumSignalQuality(20);
 
     wm.setAPStaticIPConfig(IPAddress(10, 0, 1, 1), IPAddress(10, 0, 1, 1), IPAddress(255, 255, 255, 0));
+    wm.setTitle("MyStation Wifi Setup");
+    wm.setCountry("DE");
+
+    // Set success message after saving
+    wm.setSaveConfigCallback([]() {
+        ESP_LOGI(TAG, "Konfiguration gespeichert!");
+        delay(100); // Give time for logs to be sent
+        ESP.restart();
+    });
+
     String apName = Util::getUniqueSSID("MyStation");
     ESP_LOGD(TAG, "AP SSID: %s", apName.c_str());
     bool res = wm.autoConnect(apName.c_str());
