@@ -131,10 +131,6 @@ void setup() {
     case ESP_SLEEP_WAKEUP_EXT0:
         ESP_LOGI(TAG, "  → EXT0 (single GPIO RTC_IO)");
         break;
-    // case ESP_SLEEP_WAKEUP_EXT1:
-    //     ESP_LOGI(TAG, "  → EXT1 (multiple GPIO RTC_CNTL)");
-    //     ESP_LOGI(TAG, "  → Wakeup pin mask: 0x%llx", esp_sleep_get_ext1_wakeup_status());
-    //     break;
     case ESP_SLEEP_WAKEUP_TIMER:
         ESP_LOGI(TAG, "  → Timer wakeup");
         break;
