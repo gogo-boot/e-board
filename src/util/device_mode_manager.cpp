@@ -17,6 +17,7 @@
 #include "util/sleep_utils.h"
 #include "util/time_manager.h"
 #include "util/timing_manager.h"
+#include "util/util.h"
 #include "util/weather_print.h"
 #include "util/wifi_manager.h"
 
@@ -71,11 +72,26 @@ void DeviceModeManager::runConfigurationMode() {
     // Set configuration mode flag
     ConfigManager::setConfigMode(true);
 
-    ConfigManager::setDefaults();
+    // Check current phase to determine configuration mode
+    ConfigPhase phase = getCurrentPhase();
 
-    // Setup WiFi with access point for configuration
-    WiFiManager wm;
-    MyWiFiManager::setupAPMode(wm);
+    if (phase == PHASE_WIFI_SETUP) {
+        // Phase 1: Setup WiFi with access point
+        ESP_LOGI(TAG, "Phase 1 Configuration: Setting up WiFi AP");
+         // Only set defaults in Phase 1 (fresh setup)
+        ConfigManager::setDefaults();
+
+        WiFiManager wm;
+        MyWiFiManager::setupAPMode(wm);
+    } else {
+        // Phase 2 or later: WiFi already configured, just ensure connection
+        ESP_LOGI(TAG, "Phase 2+ Configuration: Using existing WiFi connection");
+        // WiFi should already be connected from main.cpp validation
+        if (!MyWiFiManager::isConnected()) {
+            ESP_LOGW(TAG, "WiFi not connected, attempting reconnect...");
+            MyWiFiManager::reconnectWiFi();
+        }
+    }
 
     // Setup time synchronization
     TimeManager::setupNTPTime();
@@ -449,4 +465,66 @@ bool DeviceModeManager::fetchTransportData(DepartureData& depart) {
         ESP_LOGE(TAG, "Failed to get departure information from RMV");
         return false;
     }
+}
+
+// ===== CONFIGURATION PHASE MANAGEMENT =====
+
+ConfigPhase DeviceModeManager::getCurrentPhase() {
+    // Phase 1: WiFi not configured or credentials empty
+    if (!config.wifiConfigured || strlen(config.ssid) == 0) {
+        ESP_LOGI(TAG, "Configuration Phase: 1 (WiFi Setup)");
+        return PHASE_WIFI_SETUP;
+    }
+
+    // Phase 2: WiFi configured but app settings missing
+    if (strlen(config.selectedStopId) == 0 ||
+        config.latitude == 0.0 ||
+        config.longitude == 0.0) {
+        ESP_LOGI(TAG, "Configuration Phase: 2 (Application Setup)");
+        return PHASE_APP_SETUP;
+    }
+
+    // Phase 3: Everything configured
+    ESP_LOGI(TAG, "Configuration Phase: 3 (Complete)");
+    return PHASE_COMPLETE;
+}
+
+void DeviceModeManager::showPhaseInstructions(ConfigPhase phase) {
+    // Display instructions on e-paper and log them
+
+    switch (phase) {
+    case PHASE_WIFI_SETUP: {
+        ESP_LOGI(TAG, "=== SETUP - Schritt 1/2: WiFi-Konfiguration ===");
+
+        // Display Phase 1 instructions on e-paper (in German)
+        DisplayManager::displayPhase1WifiSetup();
+    }
+    break;
+
+    case PHASE_APP_SETUP:
+        ESP_LOGI(TAG, "=== SETUP - Schritt 2/2: Stations-Konfiguration ===");
+
+        // Display Phase 2 instructions on e-paper (in German)
+        DisplayManager::displayPhase2AppSetup();
+
+        break;
+
+    case PHASE_COMPLETE:
+        ESP_LOGI(TAG, "=== Configuration Complete ===");
+        ESP_LOGI(TAG, "System will enter operational mode");
+        break;
+    }
+}
+
+void DeviceModeManager::showWifiErrorPage() {
+    ESP_LOGE(TAG, "=== INTERNET ACCESS ERROR ===");
+    ESP_LOGE(TAG, "WiFi connected but internet is not accessible");
+    ESP_LOGE(TAG, "");
+
+    // Also log to serial
+    ESP_LOGI(TAG, "WiFi: Connected ✓");
+    ESP_LOGI(TAG, "1. Open browser: http://192.168.4.1 or http://mystation.local");
+    ESP_LOGI(TAG, "2. Select your transport station");
+    ESP_LOGI(TAG, "3. Configure display settings and intervals");
+    ESP_LOGI(TAG, "4. Save configuration to begin operation");
 }

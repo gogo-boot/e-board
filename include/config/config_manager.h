@@ -8,6 +8,7 @@
 struct RTCConfigData {
     // Validation
     bool isValid; // 1 byte
+    bool wifiConfigured; // 1 byte - true when WiFi credentials are validated AND internet is accessible
 
     // Display configuration
     uint8_t displayMode; // 1 byte (0=half_and_half, 1=weather_only, 2=departure_only)

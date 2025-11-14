@@ -17,6 +17,10 @@ public:
   static bool isWiFiStateCached();
   static void clearWiFiCache();
 
+  // WiFi and internet validation for configuration phase tracking
+  static bool hasInternetAccess();
+  static bool validateWifiAndInternet();
+
 private:
   static const int FAST_CONNECT_TIMEOUT_MS = 8000; // 8 seconds for fast connect
   static const int FULL_CONNECT_TIMEOUT_MS = 20000; // 20 seconds for full scan
