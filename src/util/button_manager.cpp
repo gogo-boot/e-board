@@ -47,7 +47,7 @@ void ButtonManager::init() {
     }
 
     // DIAGNOSTIC: Check current button states
-    delay(100); // Allow pull-ups to stabilize
+    delay(20); // Allow pull-ups to stabilize
     ESP_LOGI(TAG, "Current button states:");
     ESP_LOGI(TAG, "  GPIO %d: %s", Pins::BUTTON_HALF_AND_HALF,
              digitalRead(Pins::BUTTON_HALF_AND_HALF) == HIGH ? "HIGH (not pressed)" : "LOW (PRESSED!)");
