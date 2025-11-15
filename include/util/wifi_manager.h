@@ -11,9 +11,6 @@ public:
   // NEW: Refactored WiFi setup functions for clearer control flow
   static void setupWiFiAccessPointAndRestart(WiFiManager& wm);
 
-  // DEPRECATED: Old combined function - will be removed
-  static void setupAPMode(WiFiManager& wm);
-
   static bool isConnected();
   static String getLocalIP();
 

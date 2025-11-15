@@ -63,6 +63,7 @@ namespace SystemInit {
         BatteryManager::init();
         ButtonManager::init();
 
+        // Restore RTCConfigData from NVS
         ConfigManager& configMgr = ConfigManager::getInstance();
         configMgr.loadFromNVS();
         ESP_LOGI(TAG, "Configuration loaded from NVS - wifiConfigured: %d",

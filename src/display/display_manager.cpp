@@ -472,6 +472,10 @@ void DisplayManager::displayPhase2AppSetup() {
     // Get dynamic SSID with hardware ID
     String apSSID = Util::getUniqueSSID("MyStation");
 
+    ConfigManager::getInstance().loadFromNVS();
+    RTCConfigData& config = ConfigManager::getConfig();
+    String deviceIP = config.ipAddress;
+
     // Initialize for full refresh (clears screen)
     initForFullRefresh(DisplayOrientation::LANDSCAPE);
 

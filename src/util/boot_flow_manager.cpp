@@ -45,13 +45,6 @@ namespace BootFlowManager {
         // Attempt WiFi setup
         WiFiManager wm;
         MyWiFiManager::setupWiFiAccessPointAndRestart(wm);
-
-        // // Start mDNS responder
-        // if (MDNS.begin("mystation")) {
-        //     ESP_LOGI(TAG, "mDNS started: http://mystation.local");
-        // } else {
-        //     ESP_LOGW(TAG, "mDNS failed to start");
-        // }
     }
 
     static void handlePhaseAppSetup() {

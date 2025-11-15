@@ -84,7 +84,7 @@ void MyWiFiManager::setupWiFiAccessPointAndRestart(WiFiManager& wm) {
 
     // Set success message after saving
     wm.setSaveConfigCallback([]() {
-        ESP_LOGI(TAG, "Konfiguration gespeichert!");
+        ESP_LOGI(TAG, "wifi manager configuration is saved!");
         // Mark WiFi as configured
         RTCConfigData& config = ConfigManager::getConfig();
         config.wifiConfigured = true;
@@ -119,84 +119,6 @@ void MyWiFiManager::setupWiFiAccessPointAndRestart(WiFiManager& wm) {
         configMgr.saveToNVS();
         ESP.restart();
     }
-}
-
-void MyWiFiManager::setupAPMode(WiFiManager& wm) {
-    ESP_LOGW(TAG, "DEPRECATED: setupAPMode() is deprecated, use setupWiFiAccessPoint() instead");
-    ESP_LOGI(TAG, "For now, using legacy implementation...");
-    // Legacy implementation for backward compatibility
-    ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
-    const char* menu[] = {"wifi"};
-    wm.setMenu(menu, 1);
-    // Set how long to wait for connection attempt
-    wm.setConnectTimeout(20); // 20 seconds per connection attempt
-    wm.setConnectRetries(3);
-    // Lower signal quality requirement
-    wm.setMinimumSignalQuality(20);
-
-    wm.setAPStaticIPConfig(IPAddress(10, 0, 1, 1), IPAddress(10, 0, 1, 1), IPAddress(255, 255, 255, 0));
-    wm.setTitle("MyStation Wifi Setup");
-    wm.setCountry("DE");
-
-    // Set success message after saving
-    wm.setSaveConfigCallback([]() {
-        ESP_LOGI(TAG, "Konfiguration gespeichert!");
-        delay(100); // Give time for logs to be sent
-        ESP.restart();
-    });
-
-    String apName = Util::getUniqueSSID("MyStation");
-    ESP_LOGD(TAG, "AP SSID: %s", apName.c_str());
-    bool res = wm.autoConnect(apName.c_str());
-    ESP_LOGD(TAG, "autoConnect() returned");
-    if (!res) {
-        ESP_LOGE(TAG, "Failed to connect");
-        return;
-    }
-    ESP_LOGI(TAG, "WiFi connected!");
-
-    // Verify internet access after WiFi connection
-    if (!hasInternetAccess()) {
-        ESP_LOGE(TAG, "WiFi connected but internet is not accessible");
-        RTCConfigData& config = ConfigManager::getConfig();
-        config.wifiConfigured = false;
-
-        // Disconnect and clear credentials
-        WiFi.disconnect();
-        ESP_LOGE(TAG, "Please check your internet connection and try again");
-        return;
-    }
-
-    // WiFi and internet validation successful - mark as configured
-    RTCConfigData& config = ConfigManager::getConfig();
-    config.wifiConfigured = true;
-    ESP_LOGI(TAG, "WiFi and internet validation successful");
-
-    // Update configuration with new network info
-    ConfigManager::setNetwork(wm.getWiFiSSID(), WiFi.localIP().toString());
-
-    // Save WiFi credentials immediately to NVS
-    ConfigManager& configMgr = ConfigManager::getInstance();
-    ESP_LOGI(TAG, "Saving WiFi credentials to NVS: SSID=%s, IP=%s",
-             wm.getWiFiSSID().c_str(), WiFi.localIP().toString().c_str());
-    configMgr.saveToNVS();
-
-    ConfigPageData& pageData = ConfigPageData::getInstance();
-    pageData.setIPAddress(WiFi.localIP().toString());
-
-    if (MDNS.begin("mystation")) {
-        ESP_LOGI(TAG, "mDNS responder started: http://mystation.local");
-    } else {
-        ESP_LOGW(TAG, "mDNS responder failed to start");
-    }
-
-    // Restart device to transition to Phase 2 (Application Setup)
-    ESP_LOGI(TAG, "==========================================");
-    ESP_LOGI(TAG, "WiFi Setup Complete!");
-    ESP_LOGI(TAG, "Restarting device to enter Phase 2...");
-    ESP_LOGI(TAG, "==========================================");
-    delay(200); // Give time for logs to be sent
-    ESP.restart();
 }
 
 bool MyWiFiManager::isConnected() {

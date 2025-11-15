@@ -87,6 +87,9 @@ void DeviceModeManager::runConfigurationMode() {
 
     // Get location if not already saved
     ConfigPageData& pageData = ConfigPageData::getInstance();
+
+    pageData.setIPAddress(config.ipAddress);
+
     if (pageData.getLatitude() == 0.0 && pageData.getLongitude() == 0.0) {
         float lat, lon;
         getLocationFromGoogle(lat, lon);
@@ -112,9 +115,15 @@ void DeviceModeManager::runConfigurationMode() {
     // Start web server for configuration
     setupWebServer(server);
 
+    // Start mDNS responder
+    if (MDNS.begin("mystation")) {
+        ESP_LOGI(TAG, "mDNS started: http://mystation.local");
+    } else {
+        ESP_LOGW(TAG, "mDNS failed to start");
+    }
     ESP_LOGI(TAG, "Configuration web server started");
     ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local",
-             pageData.getIPAddress().c_str());
+             config.ipAddress);
     ESP_LOGI(TAG, "Web server will handle configuration until user saves settings");
 }
 
