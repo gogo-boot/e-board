@@ -32,9 +32,26 @@ namespace BootFlowManager {
     }
 
     static void handlePhaseWifiSetup() {
-        ESP_LOGI(TAG, "Phase 1: WiFi Setup Required");
+        ESP_LOGI(TAG, "==========================================");
+        ESP_LOGI(TAG, "=== PHASE 1: WiFi Setup ===");
+        ESP_LOGI(TAG, "==========================================");
+
+        // Show setup instructions on display
         DeviceModeManager::showPhaseInstructions(PHASE_WIFI_SETUP);
-        DeviceModeManager::runConfigurationMode();
+
+        // Initialize configuration with defaults
+        ConfigManager::setDefaults();
+
+        // Attempt WiFi setup
+        WiFiManager wm;
+        MyWiFiManager::setupWiFiAccessPointAndRestart(wm);
+
+        // // Start mDNS responder
+        // if (MDNS.begin("mystation")) {
+        //     ESP_LOGI(TAG, "mDNS started: http://mystation.local");
+        // } else {
+        //     ESP_LOGW(TAG, "mDNS failed to start");
+        // }
     }
 
     static void handlePhaseAppSetup() {

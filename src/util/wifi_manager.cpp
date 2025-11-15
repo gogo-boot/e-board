@@ -60,7 +60,71 @@ void MyWiFiManager::reconnectWiFi() {
     }
 }
 
+void MyWiFiManager::setupWiFiAccessPointAndRestart(WiFiManager& wm) {
+    ESP_LOGI(TAG, "Starting WiFi AP for Phase 1 configuration...");
+
+    // Configure WiFiManager
+    const char* menu[] = {"wifi"};
+    wm.setMenu(menu, 1);
+    wm.setConnectTimeout(20); // 20 seconds per connection attempt
+    wm.setConnectRetries(3);
+    wm.setMinimumSignalQuality(20); // Lower signal quality requirement
+    wm.setAPStaticIPConfig(IPAddress(10, 0, 1, 1), IPAddress(10, 0, 1, 1), IPAddress(255, 255, 255, 0));
+    wm.setTitle("MyStation WiFi Setup");
+    wm.setCountry("DE");
+
+    // Start AP and wait for WiFi configuration
+    String apName = Util::getUniqueSSID("MyStation");
+    ESP_LOGI(TAG, "Starting AP with SSID: %s", apName.c_str());
+
+    bool connected = wm.autoConnect(apName.c_str());
+
+    ESP_LOGI(TAG, "WiFi connected to: %s", WiFi.SSID().c_str());
+    ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
+
+    // Set success message after saving
+    wm.setSaveConfigCallback([]() {
+        ESP_LOGI(TAG, "Konfiguration gespeichert!");
+        // Mark WiFi as configured
+        RTCConfigData& config = ConfigManager::getConfig();
+        config.wifiConfigured = true;
+
+        // Update configuration with network info
+        ConfigManager::setNetwork(WiFi.SSID(), WiFi.localIP().toString());
+
+        // Save WiFi credentials to NVS
+        ConfigManager& configMgr = ConfigManager::getInstance();
+        ESP_LOGI(TAG, "Saving WiFi credentials to NVS:");
+        ESP_LOGI(TAG, "  SSID: %s", WiFi.SSID().c_str());
+        ESP_LOGI(TAG, "  IP: %s", WiFi.localIP().toString().c_str());
+        configMgr.saveToNVS();
+        delay(100); // Give time for logs to be sent
+        ESP.restart();
+    });
+
+    // Check internet connectivity
+    if (hasInternetAccess()) {
+        ESP_LOGW(TAG, "has internet access");
+        RTCConfigData& config = ConfigManager::getConfig();
+        config.wifiConfigured = true;
+
+        // Update configuration with network info
+        ConfigManager::setNetwork(WiFi.SSID(), WiFi.localIP().toString());
+
+        // Save WiFi credentials to NVS
+        ConfigManager& configMgr = ConfigManager::getInstance();
+        ESP_LOGI(TAG, "Saving WiFi credentials to NVS:");
+        ESP_LOGI(TAG, "  SSID: %s", WiFi.SSID().c_str());
+        ESP_LOGI(TAG, "  IP: %s", WiFi.localIP().toString().c_str());
+        configMgr.saveToNVS();
+        ESP.restart();
+    }
+}
+
 void MyWiFiManager::setupAPMode(WiFiManager& wm) {
+    ESP_LOGW(TAG, "DEPRECATED: setupAPMode() is deprecated, use setupWiFiAccessPoint() instead");
+    ESP_LOGI(TAG, "For now, using legacy implementation...");
+    // Legacy implementation for backward compatibility
     ESP_LOGD(TAG, "Starting WiFiManager AP mode...");
     const char* menu[] = {"wifi"};
     wm.setMenu(menu, 1);
@@ -131,7 +195,7 @@ void MyWiFiManager::setupAPMode(WiFiManager& wm) {
     ESP_LOGI(TAG, "WiFi Setup Complete!");
     ESP_LOGI(TAG, "Restarting device to enter Phase 2...");
     ESP_LOGI(TAG, "==========================================");
-    delay(2000); // Give time for logs to be sent
+    delay(200); // Give time for logs to be sent
     ESP.restart();
 }
 

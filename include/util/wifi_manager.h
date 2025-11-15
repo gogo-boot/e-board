@@ -4,10 +4,16 @@
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
 
+
 class MyWiFiManager {
 public:
   static void reconnectWiFi();
+  // NEW: Refactored WiFi setup functions for clearer control flow
+  static void setupWiFiAccessPointAndRestart(WiFiManager& wm);
+
+  // DEPRECATED: Old combined function - will be removed
   static void setupAPMode(WiFiManager& wm);
+
   static bool isConnected();
   static String getLocalIP();
 

@@ -259,7 +259,7 @@ void setupWebServer(WebServer& server) {
     if (!LittleFS.begin()) {
         ESP_LOGE(TAG, "LittleFS mount failed! Please check filesystem or flash.");
         while (true) {
-            delay(1000);
+            delay(500);
         }
     }
     ESP_LOGI(TAG, "Setting up web server...");
