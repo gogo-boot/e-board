@@ -47,7 +47,7 @@ void ButtonManager::init() {
     }
 
     // DIAGNOSTIC: Check current button states
-    delay(100); // Allow pull-ups to stabilize
+    delay(20); // Allow pull-ups to stabilize
     ESP_LOGI(TAG, "Current button states:");
     ESP_LOGI(TAG, "  GPIO %d: %s", Pins::BUTTON_HALF_AND_HALF,
              digitalRead(Pins::BUTTON_HALF_AND_HALF) == HIGH ? "HIGH (not pressed)" : "LOW (PRESSED!)");
@@ -131,6 +131,21 @@ uint64_t ButtonManager::getButtonMask() {
         (1ULL << Pins::BUTTON_DEPARTURE_ONLY);
 #else
     return 0;
+#endif
+}
+
+void ButtonManager::handleWakeupMode() {
+#ifdef BOARD_ESP32_S3
+    // Check if device was woken by button press (temporary display mode)
+    int8_t buttonMode = getWakeupButtonMode();
+    if (buttonMode >= 0) {
+        ESP_LOGI(TAG, "Woken by button press! Temporary display mode: %d", buttonMode);
+
+        // Store temporary mode information in RTC memory
+        RTCConfigData& config = ConfigManager::getConfig();
+        config.inTemporaryMode = true;
+        config.temporaryDisplayMode = buttonMode;
+    }
 #endif
 }
 

@@ -1,4 +1,5 @@
 #include "util/battery_manager.h"
+#include "config/pins.h"
 #include <esp_log.h>
 
 #ifdef BOARD_ESP32_S3
@@ -13,10 +14,8 @@ static const float BATTERY_VOLTAGE_MIN = 3.0f; // Empty (safe cutoff)
 static const float BATTERY_VOLTAGE_NOMINAL = 3.7f; // Nominal voltage
 
 #ifdef BOARD_ESP32_S3
-// TRMNL 7.5" (OG) DIY Kit specific pins
+// TRMNL 7.5" (OG) DIY Kit specific configuration
 // Reference: https://wiki.seeedstudio.com/ogdiy_kit_works_with_arduino/
-static const int BATTERY_ADC_PIN = 1; // GPIO1 (A0) - BAT_ADC
-static const int ADC_EN_PIN = 6; // GPIO6 (A5) - ADC_EN (power control)
 static const float VOLTAGE_DIVIDER_RATIO = 2.0f; // 2:1 voltage divider
 static const int ADC_MAX_VALUE = 4095; // 12-bit ADC
 static const float ADC_REFERENCE_VOLTAGE = 3.6f; // Actual reference voltage for ESP32-S3
@@ -29,13 +28,13 @@ void BatteryManager::init() {
     ESP_LOGI(TAG, "Initializing battery manager for TRMNL OG DIY Kit (ESP32-S3)");
 
     // Configure ADC enable pin (power control for battery ADC circuit)
-    pinMode(ADC_EN_PIN, OUTPUT);
-    digitalWrite(ADC_EN_PIN, LOW); // Start with ADC disabled to save power
+    pinMode(Pins::ADC_EN, OUTPUT);
+    digitalWrite(Pins::ADC_EN, LOW); // Start with ADC disabled to save power
 
     // Configure ADC pin for battery voltage reading
-    pinMode(BATTERY_ADC_PIN, INPUT);
+    pinMode(Pins::BATTERY_ADC, INPUT);
     analogReadResolution(12); // 12-bit resolution (0-4095)
-    analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db); // Full range: 0-3.6V
+    analogSetPinAttenuation(Pins::BATTERY_ADC, ADC_11db); // Full range: 0-3.6V
     batteryInitialized = true;
 #else
     ESP_LOGW(TAG, "Battery monitoring not available on this board");
@@ -58,19 +57,19 @@ float BatteryManager::getBatteryVoltage() {
     }
 
     // Enable ADC circuit
-    digitalWrite(ADC_EN_PIN, HIGH);
+    digitalWrite(Pins::ADC_EN, HIGH);
     delay(10); // Short delay to stabilize
 
     // Read ADC value multiple times and average to reduce noise
     uint32_t adcSum = 0;
     for (int i = 0; i < BATTERY_SAMPLES; i++) {
-        adcSum += analogRead(BATTERY_ADC_PIN);
+        adcSum += analogRead(Pins::BATTERY_ADC);
         delayMicroseconds(100); // Small delay between readings
     }
     float adcValue = adcSum / (float)BATTERY_SAMPLES;
 
     // Disable ADC circuit to save power
-    digitalWrite(ADC_EN_PIN, LOW);
+    digitalWrite(Pins::ADC_EN, LOW);
 
     // Convert ADC value to voltage
     // Formula from OG DIY Kit: (ADC / 4095.0) * 3.6V * 2.0 (divider) * calibration

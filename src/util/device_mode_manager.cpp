@@ -72,25 +72,14 @@ void DeviceModeManager::runConfigurationMode() {
     // Set configuration mode flag
     ConfigManager::setConfigMode(true);
 
-    // Check current phase to determine configuration mode
-    ConfigPhase phase = getCurrentPhase();
+    // Phase 2+: WiFi already configured, setup app configuration
+    ESP_LOGI(TAG, "=== PHASE 2+ CONFIGURATION MODE ===");
+    ESP_LOGI(TAG, "WiFi already configured, setting up app configuration...");
 
-    if (phase == PHASE_WIFI_SETUP) {
-        // Phase 1: Setup WiFi with access point
-        ESP_LOGI(TAG, "Phase 1 Configuration: Setting up WiFi AP");
-         // Only set defaults in Phase 1 (fresh setup)
-        ConfigManager::setDefaults();
-
-        WiFiManager wm;
-        MyWiFiManager::setupAPMode(wm);
-    } else {
-        // Phase 2 or later: WiFi already configured, just ensure connection
-        ESP_LOGI(TAG, "Phase 2+ Configuration: Using existing WiFi connection");
-        // WiFi should already be connected from main.cpp validation
-        if (!MyWiFiManager::isConnected()) {
-            ESP_LOGW(TAG, "WiFi not connected, attempting reconnect...");
-            MyWiFiManager::reconnectWiFi();
-        }
+    // Ensure WiFi connection
+    if (!MyWiFiManager::isConnected()) {
+        ESP_LOGW(TAG, "WiFi not connected, attempting reconnect...");
+        MyWiFiManager::reconnectWiFi();
     }
 
     // Setup time synchronization
@@ -98,18 +87,18 @@ void DeviceModeManager::runConfigurationMode() {
 
     // Get location if not already saved
     ConfigPageData& pageData = ConfigPageData::getInstance();
+
+    pageData.setIPAddress(config.ipAddress);
+
     if (pageData.getLatitude() == 0.0 && pageData.getLongitude() == 0.0) {
         float lat, lon;
         getLocationFromGoogle(lat, lon);
-        // Get city name from lat/lon
-        ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", lat, lon);
 
+        ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", lat, lon);
         String cityName = getCityFromLatLon(lat, lon);
 
-        // put cityName into RTCConfigData
         if (cityName.isEmpty()) {
             ESP_LOGE(TAG, "Failed to get city name from lat/lon");
-            // Set a default city name if fetching fails
             cityName = "Unknown City";
         }
         pageData.setLocation(lat, lon, cityName);
@@ -126,9 +115,16 @@ void DeviceModeManager::runConfigurationMode() {
     // Start web server for configuration
     setupWebServer(server);
 
-    ESP_LOGI(TAG, "Configuration mode active - web server running");
+    // Start mDNS responder
+    if (MDNS.begin("mystation")) {
+        ESP_LOGI(TAG, "mDNS started: http://mystation.local");
+    } else {
+        ESP_LOGW(TAG, "mDNS failed to start");
+    }
+    ESP_LOGI(TAG, "Configuration web server started");
     ESP_LOGI(TAG, "Access configuration at: %s or http://mystation.local",
-             pageData.getIPAddress().c_str());
+             config.ipAddress);
+    ESP_LOGI(TAG, "Web server will handle configuration until user saves settings");
 }
 
 void DeviceModeManager::showWeatherDeparture() {

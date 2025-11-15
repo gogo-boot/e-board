@@ -1,17 +1,18 @@
 #include "util/factory_reset.h"
 
 bool FactoryReset::checkFactoryResetButton() {
+#ifdef BOARD_ESP32_S3
     // Check if button is currently pressed
-    if (digitalRead(RESET_BUTTON_GPIO) == LOW) {
+    if (digitalRead(Pins::BUTTON_FACTORY_RESET) == LOW) {
         Serial.println("🔵 Reset button detected!");
         Serial.println("   Hold button for 5 seconds to factory reset...");
 
         unsigned long startTime = millis();
 
-        // Monitor button for 5 seconds
+        // Monitor button for 3 seconds
         while (millis() - startTime < HOLD_DURATION_MS) {
             // Check if button was released
-            if (digitalRead(RESET_BUTTON_GPIO) == HIGH) {
+            if (digitalRead(Pins::BUTTON_FACTORY_RESET) == HIGH) {
                 unsigned long heldDuration = millis() - startTime;
                 Serial.printf("🟢 Button released after %.1f seconds\n", heldDuration / 1000.0);
                 Serial.println("   (Not long enough for factory reset)\n");
@@ -38,6 +39,10 @@ bool FactoryReset::checkFactoryResetButton() {
     }
 
     return false;
+#else
+    // Factory reset button not available on other boards
+    return false;
+#endif
 }
 
 
