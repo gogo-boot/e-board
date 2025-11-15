@@ -406,7 +406,7 @@ void DisplayManager::displayPhase1WifiSetup() {
 
         // Draw title
         u8g2.setCursor(margin, y);
-        u8g2.print("EINRICHTUNG - Schritt 1/2 : WiFi-Konfiguration");
+        u8g2.print("EINRICHTUNG 1/2 : MyStation mit Ihrem WLAN verbinden");
 
         // Draw underline for title
         display.drawFastHLine(margin, y + 5, screenWidth - (2 * margin), GxEPD_BLACK);
@@ -414,7 +414,8 @@ void DisplayManager::displayPhase1WifiSetup() {
         y += lineHeight + 10; // Extra space after title
 
         // Draw instruction lines in German
-        u8g2.setFont(u8g2_font_helvR14_tf); // Regular 14pt for content
+        //u8g2_font_helvR14_tf
+        u8g2.setFont(u8g2_font_helvB10_tf); // Regular 14pt for content
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
@@ -423,17 +424,23 @@ void DisplayManager::displayPhase1WifiSetup() {
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print("2. Verbinden Sie sich mit WiFi-AP: " + apSSID + "");
+        u8g2.print(
+            "2. Mit Smartphone/PC mit dem MyStation-Netzwerk");
+        y += lineHeight;
+
+        u8g2.setCursor(margin + 20, y);
+        u8g2.print(
+            apSSID + " verbinden. ggf. 1. QR-Code scannen");
         y += lineHeight;
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print(
-            "3. Geben Sie http://10.0.1.1 in Ihren Internetbrowser ein");
+        u8g2.print("3. Seite erscheint nicht automatisch?");
         y += lineHeight;
 
         u8g2.setCursor(margin + 20, y);
-        u8g2.print(", falls die Seite nicht automatisch angezeigt wird.");
+        u8g2.print(
+            "ggf. 2. QR-Code scannen oder http://10.0.1.1 im Browser eingeben");
         y += lineHeight;
 
         y += 10; // Extra spacing
@@ -447,7 +454,12 @@ void DisplayManager::displayPhase1WifiSetup() {
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print("5. System prüft Internetverbindung");
+        u8g2.print("5. System prüft Internetverbindung und leitet nächsten Schritt ein");
+        y += lineHeight;
+
+        y += 20; // Extra spacing
+        u8g2.setCursor(margin, y);
+        u8g2.print("MyStation braucht die Internetverbindung für Zeit, Wetter- und Verkehrsdaten");
         y += lineHeight;
     } while (display.nextPage());
 
@@ -480,7 +492,7 @@ void DisplayManager::displayPhase2AppSetup() {
 
         // Draw title
         u8g2.setCursor(margin, y);
-        u8g2.print("EINRICHTUNG - Schritt 2/2 : MyStation-Anwendungskonfiguration");
+        u8g2.print("EINRICHTUNG 2/2 : MyStation Anwendungskonfiguration");
 
         // Draw underline for title
         display.drawFastHLine(margin, y + 5, screenWidth - (2 * margin), GxEPD_BLACK);
@@ -488,17 +500,21 @@ void DisplayManager::displayPhase2AppSetup() {
         y += lineHeight + 10; // Extra space after title
 
         // Draw instruction lines in German
-        u8g2.setFont(u8g2_font_helvR14_tf); // Regular 14pt for content
+        u8g2.setFont(u8g2_font_helvB10_tf); // Regular 14pt for content
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print("1. Verbinden Sie sich erneut mit Ihrem WLAN (nicht mit dem " + apSSID + " WLAN)");
+        u8g2.print("1. Verbinden Sie sich mit Ihrem WLAN ");
+        y += lineHeight;
+
+        u8g2.setCursor(margin + 20, y);
+        u8g2.print("(nicht mit dem " + apSSID + " WLAN)");
         y += lineHeight;
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
         u8g2.print(
-            "2. Scannen Sie den QR-Code oder geben Sie die der angezeigte URL in Ihren Internetbrowser ein.");
+            "2. QR-Code scannen oder angezeigte URL im Browser eingeben");
         y += lineHeight;
 
         y += 10; // Extra spacing
