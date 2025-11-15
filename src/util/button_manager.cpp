@@ -134,4 +134,19 @@ uint64_t ButtonManager::getButtonMask() {
 #endif
 }
 
+void ButtonManager::handleWakeupMode() {
+#ifdef BOARD_ESP32_S3
+    // Check if device was woken by button press (temporary display mode)
+    int8_t buttonMode = getWakeupButtonMode();
+    if (buttonMode >= 0) {
+        ESP_LOGI(TAG, "Woken by button press! Temporary display mode: %d", buttonMode);
+
+        // Store temporary mode information in RTC memory
+        RTCConfigData& config = ConfigManager::getConfig();
+        config.inTemporaryMode = true;
+        config.temporaryDisplayMode = buttonMode;
+    }
+#endif
+}
+
 

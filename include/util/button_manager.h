@@ -21,6 +21,10 @@ public:
     // Enable EXT1 wakeup for all buttons before entering deep sleep
     static void enableButtonWakeup();
 
+    // Handle button wakeup and set temporary display mode if needed
+    // Should be called early in boot process
+    static void handleWakeupMode();
+
 private:
     // Get GPIO mask for all three buttons
     static uint64_t getButtonMask();
