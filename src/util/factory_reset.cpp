@@ -9,7 +9,7 @@ bool FactoryReset::checkFactoryResetButton() {
 
         unsigned long startTime = millis();
 
-        // Monitor button for 5 seconds
+        // Monitor button for 3 seconds
         while (millis() - startTime < HOLD_DURATION_MS) {
             // Check if button was released
             if (digitalRead(Pins::BUTTON_FACTORY_RESET) == HIGH) {
