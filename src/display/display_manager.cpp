@@ -8,6 +8,7 @@
 #include "display/weather_general_half.h"
 #include "display/weather_general_full.h"
 #include "display/display_shared.h"
+#include "display/qr_code_helper.h"
 #include "util/util.h"
 
 // Include e-paper display libraries
@@ -386,6 +387,10 @@ void DisplayManager::displayPhase1WifiSetup() {
     String apSSID = Util::getUniqueSSID("MyStation");
     ESP_LOGI(TAG, "AP SSID: %s", apSSID.c_str());
 
+    // Prepare QR code data
+    String wifiQR = "WIFI:S:" + apSSID + ";;"; // WiFi connection string (no password)
+    String urlQR = "http://10.0.1.1"; // Captive portal URL
+
     // Initialize for full refresh (clears screen)
     initForFullRefresh(DisplayOrientation::LANDSCAPE);
 
@@ -403,6 +408,7 @@ void DisplayManager::displayPhase1WifiSetup() {
         int16_t y = 40; // Start position from top
         const int16_t lineHeight = 35; // Spacing between lines
         const int16_t margin = 20; // Left margin
+        const int16_t instructionWidth = 500; // Width for instructions (left side)
 
         // Draw title
         u8g2.setCursor(margin, y);
@@ -414,8 +420,7 @@ void DisplayManager::displayPhase1WifiSetup() {
         y += lineHeight + 10; // Extra space after title
 
         // Draw instruction lines in German
-        //u8g2_font_helvR14_tf
-        u8g2.setFont(u8g2_font_helvB10_tf); // Regular 14pt for content
+        u8g2.setFont(u8g2_font_helvB10_tf); // Regular 10pt for content
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
@@ -425,12 +430,11 @@ void DisplayManager::displayPhase1WifiSetup() {
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
         u8g2.print(
-            "2. Mit Smartphone/PC mit dem MyStation-Netzwerk");
+            "2. Mit Smartphone/PC mit dem MyStation-Netzwerk verbinden");
         y += lineHeight;
 
         u8g2.setCursor(margin + 20, y);
-        u8g2.print(
-            apSSID + " verbinden. ggf. 1. QR-Code scannen");
+        u8g2.print("1. QR-Code scannen");
         y += lineHeight;
 
         y += 10; // Extra spacing
@@ -439,8 +443,7 @@ void DisplayManager::displayPhase1WifiSetup() {
         y += lineHeight;
 
         u8g2.setCursor(margin + 20, y);
-        u8g2.print(
-            "ggf. 2. QR-Code scannen oder http://10.0.1.1 im Browser eingeben");
+        u8g2.print("ggf. 2. QR-Code scannen");
         y += lineHeight;
 
         y += 10; // Extra spacing
@@ -454,16 +457,36 @@ void DisplayManager::displayPhase1WifiSetup() {
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print("5. System prüft Internetverbindung und leitet nächsten Schritt ein");
+        u8g2.print("5. Warten Sie etwa 10 Sekunden");
+        y += lineHeight;
+
+        u8g2.setCursor(margin + 20, y);
+        u8g2.print("System prüft Internetverbindung und leitet nächsten Schritt ein");
         y += lineHeight;
 
         y += 20; // Extra spacing
         u8g2.setCursor(margin, y);
         u8g2.print("MyStation braucht die Internetverbindung für Zeit, Wetter- und Verkehrsdaten");
         y += lineHeight;
+
+        // === QR CODES ON RIGHT SIDE ===
+        const int16_t qrX = 540; // X position for QR codes (right side)
+        const uint8_t qrVersion = 3; // Version 3 (29x29 modules)
+        const uint8_t qrScale = 4; // 4 pixels per module
+        int16_t qrSize = QRCodeHelper::getQRCodeSize(qrVersion, qrScale);
+
+        // QR Code 1: WiFi Connection
+        int16_t qr1Y = 80;
+        QRCodeHelper::drawQRCode(qrX, qr1Y, wifiQR, qrScale, qrVersion);
+        QRCodeHelper::drawQRLabel(qrX, qr1Y, qrSize, "1. " + apSSID, 15);
+
+        // QR Code 2: Portal URL
+        int16_t qr2Y = qr1Y + qrSize + 60; // Space between QR codes
+        QRCodeHelper::drawQRCode(qrX, qr2Y, urlQR, qrScale, qrVersion);
+        QRCodeHelper::drawQRLabel(qrX, qr2Y, qrSize, "2. " + urlQR, 15);
     } while (display.nextPage());
 
-    ESP_LOGI(TAG, "Phase 1 WiFi setup instructions displayed");
+    ESP_LOGI(TAG, "Phase 1 WiFi setup instructions displayed with QR codes");
 }
 
 void DisplayManager::displayPhase2AppSetup() {
@@ -475,6 +498,9 @@ void DisplayManager::displayPhase2AppSetup() {
     ConfigManager::getInstance().loadFromNVS();
     RTCConfigData& config = ConfigManager::getConfig();
     String deviceIP = config.ipAddress;
+    // Prepare QR code data - device configuration URL
+    String configURL = "http://" + deviceIP;
+    ESP_LOGI(TAG, "Config URL: %s", configURL.c_str());
 
     // Initialize for full refresh (clears screen)
     initForFullRefresh(DisplayOrientation::LANDSCAPE);
@@ -504,11 +530,11 @@ void DisplayManager::displayPhase2AppSetup() {
         y += lineHeight + 10; // Extra space after title
 
         // Draw instruction lines in German
-        u8g2.setFont(u8g2_font_helvB10_tf); // Regular 14pt for content
+        u8g2.setFont(u8g2_font_helvB10_tf); // Regular 10pt for content
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print("1. Verbinden Sie sich mit Ihrem WLAN ");
+        u8g2.print("1. Verbinden Sie sich mit Ihrem WLAN");
         y += lineHeight;
 
         u8g2.setCursor(margin + 20, y);
@@ -517,8 +543,7 @@ void DisplayManager::displayPhase2AppSetup() {
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print(
-            "2. QR-Code scannen oder angezeigte URL im Browser eingeben");
+        u8g2.print("2. QR-Code scannen oder angezeigte URL im Browser eingeben");
         y += lineHeight;
 
         y += 10; // Extra spacing
@@ -528,16 +553,27 @@ void DisplayManager::displayPhase2AppSetup() {
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
-        u8g2.print("4. Speichern Sie die Konfiguration und warten Sie etwa 10 Sekunden. ");
+        u8g2.print("4. Speichern Sie die Konfiguration und warten Sie etwa 10 Sekunden.");
         y += lineHeight;
 
         y += 10; // Extra spacing
         u8g2.setCursor(margin, y);
         u8g2.print("MyStation startet automatisch neu");
         y += lineHeight;
+
+        // === QR CODE ON RIGHT SIDE ===
+        const int16_t qrX = 540; // X position for QR code (right side)
+        const uint8_t qrVersion = 3; // Version 3 (29x29 modules)
+        const uint8_t qrScale = 4; // 4 pixels per module
+        int16_t qrSize = QRCodeHelper::getQRCodeSize(qrVersion, qrScale);
+
+        // QR Code: Configuration URL
+        int16_t qrY = 120; // Centered vertically
+        QRCodeHelper::drawQRCode(qrX, qrY, configURL, qrScale, qrVersion);
+        QRCodeHelper::drawQRLabel(qrX, qrY, qrSize, configURL, 15);
     } while (display.nextPage());
 
-    ESP_LOGI(TAG, "Phase 2 app setup instructions displayed");
+    ESP_LOGI(TAG, "Phase 2 app setup instructions displayed with QR code");
 }
 
 
