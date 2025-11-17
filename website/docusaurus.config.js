@@ -13,14 +13,14 @@ const config = {
     favicon: 'img/favicon.ico',
 
     // Set the production url of your site here
-    url: 'https://YOUR-USERNAME.github.io',
+    url: 'https://gogo-boot.github.io',
     // Set the /<baseUrl>/ pathname under which your site is served
     // For GitHub pages deployment, it is often '/<projectName>/'
     baseUrl: '/mystation/',
 
     // GitHub pages deployment config.
     // If you aren't using GitHub pages, you don't need these.
-    organizationName: 'YOUR-USERNAME', // Usually your GitHub org/user name.
+    organizationName: 'gogo-boot', // Usually your GitHub org/user name.
     projectName: 'mystation', // Usually your repo name.
     deploymentBranch: 'gh-pages',
     trailingSlash: false,
