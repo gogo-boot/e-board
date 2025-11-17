@@ -186,6 +186,19 @@
         background: #ff3b30;
     }
 
+    /* Autocomplete suggestions styling */
+    #city-suggestions, #stop-suggestions {
+        position: relative;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1000;
+        margin-top: 0.3em;
+    }
+
     @media (max-width: 768px) {
       .toggle-buttons {
         flex-direction: column;
@@ -241,19 +254,19 @@
       <div class="label">
         Mein Standort
         <span class="tooltip">ℹ️
-          <span class="tooltiptext">Standort wird für Wetter- und Verkehrsdaten verwendet.</span>
+          <span class="tooltiptext">Standort wird für Wetter- und Verkehrsdaten verwendet. Geben Sie Ihre Postleitzahl ein, um die Stadt zu finden.</span>
         </span>
       </div>
       <div class="config-row">
         <span id="city-display">{{CITY}}</span>
-        <input type="text" id="city-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;" placeholder="Stadt eingeben..." autocomplete="off">
+        <input type="text" id="city-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px;" placeholder="Postleitzahl eingeben (5 Ziffern)..." autocomplete="off" inputmode="numeric" pattern="[0-9]*">
         <button type="button" class="edit-btn" onclick="editCity()">✏️</button>
         <input type="hidden" id="city-lat" value="{{LAT}}">
         <input type="hidden" id="city-lon" value="{{LON}}">
       </div>
-      <div id="city-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+      <div id="city-suggestions" style="display:none;"></div>
       <div class="help-text">
-        Breitengrad: <span id="lat-display">{{LAT}}</span>, Längengrad: <span id="lon-display">{{LON}}</span>
+        Postleitzahl eingeben, um Stadt automatisch zu finden. Breitengrad: <span id="lat-display">{{LAT}}</span>, Längengrad: <span id="lon-display">{{LON}}</span>
       </div>
     </div>
 
@@ -292,7 +305,7 @@
         <input type="text" id="stop-input" style="display:none; width:100%; padding:0.5em; font-size:1em; border:1px solid #ccc; border-radius:5px; margin-left:0.5em;" placeholder="Haltestelle eingeben..." autocomplete="off">
         <button type="button" class="edit-btn" onclick="editStop()">✏️</button>
       </div>
-      <div id="stop-suggestions" style="background:#fff; border:1px solid #ccc; border-radius:5px; display:none; position:absolute; z-index:10;"></div>
+      <div id="stop-suggestions" style="display:none;"></div>
       <div class="help-text">Automatisch gefundene Haltestellen oder manuell eingeben</div>
     </div>
 
@@ -655,10 +668,11 @@
       }, 200);
     });
 
-    // Handle city input suggestions
+    // Handle city input suggestions (postal code search)
     cityInput.addEventListener('input', function() {
       var q = cityInput.value.trim();
-      if (q.length < 2) {
+      // Trigger search after 5 digits (postal code)
+      if (q.length < 5 || !/^\d+$/.test(q)) {
         citySuggestions.style.display = 'none';
         return;
       }
@@ -668,42 +682,38 @@
           citySuggestions.innerHTML = '';
           suggestions.forEach(function(cityData) {
             var div = document.createElement('div');
-            div.textContent = cityData.name || cityData;
+            // Show full display name (e.g., "60311, Frankfurt am Main, Hessen, Deutschland")
+            div.textContent = cityData.display || cityData.name || cityData;
             div.style.padding = '0.5em';
             div.style.cursor = 'pointer';
+            div.style.borderBottom = '1px solid #eee';
+            div.onmouseover = function() { div.style.background = '#f0f8ff'; };
+            div.onmouseout = function() { div.style.background = '#fff'; };
             div.onclick = function() {
-              cityInput.value = cityData.name || cityData;
+              // Use city name for display, but show lat/lon were set
+              document.getElementById('city-display').textContent = cityData.name || cityData.display;
+              cityInput.value = cityData.name || cityData.display;
               if (cityData.lat && cityData.lon) {
                 document.getElementById('city-lat').value = cityData.lat;
                 document.getElementById('city-lon').value = cityData.lon;
-                document.getElementById('lat-display').textContent = cityData.lat;
-                document.getElementById('lon-display').textContent = cityData.lon;
+                document.getElementById('lat-display').textContent = parseFloat(cityData.lat).toFixed(4);
+                document.getElementById('lon-display').textContent = parseFloat(cityData.lon).toFixed(4);
               }
               citySuggestions.style.display = 'none';
+              cityInput.style.display = 'none';
+              document.getElementById('city-display').style.display = '';
             };
             citySuggestions.appendChild(div);
           });
           if (suggestions.length > 0) {
-            citySuggestions.style.display = '';
-            citySuggestions.style.top = (cityInput.offsetTop + cityInput.offsetHeight) + 'px';
-            citySuggestions.style.left = cityInput.offsetLeft + 'px';
-            citySuggestions.style.width = cityInput.offsetWidth + 'px';
+            citySuggestions.style.display = 'block';
           } else {
             citySuggestions.style.display = 'none';
           }
         })
-        .catch(function() {
-          citySuggestions.innerHTML = '';
-          var div = document.createElement('div');
-          div.textContent = q;
-          div.style.padding = '0.5em';
-          div.style.cursor = 'pointer';
-          div.onclick = function() {
-            cityInput.value = q;
-            citySuggestions.style.display = 'none';
-          };
-          citySuggestions.appendChild(div);
-          citySuggestions.style.display = '';
+        .catch(function(err) {
+          console.error('City search error:', err);
+          citySuggestions.style.display = 'none';
         });
     });
 
@@ -732,7 +742,7 @@
     // Handle stop input suggestions
     stopInput.addEventListener('input', function() {
       var q = stopInput.value.trim();
-      if (q.length < 2) {
+      if (q.length < 3) {
         stopSuggestions.style.display = 'none';
         return;
       }
@@ -745,6 +755,9 @@
             div.textContent = stopData.name || stopData;
             div.style.padding = '0.5em';
             div.style.cursor = 'pointer';
+            div.style.borderBottom = '1px solid #eee';
+            div.onmouseover = function() { div.style.background = '#f0f8ff'; };
+            div.onmouseout = function() { div.style.background = '#fff'; };
             div.onclick = function() {
               stopInput.value = stopData.name || stopData;
               if (stopData.id) {
@@ -755,26 +768,14 @@
             stopSuggestions.appendChild(div);
           });
           if (suggestions.length > 0) {
-            stopSuggestions.style.display = '';
-            stopSuggestions.style.top = (stopInput.offsetTop + stopInput.offsetHeight) + 'px';
-            stopSuggestions.style.left = stopInput.offsetLeft + 'px';
-            stopSuggestions.style.width = stopInput.offsetWidth + 'px';
+            stopSuggestions.style.display = 'block';
           } else {
             stopSuggestions.style.display = 'none';
           }
         })
-        .catch(function() {
-          stopSuggestions.innerHTML = '';
-          var div = document.createElement('div');
-          div.textContent = q;
-          div.style.padding = '0.5em';
-          div.style.cursor = 'pointer';
-          div.onclick = function() {
-            stopInput.value = q;
-            stopSuggestions.style.display = 'none';
-          };
-          stopSuggestions.appendChild(div);
-          stopSuggestions.style.display = '';
+        .catch(function(err) {
+          console.error('Stop search error:', err);
+          stopSuggestions.style.display = 'none';
         });
     });
 
@@ -799,14 +800,15 @@
       var stopInput = document.getElementById('stop-input');
       if (stopInput && stopInput.style.display !== 'none') {
         stopName = stopInput.value;
-        stopId = '__manual__';
+        // Get stop ID from data attribute if it was set by autocomplete
+        stopId = stopInput.getAttribute('data-stop-id') || '__manual__';
       } else if (stopSelect) {
         stopId = stopSelect.value;
         stopName = stopSelect.options[stopSelect.selectedIndex] ? stopSelect.options[stopSelect.selectedIndex].text : '';
       }
 
       // Validate "stop-select" for display modes 0 and 2
-      if ((displayMode === '0' || displayMode === '2') && (!stopSelect || stopSelect.value.trim() === '')) {
+      if ((displayMode === '0' || displayMode === '2') && (!stopId || stopId.trim() === '')) {
           alert('Bitte wählen Sie eine Haltestelle aus, um den Anzeigemodus zu speichern.');
           return;
       }

@@ -2,10 +2,12 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <WebServer.h>
+#include <HTTPClient.h>
 #include "config/config_struct.h"
 #include "config/config_manager.h"
 #include "config/config_page_data.h"
 #include "util/util.h"
+#include "sec/aes_crypto.h"
 #include <esp_log.h>
 #include "util/sleep_utils.h"
 
@@ -222,19 +224,157 @@ void handleSaveConfig(WebServer& server) {
     enterDeepSleep(1); // Enter deep sleep for 1 seconds
 }
 
+// AJAX handler to search cities by postal code (GET /api/city?q=...)
+void handleCityAutocomplete(WebServer& server) {
+    String query = server.hasArg("q") ? server.arg("q") : "";
+
+    // Validate postal code: must be 5 digits
+    if (query.length() < 5) {
+        server.send(200, "application/json", "[]");
+        return;
+    }
+
+    // Validate that it's numeric
+    for (size_t i = 0; i < query.length(); i++) {
+        if (!isdigit(query.charAt(i))) {
+            server.send(200, "application/json", "[]");
+            return;
+        }
+    }
+
+    ESP_LOGI(TAG, "Postal code search query: %s", query.c_str());
+
+    HTTPClient http;
+    String url = "https://nominatim.openstreetmap.org/search?postalcode=" + Util::urlEncode(query) +
+        "&format=json&limit=5&addressdetails=1&countrycodes=de";
+
+    http.begin(url);
+    http.addHeader("User-Agent", "ESP32-MyStation/1.0");
+
+    int httpCode = http.GET();
+
+    if (httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        ESP_LOGD(TAG, "Nominatim response: %s", payload.c_str());
+
+        // Parse the response and extract city, lat, lon
+        DynamicJsonDocument docIn(4096);
+        DeserializationError error = deserializeJson(docIn, payload);
+
+        if (!error) {
+            DynamicJsonDocument docOut(2048);
+            JsonArray outArray = docOut.to<JsonArray>();
+
+            JsonArray results = docIn.as<JsonArray>();
+            for (JsonObject result : results) {
+                JsonObject city = outArray.createNestedObject();
+
+                // Get display name or city name
+                String displayName = result["display_name"].as<String>();
+                String lat = result["lat"].as<String>();
+                String lon = result["lon"].as<String>();
+                // Try to extract city name from address
+                String cityName = displayName;
+                if (result.containsKey("address")) {
+                    JsonObject addr = result["address"];
+                    if (addr.containsKey("city")) {
+                        cityName = addr["city"].as<String>();
+                    } else if (addr.containsKey("town")) {
+                        cityName = addr["town"].as<String>();
+                    } else if (addr.containsKey("village")) {
+                        cityName = addr["village"].as<String>();
+                    }
+                }
+
+                city["name"] = cityName;
+                city["display"] = displayName;
+                city["lat"] = lat;
+                city["lon"] = lon;
+            }
+
+            String out;
+            serializeJson(docOut, out);
+            http.end();
+            server.send(200, "application/json", out);
+            return;
+        } else {
+            ESP_LOGE(TAG, "Failed to parse Nominatim JSON: %s", error.c_str());
+        }
+    } else {
+        ESP_LOGE(TAG, "Nominatim API failed: %s", http.errorToString(httpCode).c_str());
+    }
+
+    http.end();
+    server.send(200, "application/json", "[]");
+}
+
 // AJAX handler to resolve station/stop name (GET /api/stop?q=...)
 void handleStopAutocomplete(WebServer& server) {
     String query = server.hasArg("q") ? server.arg("q") : "";
-    // TODO: Call RMV API and return JSON array of suggestions
-    // For now, return dummy data
-    DynamicJsonDocument doc(256);
-    JsonArray arr = doc.to<JsonArray>();
-    arr.add("Frankfurt Hauptbahnhof");
-    arr.add("Frankfurt West");
-    arr.add("Frankfurt Süd");
-    String out;
-    serializeJson(doc, out);
-    server.send(200, "application/json", out);
+
+    if (query.length() < 3) {
+        server.send(200, "application/json", "[]");
+        return;
+    }
+
+    ESP_LOGI(TAG, "Station search query: %s", query.c_str());
+
+    // Use static utility method for secure API key decryption
+    std::string decrypted = AESCrypto::getRMVAPIKey();
+
+    HTTPClient http;
+    String url = "https://www.rmv.de/hapi/location.name?accessId=" + String(decrypted.c_str()) +
+        "&input=" + Util::urlEncode(query) +
+        "&format=json&maxNo=5";
+
+    String urlForLog = url;
+    int keyPos = urlForLog.indexOf("accessId=");
+    if (keyPos != -1) {
+        int keyEnd = urlForLog.indexOf('&', keyPos);
+        if (keyEnd == -1) keyEnd = urlForLog.length();
+        urlForLog.replace(urlForLog.substring(keyPos, keyEnd), "accessId=***");
+    }
+
+    ESP_LOGI(TAG, "Requesting RMV location search: %s", urlForLog.c_str());
+
+    http.begin(url);
+    int httpCode = http.GET();
+
+    if (httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        ESP_LOGD(TAG, "RMV response: %s", payload.c_str());
+
+        // Parse the response and extract station names and IDs
+        DynamicJsonDocument docIn(4096);
+        DeserializationError error = deserializeJson(docIn, payload);
+
+        if (!error) {
+            DynamicJsonDocument docOut(2048);
+            JsonArray outArray = docOut.to<JsonArray>();
+            JsonArray locations = docIn["stopLocationOrCoordLocation"];
+            for (JsonObject item : locations) {
+                JsonObject stopLoc = item["StopLocation"];
+                if (!stopLoc.isNull()) {
+                    JsonObject stop = outArray.createNestedObject();
+                    stop["name"] = stopLoc["name"].as<String>();
+                    stop["id"] = stopLoc["id"].as<String>();
+                }
+            }
+
+            String out;
+            serializeJson(docOut, out);
+            http.end();
+            server.send(200, "application/json", out);
+            return;
+        } else {
+            ESP_LOGE(TAG, "Failed to parse RMV JSON: %s", error.c_str());
+        }
+    } else {
+        ESP_LOGE(TAG, "RMV API failed: %s", http.errorToString(httpCode).c_str());
+    }
+
+    http.end();
+    server.send(200, "application/json", "[]");
 }
 
 // Global server reference for callback access
@@ -247,6 +387,10 @@ void handleConfigPageWrapper() {
 
 void handleSaveConfigWrapper() {
     handleSaveConfig(*g_server);
+}
+
+void handleCityAutocompleteWrapper() {
+    handleCityAutocomplete(*g_server);
 }
 
 void handleStopAutocompleteWrapper() {
@@ -266,6 +410,7 @@ void setupWebServer(WebServer& server) {
     g_server = &server;
     server.on("/", handleConfigPageWrapper);
     server.on("/save_config", HTTP_POST, handleSaveConfigWrapper);
+    server.on("/api/city", HTTP_GET, handleCityAutocompleteWrapper);
     server.on("/api/stop", HTTP_GET, handleStopAutocompleteWrapper);
     server.begin();
     ESP_LOGI("WEB_SERVER", "HTTP server started.");
