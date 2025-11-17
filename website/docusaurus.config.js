@@ -16,12 +16,12 @@ const config = {
     url: 'https://gogo-boot.github.io',
     // Set the /<baseUrl>/ pathname under which your site is served
     // For GitHub pages deployment, it is often '/<projectName>/'
-    baseUrl: '/mystation/',
+    baseUrl: '/e-board/',
 
     // GitHub pages deployment config.
     // If you aren't using GitHub pages, you don't need these.
     organizationName: 'gogo-boot', // Usually your GitHub org/user name.
-    projectName: 'mystation', // Usually your repo name.
+    projectName: 'e-board', // Usually your repo name.
     deploymentBranch: 'gh-pages',
     trailingSlash: false,
 
@@ -77,7 +77,7 @@ const config = {
                         label: 'Documentation',
                     },
                     {
-                        href: 'https://github.com/YOUR-USERNAME/mystation',
+                        href: 'https://github.com/YOUR-USERNAME/e-board',
                         label: 'GitHub',
                         position: 'right',
                     },
@@ -108,7 +108,7 @@ const config = {
                         items: [
                             {
                                 label: 'GitHub',
-                                href: 'https://github.com/YOUR-USERNAME/mystation',
+                                href: 'https://github.com/YOUR-USERNAME/e-board',
                             },
                         ],
                     },
