@@ -571,6 +571,7 @@ void DisplayManager::displayPhase2AppSetup() {
         int16_t qrY = 120; // Centered vertically
         QRCodeHelper::drawQRCode(qrX, qrY, configURL, qrScale, qrVersion);
         QRCodeHelper::drawQRLabel(qrX, qrY, qrSize, configURL, 15);
+        QRCodeHelper::drawQRLabel(qrX, qrY, qrSize, "http://mystation.local", 30);
     } while (display.nextPage());
 
     ESP_LOGI(TAG, "Phase 2 app setup instructions displayed with QR code");
