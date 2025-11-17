@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <WebServer.h>
 #include <HTTPClient.h>
+#include <StreamUtils.h>
 #include "config/config_struct.h"
 #include "config/config_manager.h"
 #include "config/config_page_data.h"
@@ -338,43 +339,70 @@ void handleStopAutocomplete(WebServer& server) {
     ESP_LOGI(TAG, "Requesting RMV location search: %s", urlForLog.c_str());
 
     http.begin(url);
+
+    // Collect Transfer-Encoding header to handle chunked responses
+    const char* keys[] = {"Transfer-Encoding"};
+    http.collectHeaders(keys, 1);
     int httpCode = http.GET();
 
-    if (httpCode == HTTP_CODE_OK) {
-        String payload = http.getString();
-        ESP_LOGD(TAG, "RMV response: %s", payload.c_str());
-
-        // Parse the response and extract station names and IDs
-        DynamicJsonDocument docIn(4096);
-        DeserializationError error = deserializeJson(docIn, payload);
-
-        if (!error) {
-            DynamicJsonDocument docOut(2048);
-            JsonArray outArray = docOut.to<JsonArray>();
-            JsonArray locations = docIn["stopLocationOrCoordLocation"];
-            for (JsonObject item : locations) {
-                JsonObject stopLoc = item["StopLocation"];
-                if (!stopLoc.isNull()) {
-                    JsonObject stop = outArray.createNestedObject();
-                    stop["name"] = stopLoc["name"].as<String>();
-                    stop["id"] = stopLoc["id"].as<String>();
-                }
-            }
-
-            String out;
-            serializeJson(docOut, out);
-            http.end();
-            server.send(200, "application/json", out);
-            return;
-        } else {
-            ESP_LOGE(TAG, "Failed to parse RMV JSON: %s", error.c_str());
-        }
-    } else {
+    if (httpCode != HTTP_CODE_OK) {
         ESP_LOGE(TAG, "RMV API failed: %s", http.errorToString(httpCode).c_str());
+        http.end();
+        server.send(200, "application/json", "[]");
+        return;
+    }
+
+    // Create JSON filter to only parse "id" and "name" fields
+    StaticJsonDocument<128> stationFilter;
+    stationFilter["stopLocationOrCoordLocation"][0]["StopLocation"]["id"] = true;
+    stationFilter["stopLocationOrCoordLocation"][0]["StopLocation"]["name"] = true;
+
+    // Create the raw and decoded stream
+    Stream& rawStream = http.getStream();
+    ChunkDecodingStream decodedStream(http.getStream());
+
+    // Choose the stream based on the Transfer-Encoding header
+    Stream& response = http.header("Transfer-Encoding") == "chunked" ? decodedStream : rawStream;
+
+    // Use smaller JSON document since we're only extracting id and name
+    DynamicJsonDocument docIn(2048); // Reduced from 4096
+    DeserializationOption::NestingLimit nestingLimit(15);
+
+    // Parse with filter to minimize memory usage
+    DeserializationError error = deserializeJson(docIn, response,
+                                                 DeserializationOption::Filter(stationFilter),
+                                                 nestingLimit);
+
+    if (error) {
+        ESP_LOGE(TAG, "Failed to parse RMV JSON: %s", error.c_str());
+        if (error == DeserializationError::NoMemory) {
+            ESP_LOGE(TAG, "Increase JSON capacity or reduce maxNo parameter");
+        }
+        http.end();
+        server.send(200, "application/json", "[]");
+        return;
     }
 
     http.end();
-    server.send(200, "application/json", "[]");
+
+    // Build compact output with only id and name
+    DynamicJsonDocument docOut(1024); // Reduced from 2048
+    JsonArray outArray = docOut.to<JsonArray>();
+
+    JsonArray locations = docIn["stopLocationOrCoordLocation"];
+    for (JsonVariantConst item : locations) {
+        JsonObjectConst stopLoc = item["StopLocation"];
+        if (!stopLoc.isNull()) {
+            JsonObject stop = outArray.createNestedObject();
+            stop["name"] = stopLoc["name"].as<String>();
+            stop["id"] = stopLoc["id"].as<String>();
+        }
+    }
+
+    String out;
+    serializeJson(docOut, out);
+    ESP_LOGI(TAG, "Found %d stations", outArray.size());
+    server.send(200, "application/json", out);
 }
 
 // Global server reference for callback access

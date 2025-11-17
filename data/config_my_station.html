@@ -597,14 +597,15 @@
     function editCity() {
       document.getElementById('city-display').style.display = 'none';
       document.getElementById('city-input').style.display = '';
+      document.getElementById('city-input').value = '';
       document.getElementById('city-input').focus();
-      document.getElementById('city-input').value = document.getElementById('city-display').textContent;
     }
 
     // --- Haltestelle bearbeiten ---
     function editStop() {
       document.getElementById('stop-select').style.display = 'none';
       document.getElementById('stop-input').style.display = '';
+      document.getElementById('stop-input').value = '';
       document.getElementById('stop-input').focus();
       // Copy current selection to input field
       var currentSelection = document.getElementById('stop-select');
@@ -742,7 +743,7 @@
     // Handle stop input suggestions
     stopInput.addEventListener('input', function() {
       var q = stopInput.value.trim();
-      if (q.length < 3) {
+      if (q.length < 5) {
         stopSuggestions.style.display = 'none';
         return;
       }
