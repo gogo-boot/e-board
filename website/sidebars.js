@@ -44,7 +44,6 @@ const sidebars = {
             label: 'Display',
             items: [
                 'display-layout-overview',
-                'display-modes',
                 'e-paper-config-instructions',
                 'e-paper-library-comparison',
                 'partial-update-bug-analysis',
@@ -81,7 +80,6 @@ const sidebars = {
             items: [
                 'dedicated-german-phase-functions',
                 'final-fix-setdefaults-bug',
-                'gpio-refactoring-summary',
                 'main-refactoring-summary',
                 'ota-integration-summary',
                 'ota-sleep-timing-integration',
