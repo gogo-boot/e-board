@@ -1,0 +1,26 @@
+# Docusaurus website dependencies
+node_modules/
+.docusaurus/
+.cache-loader/
+
+# Build output
+build/
+.DS_Store
+
+# npm
+package-lock.json
+
+# Debug
+npm-debug.log*
+*.log
+.docusaurus-ssg
+.hero__title {
+  font-size: 3rem;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
