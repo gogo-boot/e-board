@@ -39,11 +39,11 @@ jobs:
 
             -   name: Install dependencies
                 working-directory: ./website
-                run: npm install --frozen-lockfile
+                run: npm ci
 
             -   name: Build Docusaurus site
                 working-directory: ./website
-                run: npm build
+                run: npm run build
 
             -   name: Upload artifact
                 uses: actions/upload-pages-artifact@v3
