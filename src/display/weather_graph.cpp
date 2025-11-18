@@ -459,10 +459,12 @@ void WeatherGraph::drawDottedLine(int16_t x1, int16_t y1, int16_t x2, int16_t y2
 
 // Utility function implementations
 float WeatherGraph::calculateDynamicMinTemp(float actualMin) {
-    // Your logic: divide by 5 (integer division), then multiply by 5
-    // Example: 17°C -> 17/5 = 3 -> 3*5 = 15°C
-    int tempDiv = (int)actualMin / 5;
-    return (float)(tempDiv * 5);
+    // Use floor() to always round down to nearest 5°C
+    // Examples:
+    //   17°C  -> floor(17/5) = floor(3.4) = 3  -> 3*5 = 15°C
+    //   -3°C  -> floor(-3/5) = floor(-0.6) = -1 -> -1*5 = -5°C
+    //   -7°C  -> floor(-7/5) = floor(-1.4) = -2 -> -2*5 = -10°C
+    return floor(actualMin / 5.0f) * 5.0f;
 }
 
 float WeatherGraph::calculateDynamicMaxTemp(float actualMax) {

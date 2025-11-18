@@ -99,14 +99,14 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
     display->drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, WEATHER_ICON_SIZE),
                                 WEATHER_ICON_SIZE, WEATHER_ICON_SIZE, GxEPD_BLACK);
     // Current temperature: 30px
-    String tempText = String(weather.temperature) + "°C  ";
+    String tempText = String(weather.temperature, 1) + "°C  ";
     TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);
 }
 
 void WeatherHalfDisplay::drawWeatherInfoSecondColumn(int16_t currentX, int16_t dayWeatherInfoY,
                                                      const WeatherInfo& weather) {
     TextUtils::setFont12px_margin15px(); // Small font for weather info
-    String tempRange = String(weather.dailyForecast[0].tempMin, 0) + "°C - " + String(
+    String tempRange = String(weather.dailyForecast[0].tempMin, 0) + "°C / " + String(
             weather.dailyForecast[0].tempMax, 0)
         +
         "°C";
