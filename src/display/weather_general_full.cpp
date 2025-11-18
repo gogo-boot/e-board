@@ -76,12 +76,12 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     // Temperature low high
     TextUtils::setFont12px_margin15px(); // Medium font for temp range
     TextUtils::printTextAtWithMargin(100, colY + 20, "Temp.");
-    String tempRange = String(weather.dailyForecast[0].tempMin, 0) + " - " + String(weather.dailyForecast[0].tempMax, 0)
+    String tempRange = String(weather.dailyForecast[0].tempMin, 0) + " / " + String(weather.dailyForecast[0].tempMax, 0)
         + "°C";
     TextUtils::printTextAtWithMargin(screenQuaterWidth, colY + 20, tempRange);
     // Feels like temperature low high
     TextUtils::printTextAtWithMargin(100, colY + 50, "Gefühlte");
-    String feelTempRange = String(weather.dailyForecast[0].apparentTempMin, 0) + " - " + String(
+    String feelTempRange = String(weather.dailyForecast[0].apparentTempMin, 0) + " / " + String(
         weather.dailyForecast[0].apparentTempMax, 0) + "°C";
     TextUtils::printTextAtWithMargin(screenQuaterWidth, colY + 50, feelTempRange);
     currentY += 100; // Move down after first row of weather info
@@ -165,7 +165,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
         int tempMinInt = (int)weather.dailyForecast[i].tempMin;
         int tempMaxInt = (int)weather.dailyForecast[i].tempMax;
         TextUtils::printTextAtWithMargin(screenTenthWidth * (i + 3), currentY + 75,
-                                         String(tempMinInt) + " - " + String(tempMaxInt) + "°");
+                                         String(tempMinInt) + " / " + String(tempMaxInt) + "°");
     }
     currentY += FORECAST_ROW_HEIGHT; // Space after day labels
 
