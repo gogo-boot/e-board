@@ -83,6 +83,7 @@ const sidebars = {
             label: '🛠️ Development',
             items: [
                 'developer-guide/development-setup',
+                'developer-guide/github-actions',
                 'developer-guide/testing',
                 'developer-guide/testing-mocks',
                 'developer-guide/testing-rtc',
