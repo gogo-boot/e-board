@@ -13,82 +13,99 @@
 
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-    // By default, Docusaurus generates a sidebar from the docs folder structure
-    tutorialSidebar: [
+    // User Guide Sidebar - For end users
+    userSidebar: [
         {
             type: 'category',
-            label: 'Getting Started',
+            label: '👋 Getting Started',
             items: [
-                'README',
-                'quick-start',
+                'user-guide/index',
+                'user-guide/quick-start-simplified',
+            ],
+        },
+        {
+            type: 'category',
+            label: '📱 Using MyStation',
+            items: [
+                'user-guide/understanding-display',
+                'user-guide/button-controls',
+            ],
+        },
+        {
+            type: 'category',
+            label: '🔧 Maintenance & Support',
+            items: [
+                'user-guide/factory-reset',
+                'user-guide/troubleshooting',
+            ],
+        },
+        {
+            type: 'category',
+            label: '🔨 Advanced (DIY)',
+            collapsed: true,
+            items: [
+                'user-guide/hardware-assembly',
                 'hardware-setup',
-                'software-setup',
+            ],
+        },
+    ],
+
+    // Developer Guide Sidebar - For developers
+    developerSidebar: [
+        {
+            type: 'category',
+            label: '🏗️ Architecture',
+            items: [
+                'developer-guide/index',
+                'developer-guide/boot-process',
+                'developer-guide/configuration-layers',
             ],
         },
         {
             type: 'category',
-            label: 'Configuration',
+            label: '⚙️ Core Systems',
             items: [
-                'configuration',
-                'configuration-data-flow',
-                'configuration-flowchart',
-                'configuration-keys-mapping',
-                'configuration-keys-quick-reference',
-                'configuration-phase-quick-reference',
-                'configuration-phase-tracking',
-                'ota-configuration-feature',
+                'developer-guide/configuration-system',
+                'developer-guide/data-flow',
+                'developer-guide/display-system',
+                'developer-guide/ota-system',
             ],
         },
         {
             type: 'category',
-            label: 'Display',
+            label: '📡 APIs & Integration',
             items: [
-                'display-layout-overview',
-                'e-paper-config-instructions',
-                'e-paper-library-comparison',
-                'partial-update-bug-analysis',
+                'developer-guide/api-integration',
             ],
         },
         {
             type: 'category',
-            label: 'Features',
+            label: '🛠️ Development',
             items: [
-                'button-quick-reference',
-                'button-temporary-mode-feature',
-                'button-wakeup-debugging',
+                'developer-guide/development-setup',
+                'developer-guide/github-actions',
+                'developer-guide/testing',
+                'developer-guide/testing-mocks',
+                'developer-guide/testing-rtc',
             ],
         },
         {
             type: 'category',
-            label: 'API & Integration',
+            label: '🔌 Hardware Reference',
             items: [
-                'api-keys',
+                'hardware-setup',
             ],
         },
+    ],
+
+    // Quick Reference Sidebar - For quick lookups
+    referenceSidebar: [
         {
             type: 'category',
-            label: 'Development',
+            label: '📋 Quick Reference',
             items: [
-                'native-testing-setup',
-                'mock-time-implementation',
-                'test-rtc-timestamps',
-            ],
-        },
-        {
-            type: 'category',
-            label: 'Implementation Details',
-            items: [
-                'dedicated-german-phase-functions',
-                'final-fix-setdefaults-bug',
-                'main-refactoring-summary',
-                'ota-integration-summary',
-                'ota-sleep-timing-integration',
-                'phase-transition-bugfix',
-                'phase-transition-implementation-summary',
-                'phase1-to-phase2-transition',
-                'phase2-infinite-restart-fix',
-                'refresh-process',
-                'wifi-config-refactoring-summary',
+                'reference/configuration-keys-quick-reference',
+                'reference/configuration-phase-quick-reference',
             ],
         },
     ],

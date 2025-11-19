@@ -9,7 +9,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
     title: 'MyStation Documentation',
-    tagline: 'ESP32-C3 powered public transport departure board',
+    tagline: 'ESP32 powered public transport departure board',
     favicon: 'img/favicon.ico',
 
     // Set the production url of your site here
@@ -48,7 +48,7 @@ const config = {
                     // Please change this to your repo.
                     // Remove this to remove the "edit this page" links.
                     editUrl:
-                        'https://github.com/YOUR-USERNAME/mystation/tree/main/',
+                        'https://github.com/gogo-boot/e-board/tree/main/',
                 },
                 blog: false,
                 theme: {
@@ -72,12 +72,24 @@ const config = {
                 items: [
                     {
                         type: 'docSidebar',
-                        sidebarId: 'tutorialSidebar',
+                        sidebarId: 'userSidebar',
                         position: 'left',
-                        label: 'Documentation',
+                        label: 'User Guide',
                     },
                     {
-                        href: 'https://github.com/YOUR-USERNAME/e-board',
+                        type: 'docSidebar',
+                        sidebarId: 'developerSidebar',
+                        position: 'left',
+                        label: 'Developer Guide',
+                    },
+                    {
+                        type: 'docSidebar',
+                        sidebarId: 'referenceSidebar',
+                        position: 'left',
+                        label: 'Reference',
+                    },
+                    {
+                        href: 'https://github.com/gogo-boot/e-board',
                         label: 'GitHub',
                         position: 'right',
                     },
@@ -87,19 +99,36 @@ const config = {
                 style: 'dark',
                 links: [
                     {
-                        title: 'Docs',
+                        title: 'User Guide',
                         items: [
                             {
                                 label: 'Quick Start',
-                                to: '/docs/quick-start',
+                                to: '/docs/user-guide/quick-start',
+                            },
+                            {
+                                label: 'Hardware Assembly',
+                                to: '/docs/user-guide/hardware-assembly',
+                            },
+                            {
+                                label: 'Troubleshooting',
+                                to: '/docs/user-guide/troubleshooting',
+                            },
+                        ],
+                    },
+                    {
+                        title: 'Developer',
+                        items: [
+                            {
+                                label: 'Architecture',
+                                to: '/docs/developer-guide/index',
+                            },
+                            {
+                                label: 'Boot Process',
+                                to: '/docs/developer-guide/boot-process',
                             },
                             {
                                 label: 'Hardware Setup',
                                 to: '/docs/hardware-setup',
-                            },
-                            {
-                                label: 'Software Setup',
-                                to: '/docs/software-setup',
                             },
                         ],
                     },
@@ -108,7 +137,7 @@ const config = {
                         items: [
                             {
                                 label: 'GitHub',
-                                href: 'https://github.com/YOUR-USERNAME/e-board',
+                                href: 'https://github.com/gogo-boot/e-board',
                             },
                         ],
                     },
