@@ -300,7 +300,6 @@ If you just want to change settings without erasing everything:
 
 - 🚀 [Quick Start Guide](quick-start.md) - Complete setup instructions after reset
 - 🔧 [Troubleshooting](troubleshooting.md) - Common issues and solutions
-- ⚙️ [Station Configuration](station-configuration.md) - Detailed configuration options
 
 ---
 

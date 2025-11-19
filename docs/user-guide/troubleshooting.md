@@ -114,8 +114,6 @@ Look for error messages, warnings, or unexpected behavior in the output.
     - Router might have DNS problems
     - Check serial monitor for DNS resolution errors
 
-4. **Verify API keys configured**
-    - Google Geolocation API
     - RMV API key
     - See [Configuration](station-configuration.md)
 
@@ -311,10 +309,10 @@ Look for error messages, warnings, or unexpected behavior in the output.
     - Doubles/triples battery life
     - Still provides current information
 
-2. **Enable sleep schedule**
+3. **Enable sleep schedule**
     - Configure quiet hours (e.g., 23:00-06:00)
     - Save power overnight
-    - See [Station Configuration](station-configuration.md)
+    - See web configuration interface
 
 3. **Check WiFi strength**
     - Weak signal uses more power
@@ -566,7 +564,7 @@ Look for error messages, warnings, or unexpected behavior in the output.
 3. **API key issues**
     - Google Geolocation API key required
     - RMV API key required
-    - See [API Configuration](station-configuration.md#api-keys)
+    - See web configuration interface
 
 4. **Check API limits**
     - Free tier has request limits
@@ -834,7 +832,7 @@ Before asking for help, collect:
 
 - 📖 [User Guide](index.md) - Complete user documentation
 - 🔧 [Developer Guide](../developer-guide/index.md) - Technical details
-- 📚 [Configuration Reference](../reference/configuration-keys.md) - All settings explained
+- 📚 [Configuration Reference](../reference/configuration-keys-quick-reference.md) - All settings explained
 
 ### Report Issues
 

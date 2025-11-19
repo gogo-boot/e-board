@@ -260,9 +260,7 @@ For more help, see the [Troubleshooting Guide](troubleshooting.md).
 ## Next Steps
 
 - 📖 [Understanding the Display](understanding-display.md) - Learn what information is shown
-- 🔋 [Battery & Charging](battery-charging.md) - Battery care and charging
 - 🔧 [Troubleshooting](troubleshooting.md) - Common issues and solutions
-- ⚙️ [Station Configuration](station-configuration.md) - Advanced configuration options
 
 Congratulations! Your MyStation is now running! 🎉
 
@@ -363,5 +361,5 @@ minutes!
 - 🚀 [Quick Start Guide](quick-start.md) - First-time setup
 - 🔧 [Troubleshooting](troubleshooting.md) - Common issues and solutions
 - 🔄 [Factory Reset](factory-reset.md) - Reset to defaults
-- 📖 [Full Documentation](../README.md) - Complete documentation index
+- 📖 [Full Documentation](../index.md) - Complete documentation index
 

@@ -476,9 +476,7 @@ To maximize battery life while keeping useful information:
 ## Related Documentation
 
 - 🏠 [User Guide Home](index.md)
-- ⚙️ [Station Configuration](station-configuration.md)
 - 🔘 [Button Controls](button-controls.md)
-- 🔋 [Battery & Charging](battery-charging.md)
 - 🔧 [Troubleshooting](troubleshooting.md)
 
 ---

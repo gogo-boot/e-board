@@ -26,12 +26,12 @@ If you want to understand the code, contribute, or modify MyStation:
 
 - [Architecture Overview](developer-guide/index.md) - System design
 - [Boot Process](developer-guide/boot-process.md) - Detailed boot flow
-- [Configuration System](configuration.md) - How settings are stored
-- [Display System](display-layout-overview.md) - E-paper rendering
-- [API Integration](api-keys.md) - External API usage
+- [Configuration System](developer-guide/configuration-system.md) - How settings are stored
+- [Display System](developer-guide/display-system.md) - E-paper rendering
+- [API Integration](developer-guide/api-integration.md) - External API usage
 - [Hardware Setup](hardware-setup.md) - Pin configuration and specs
-- [Development Setup](software-setup.md) - PlatformIO environment
-- [Testing](native-testing-setup.md) - Unit tests and mocks
+- [Development Setup](developer-guide/development-setup.md) - PlatformIO environment
+- [Testing](developer-guide/testing.md) - Unit tests and mocks
 
 ### Quick Reference
 
@@ -57,10 +57,10 @@ If you want to understand the code, contribute, or modify MyStation:
 
 ### Developer Tasks
 
-- **[Development Environment](software-setup.md)** - Set up PlatformIO
+- **[Development Environment](developer-guide/development-setup.md)** - Set up PlatformIO
 - **[Boot Process](developer-guide/boot-process.md)** - How the system starts
 - **[Pin Configuration](hardware-setup.md)** - GPIO assignments
-- **[API Integration](api-keys.md)** - Add API keys
+- **[API Integration](developer-guide/api-integration.md)** - Add API keys
 
 ## 📦 What's Included
 

@@ -12,40 +12,30 @@ ensures a smooth user experience from first boot through normal operation.
 ```mermaid
 flowchart TD
     Start([Power On]) --> SystemInit[SystemInit]
-
-    SystemInit --> |Hardware setup<br/>Load config<br/>Check NVS| OTAManager
-
-    OTAManager[OTAManager] --> |Check OTA time<br/>Download if scheduled<br/>Apply and restart| ButtonManager
-
-    ButtonManager[ButtonManager] --> |Detect button wake<br/>Set temporary mode<br/>ESP32-S3 only| BootFlowManager
-
-    BootFlowManager[BootFlowManager] --> |Check config state<br/>Determine phase| PhaseCheck{Configuration<br/>Phase?}
-
-    PhaseCheck -->|No WiFi| Phase1[PHASE 1: WiFi Setup]
-    PhaseCheck -->|WiFi OK, No Station| Phase2[PHASE 2: App Setup]
-    PhaseCheck -->|Fully Configured| Phase3[PHASE 3: Operational]
-
-    Phase1 --> |Create AP<br/>Web config<br/>Wait for WiFi| WiFiSaved{WiFi<br/>Saved?}
+    SystemInit -->|Hardware setup<br/>Load config<br/>Check NVS| OTAManager
+    OTAManager[OTAManager] -->|Check OTA time<br/>Download if scheduled<br/>Apply and restart| ButtonManager
+    ButtonManager[ButtonManager] -->|Detect button wake<br/>Set temporary mode<br/>ESP32 - S3 only| BootFlowManager
+    BootFlowManager[BootFlowManager] -->|Check config state<br/>Determine phase| PhaseCheck{Configuration<br/>Phase?}
+    PhaseCheck -->|No WiFi| Phase1[PHASE 1 WiFi Setup]
+    PhaseCheck -->|WiFi OK No Station| Phase2[PHASE 2 App Setup]
+    PhaseCheck -->|Fully Configured| Phase3[PHASE 3 Operational]
+    Phase1 -->|Create AP<br/>Web config<br/>Wait for WiFi| WiFiSaved{WiFi<br/>Saved?}
     WiFiSaved -->|Yes| Restart1([Restart to Phase 2])
     WiFiSaved -->|No| Phase1
-
-    Phase2 --> |Connect WiFi<br/>Location detect<br/>Find stops<br/>Web config| StationSaved{Station<br/>Configured?}
+    Phase2 -->|Connect WiFi<br/>Location detect<br/>Find stops<br/>Web config| StationSaved{Station<br/>Configured?}
     StationSaved -->|Yes| Restart2([Restart to Phase 3])
     StationSaved -->|No| Phase2
-
-    Phase3 --> |Connect WiFi<br/>Fetch data<br/>Update display| Sleep[Deep Sleep]
-    Sleep --> |Timer/Button| SystemInit
-
+    Phase3 -->|Connect WiFi<br/>Fetch data<br/>Update display| Sleep[Deep Sleep]
+    Sleep -->|Timer or Button| SystemInit
     Restart1 --> SystemInit
     Restart2 --> SystemInit
-
-    style SystemInit fill:#e1f5ff
-    style OTAManager fill:#fff4e1
-    style ButtonManager fill:#ffe1f5
-    style BootFlowManager fill:#e1ffe1
-    style Phase1 fill:#ffe1e1
-    style Phase2 fill:#fff9e1
-    style Phase3 fill:#e1ffe1
+    style SystemInit fill: #e1f5ff
+    style OTAManager fill: #fff4e1
+    style ButtonManager fill: #ffe1f5
+    style BootFlowManager fill: #e1ffe1
+    style Phase1 fill: #ffe1e1
+    style Phase2 fill: #fff9e1
+    style Phase3 fill: #e1ffe1
 ```
 
 ## Detailed Boot Steps
@@ -444,28 +434,23 @@ stateDiagram-v2
     Phase1: Phase 1 - WiFi Setup
     Phase2: Phase 2 - App Setup
     Phase3: Phase 3 - Operational
-
     Phase1 --> Phase2: WiFi credentials saved
     Phase2 --> Phase3: Station configured
     Phase3 --> Phase3: Each wake cycle
-
     Phase1 --> Phase1: Factory Reset
     Phase2 --> Phase1: Factory Reset
     Phase3 --> Phase1: Factory Reset
-
     note right of Phase1
         Create AP
         Web configuration
         Wait for WiFi setup
     end note
-
     note right of Phase2
         Connect to WiFi
         Detect location
         Find transport stops
         Configure preferences
     end note
-
     note right of Phase3
         Normal operation
         Fetch data
@@ -573,7 +558,7 @@ RTC_DATA_ATTR unsigned long temporaryModeStart = 0;
 | Phase          | Activity             | Time        |
 |----------------|----------------------|-------------|
 | Hardware Init  | CPU, peripherals     | ~1s         |
-| NVS Load       | Read configuration   | <0.1s       |
+| NVS Load       | Read configuration   | &lt;0.1s    |
 | WiFi Connect   | Join network         | 2-5s        |
 | API Calls      | Weather + Departures | 5-10s       |
 | Display Update | E-paper refresh      | 30-45s      |
