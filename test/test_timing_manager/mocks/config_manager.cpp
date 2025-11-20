@@ -120,10 +120,12 @@ std::vector<String> ConfigManager::getActiveFilters() {
     if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S-Bahn");
     if (rtcConfig.filterFlags & FILTER_U) filters.push_back("U");
     if (rtcConfig.filterFlags & FILTER_TRAM) filters.push_back("Tram");
-    if (rtcConfig.filterFlags & FILTER_BUS) filters.push_back("Bus");
-    if (rtcConfig.filterFlags & FILTER_HIGHFLOOR) filters.push_back("Hochflurbus");
+    // Check if all bus types are enabled
+    uint16_t allBusFlags = FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
+    if ((rtcConfig.filterFlags & allBusFlags) == allBusFlags) {
+        filters.push_back("Bus");
+    }
     if (rtcConfig.filterFlags & FILTER_FERRY) filters.push_back("Fähre");
-    if (rtcConfig.filterFlags & FILTER_CALLBUS) filters.push_back("Rufbus");
     return filters;
 }
 
@@ -131,14 +133,19 @@ void ConfigManager::setActiveFilters(const std::vector<String>& filters) {
     rtcConfig.filterFlags = 0;
     for (const String& filter : filters) {
         // Support both short and long filter names
-        if (filter == "R" || filter == "RE" || filter == "Regional") rtcConfig.filterFlags |= FILTER_R;
-        else if (filter == "S" || filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
-        else if (filter == "U" || filter == "U-Bahn") rtcConfig.filterFlags |= FILTER_U;
-        else if (filter == "Tram" || filter == "Straßenbahn") rtcConfig.filterFlags |= FILTER_TRAM;
-        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
-        else if (filter == "Hochflurbus") rtcConfig.filterFlags |= FILTER_HIGHFLOOR;
-        else if (filter == "Fähre" || filter == "Ferry") rtcConfig.filterFlags |= FILTER_FERRY;
-        else if (filter == "Rufbus" || filter == "Callbus") rtcConfig.filterFlags |= FILTER_CALLBUS;
+        if (filter == "R" || filter == "RE" || filter == "Regional") {
+            rtcConfig.filterFlags |= FILTER_R;
+        } else if (filter == "S" || filter == "S-Bahn") {
+            rtcConfig.filterFlags |= FILTER_S;
+        } else if (filter == "U" || filter == "U-Bahn") {
+            rtcConfig.filterFlags |= FILTER_U;
+        } else if (filter == "Tram" || filter == "Straßenbahn") {
+            rtcConfig.filterFlags |= FILTER_TRAM;
+        } else if (filter == "Bus") {
+            rtcConfig.filterFlags |= FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
+        } else if (filter == "Fähre" || filter == "Ferry") {
+            rtcConfig.filterFlags |= FILTER_FERRY;
+        }
     }
 }
 
