@@ -45,7 +45,7 @@ String CommonFooter::getTimeString() {
         struct tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
             char timeStr[20];
-            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
+            strftime(timeStr, sizeof(timeStr), "%H:%M", &timeinfo);
             footerText = String(timeStr);
         } else {
             footerText = "Zeit nicht verfügbar";
