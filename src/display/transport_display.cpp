@@ -16,7 +16,7 @@ static const char* TAG = "TRANSPORT_DISPLAY";
 namespace TransportDisplayConstants {
     constexpr int16_t MARGIN = 10;
     constexpr int16_t STATION_NAME_HEIGHT = 17;
-    constexpr int16_t STATION_NAME_SPACING = 10;
+    constexpr int16_t STATION_NAME_SPACING = 20;
     constexpr int16_t COLUMN_HEADER_HEIGHT = 12;
     constexpr int16_t COLUMN_HEADER_SPACING = 5;
     constexpr int8_t SEPARATOR_PADDING = 9;
