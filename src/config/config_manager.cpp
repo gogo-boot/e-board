@@ -301,15 +301,15 @@ bool ConfigManager::getFilterFlag(uint16_t flag) {
 std::vector<String> ConfigManager::getActiveFilters() {
     std::vector<String> filters;
     if (rtcConfig.filterFlags & FILTER_R) filters.push_back("R");
-    if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S-Bahn");
+    if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S");
     if (rtcConfig.filterFlags & FILTER_U) filters.push_back("U");
     if (rtcConfig.filterFlags & FILTER_TRAM) filters.push_back("Tram");
     // Check if all bus types are enabled
     uint16_t allBusFlags = FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
-    if ((rtcConfig.filterFlags & allBusFlags) == allBusFlags) {
+    if (rtcConfig.filterFlags & allBusFlags) {
         filters.push_back("Bus");
     }
-    if (rtcConfig.filterFlags & FILTER_FERRY) filters.push_back("Fähre");
+    if (rtcConfig.filterFlags & FILTER_FERRY) filters.push_back("Ferry");
     return filters;
 }
 
@@ -363,8 +363,7 @@ void ConfigManager::setDefaults() {
     strcpy(rtcConfig.weekendTransportEnd, "20:00");
     strcpy(rtcConfig.weekendSleepStart, "23:00");
     strcpy(rtcConfig.weekendSleepEnd, "07:00");
-    rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY
-        | FILTER_CALLBUS;
+    rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_FERRY;
     rtcConfig.configMode = true;
     rtcConfig.lastUpdate = 0;
 }
