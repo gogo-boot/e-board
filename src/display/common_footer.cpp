@@ -45,7 +45,7 @@ String CommonFooter::getTimeString() {
         struct tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
             char timeStr[20];
-            strftime(timeStr, sizeof(timeStr), "%H:%M %d.%m.", &timeinfo);
+            strftime(timeStr, sizeof(timeStr), "%H:%M", &timeinfo);
             footerText = String(timeStr);
         } else {
             footerText = "Zeit nicht verfügbar";
@@ -59,11 +59,19 @@ String CommonFooter::getTimeString() {
 void CommonFooter::drawWiFiStatus(int16_t& currentX, int16_t y) {
     auto* display = DisplayShared::getDisplay();
     if (!display) return;
+
+    icon_name wifiIcon = getWiFiIcon();
+    display->drawInvertedBitmap(currentX, y, getBitmap(wifiIcon, 16), 16, 16, GxEPD_BLACK);
+    currentX += 20; // Move right
+}
+
+icon_name CommonFooter::getWiFiIcon() {
     // Get WiFi signal strength
     int32_t rssi = WiFi.RSSI();
     icon_name wifiIcon;
+
     if (WiFi.status() != WL_CONNECTED) {
-        wifiIcon = wifi_off; // Assume we have a wifi_off icon
+        wifiIcon = wifi_off;
     } else if (rssi > -50) {
         wifiIcon = wifi; // Strong signal
     } else if (rssi > -60) {
@@ -73,8 +81,8 @@ void CommonFooter::drawWiFiStatus(int16_t& currentX, int16_t y) {
     } else {
         wifiIcon = wifi_1_bar; // Weak signal
     }
-    display->drawInvertedBitmap(currentX, y, getBitmap(wifiIcon, 16), 16, 16, GxEPD_BLACK);
-    currentX += 20; // Move right
+
+    return wifiIcon;
 }
 
 void CommonFooter::drawBatteryStatus(int16_t& currentX, int16_t y) {
@@ -91,6 +99,33 @@ void CommonFooter::drawBatteryStatus(int16_t& currentX, int16_t y) {
     if (iconLevel <= 0) {
         ESP_LOGW(TAG, "Unable to read battery status");
         return;
+    }
+
+    icon_name batteryIcon = getBatteryIcon();
+    display->drawInvertedBitmap(currentX, y, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
+    currentX += 20; // Move right
+
+    // Log battery info for debugging
+    float voltage = BatteryManager::getBatteryVoltage();
+    int percentage = BatteryManager::getBatteryPercentage();
+    ESP_LOGD(TAG, "Battery: %.2fV (%d%%) - Icon level: %d", voltage, percentage, iconLevel);
+}
+
+icon_name CommonFooter::getBatteryIcon() {
+    // Check if battery monitoring is available
+    if (!BatteryManager::isAvailable()) {
+        return Battery_3; // Default fallback
+    }
+
+    // Get battery icon level (1-5)
+    int iconLevel = BatteryManager::getBatteryIconLevel();
+    if (iconLevel <= 0) {
+        return Battery_3; // Default fallback
+    }
+
+    // Check if charging first
+    if (BatteryManager::isCharging()) {
+        return battery_charging_full_90deg;
     }
 
     // Map icon level to icon name
@@ -110,19 +145,7 @@ void CommonFooter::drawBatteryStatus(int16_t& currentX, int16_t y) {
         break; // Fallback
     }
 
-    // Check if charging
-    if (BatteryManager::isCharging()) {
-        // Use charging icon instead
-        batteryIcon = battery_charging_full_90deg;
-    }
-
-    display->drawInvertedBitmap(currentX, y, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
-    currentX += 20; // Move right
-
-    // Log battery info for debugging
-    float voltage = BatteryManager::getBatteryVoltage();
-    int percentage = BatteryManager::getBatteryPercentage();
-    ESP_LOGD(TAG, "Battery: %.2fV (%d%%) - Icon level: %d", voltage, percentage, iconLevel);
+    return batteryIcon;
 }
 
 void CommonFooter::drawRefreshIcon(int16_t& currentX, int16_t y) {

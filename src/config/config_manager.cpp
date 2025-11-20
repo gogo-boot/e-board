@@ -134,14 +134,13 @@ bool ConfigManager::loadFromNVS() {
     for (size_t i = 0; i < filterCount && i < MAX_TRANSPORT_FILTERS; i++) {
         String key = "filter" + String(i);
         String filter = preferences.getString(key.c_str(), "");
-        if (filter == "R") rtcConfig.filterFlags |= FILTER_R;
-        else if (filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
-        else if (filter == "U") rtcConfig.filterFlags |= FILTER_U;
-        else if (filter == "Tram") rtcConfig.filterFlags |= FILTER_TRAM;
-        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
-        else if (filter == "Hochflurbus") rtcConfig.filterFlags |= FILTER_HIGHFLOOR;
-        else if (filter == "Fähre") rtcConfig.filterFlags |= FILTER_FERRY;
-        else if (filter == "Rufbus") rtcConfig.filterFlags |= FILTER_CALLBUS;
+        // Support both short and long filter names
+        if (filter == "R" || filter == "RE" || filter == "Regional") rtcConfig.filterFlags |= FILTER_R;
+        else if (filter == "S" || filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
+        else if (filter == "U" || filter == "U-Bahn") rtcConfig.filterFlags |= FILTER_U;
+        else if (filter == "Tram" || filter == "Straßenbahn") rtcConfig.filterFlags |= FILTER_TRAM;
+        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
+        else if (filter == "Fähre" || filter == "Ferry") rtcConfig.filterFlags |= FILTER_FERRY;
     }
 
     // Set default filters if none loaded
@@ -302,29 +301,39 @@ bool ConfigManager::getFilterFlag(uint16_t flag) {
 std::vector<String> ConfigManager::getActiveFilters() {
     std::vector<String> filters;
     if (rtcConfig.filterFlags & FILTER_R) filters.push_back("R");
-    if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S-Bahn");
+    if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S");
     if (rtcConfig.filterFlags & FILTER_U) filters.push_back("U");
     if (rtcConfig.filterFlags & FILTER_TRAM) filters.push_back("Tram");
-    if (rtcConfig.filterFlags & FILTER_BUS) filters.push_back("Bus");
-    if (rtcConfig.filterFlags & FILTER_HIGHFLOOR) filters.push_back("Hochflurbus");
-    if (rtcConfig.filterFlags & FILTER_FERRY) filters.push_back("Fähre");
-    if (rtcConfig.filterFlags & FILTER_CALLBUS) filters.push_back("Rufbus");
+    // Check if all bus types are enabled
+    uint16_t allBusFlags = FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
+    if (rtcConfig.filterFlags & allBusFlags) {
+        filters.push_back("Bus");
+    }
+    if (rtcConfig.filterFlags & FILTER_FERRY) filters.push_back("Ferry");
     return filters;
 }
 
 void ConfigManager::setActiveFilters(const std::vector<String>& filters) {
     rtcConfig.filterFlags = 0; // Reset all flags
     for (const String& filter : filters) {
-        if (filter == "R") rtcConfig.filterFlags |= FILTER_R;
-        else if (filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
-        else if (filter == "U") rtcConfig.filterFlags |= FILTER_U;
-        else if (filter == "Tram") rtcConfig.filterFlags |= FILTER_TRAM;
-        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
-        else if (filter == "Hochflurbus") rtcConfig.filterFlags |= FILTER_HIGHFLOOR;
-        else if (filter == "Fähre") rtcConfig.filterFlags |= FILTER_FERRY;
-        else if (filter == "Rufbus") rtcConfig.filterFlags |= FILTER_CALLBUS;
+        // Support both short and long filter names
+        if (filter == "R" || filter == "RE" || filter == "Regional") {
+            rtcConfig.filterFlags |= FILTER_R;
+        } else if (filter == "S" || filter == "S-Bahn") {
+            rtcConfig.filterFlags |= FILTER_S;
+        } else if (filter == "U" || filter == "U-Bahn") {
+            rtcConfig.filterFlags |= FILTER_U;
+        } else if (filter == "Tram" || filter == "Straßenbahn") {
+            rtcConfig.filterFlags |= FILTER_TRAM;
+        } else if (filter == "Bus") {
+            rtcConfig.filterFlags |= FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
+        } else if (filter == "Fähre" || filter == "Ferry") {
+            rtcConfig.filterFlags |= FILTER_FERRY;
+        } else {
+            ESP_LOGW(TAG, "Unknown filter type: %s", filter.c_str());
+        }
     }
-    ESP_LOGI(TAG, "Filters updated: %d active", filters.size());
+    ESP_LOGI(TAG, "Filters updated: %d active filters, filterFlags=%u", filters.size(), rtcConfig.filterFlags);
 }
 
 // Internal helper functions
@@ -354,8 +363,7 @@ void ConfigManager::setDefaults() {
     strcpy(rtcConfig.weekendTransportEnd, "20:00");
     strcpy(rtcConfig.weekendSleepStart, "23:00");
     strcpy(rtcConfig.weekendSleepEnd, "07:00");
-    rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY
-        | FILTER_CALLBUS;
+    rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_FERRY;
     rtcConfig.configMode = true;
     rtcConfig.lastUpdate = 0;
 }

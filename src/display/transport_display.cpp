@@ -2,11 +2,13 @@
 #include "display/text_utils.h"
 #include "util/util.h"
 #include "util/time_manager.h"
+#include "util/battery_manager.h"
 #include "display/display_shared.h"
 #include "display/common_footer.h"
 #include <esp_log.h>
 #include <vector>
 #include <icons.h>
+#include <WiFi.h>
 
 static const char* TAG = "TRANSPORT_DISPLAY";
 
@@ -14,7 +16,7 @@ static const char* TAG = "TRANSPORT_DISPLAY";
 namespace TransportDisplayConstants {
     constexpr int16_t MARGIN = 10;
     constexpr int16_t STATION_NAME_HEIGHT = 17;
-    constexpr int16_t STATION_NAME_SPACING = 10;
+    constexpr int16_t STATION_NAME_SPACING = 20;
     constexpr int16_t COLUMN_HEADER_HEIGHT = 12;
     constexpr int16_t COLUMN_HEADER_SPACING = 5;
     constexpr int8_t SEPARATOR_PADDING = 9;
@@ -159,14 +161,40 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
     // Print station name at top margin
     TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
 
+    // Upper right corner: Time + Status icons (refresh, WiFi, battery)
     String dateTime = TimeManager::getGermanDateTimeString();
     int16_t dateTimeWidth = TextUtils::getTextWidth(dateTime);
 
-    int16_t refreshIconWidth = 16; // Width of the refresh icon
-    TextUtils::printTextAtTopMargin(rightMargin - dateTimeWidth - refreshIconWidth - MARGIN, currentY, dateTime);
+    const int16_t iconWidth = 16;
+    const int16_t iconSpacing = 4; // Spacing between icons
+    int16_t iconX = rightMargin; // Start from right edge and work backwards
 
     auto* display = DisplayShared::getDisplay();
-    display->drawInvertedBitmap(rightMargin - refreshIconWidth, currentY, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+
+    // Battery icon (rightmost)
+    if (BatteryManager::isAvailable()) {
+        int batteryLevel = BatteryManager::getBatteryIconLevel();
+        if (batteryLevel > 0) {
+            iconX -= iconWidth;
+            icon_name batteryIcon = CommonFooter::getBatteryIcon();
+            display->drawInvertedBitmap(iconX, currentY, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
+            iconX -= iconSpacing;
+        }
+    }
+
+    // WiFi icon
+    iconX -= iconWidth;
+    icon_name wifiIcon = CommonFooter::getWiFiIcon();
+    display->drawInvertedBitmap(iconX, currentY, getBitmap(wifiIcon, 16), 16, 16, GxEPD_BLACK);
+    iconX -= iconSpacing;
+
+    // Refresh icon
+    iconX -= iconWidth;
+    display->drawInvertedBitmap(iconX, currentY, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+
+    // Time (left of all icons)
+    iconX -= (iconSpacing + dateTimeWidth);
+    TextUtils::printTextAtTopMargin(iconX, currentY, dateTime);
 
     currentY += STATION_NAME_HEIGHT;
     currentY += FULL_SCREEN_STATION_SPACING;

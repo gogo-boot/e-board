@@ -118,20 +118,34 @@ std::vector<String> ConfigManager::getActiveFilters() {
     std::vector<String> filters;
     if (rtcConfig.filterFlags & FILTER_R) filters.push_back("R");
     if (rtcConfig.filterFlags & FILTER_S) filters.push_back("S-Bahn");
-    if (rtcConfig.filterFlags & FILTER_BUS) filters.push_back("Bus");
     if (rtcConfig.filterFlags & FILTER_U) filters.push_back("U");
     if (rtcConfig.filterFlags & FILTER_TRAM) filters.push_back("Tram");
+    // Check if all bus types are enabled
+    uint16_t allBusFlags = FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
+    if ((rtcConfig.filterFlags & allBusFlags) == allBusFlags) {
+        filters.push_back("Bus");
+    }
+    if (rtcConfig.filterFlags & FILTER_FERRY) filters.push_back("Fähre");
     return filters;
 }
 
 void ConfigManager::setActiveFilters(const std::vector<String>& filters) {
     rtcConfig.filterFlags = 0;
     for (const String& filter : filters) {
-        if (filter == "R") rtcConfig.filterFlags |= FILTER_R;
-        else if (filter == "S-Bahn") rtcConfig.filterFlags |= FILTER_S;
-        else if (filter == "Bus") rtcConfig.filterFlags |= FILTER_BUS;
-        else if (filter == "U") rtcConfig.filterFlags |= FILTER_U;
-        else if (filter == "Tram") rtcConfig.filterFlags |= FILTER_TRAM;
+        // Support both short and long filter names
+        if (filter == "R" || filter == "RE" || filter == "Regional") {
+            rtcConfig.filterFlags |= FILTER_R;
+        } else if (filter == "S" || filter == "S-Bahn") {
+            rtcConfig.filterFlags |= FILTER_S;
+        } else if (filter == "U" || filter == "U-Bahn") {
+            rtcConfig.filterFlags |= FILTER_U;
+        } else if (filter == "Tram" || filter == "Straßenbahn") {
+            rtcConfig.filterFlags |= FILTER_TRAM;
+        } else if (filter == "Bus") {
+            rtcConfig.filterFlags |= FILTER_BUS | FILTER_CALLBUS | FILTER_HIGHFLOOR;
+        } else if (filter == "Fähre" || filter == "Ferry") {
+            rtcConfig.filterFlags |= FILTER_FERRY;
+        }
     }
 }
 

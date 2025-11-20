@@ -46,17 +46,23 @@ void TimeManager::setupNTPTime() {
 }
 
 String TimeManager::getGermanDateTimeString() {
-    time_t now = time(nullptr);
-    tm* timeinfo = localtime(&now);
+    struct tm timeinfo;
+    if (!getCurrentLocalTime(timeinfo)) {
+        ESP_LOGW(TAG, "Failed to get local time for German date/time string");
+        return String("--:-- --.--.---- -------");
+    }
 
-    static const char* germanMonths[] = {
-        "Jan", "Feb", "März", "Apr", "Mai", "Juni",
-        "Juli", "Aug", "Sep", "Okt", "Nov", "Dez"
+    static const char* dayNames[] = {
+        "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
     };
-    char buf[32];
-    int monthIdx = timeinfo->tm_mon;
-    snprintf(buf, sizeof(buf), "%02d:%02d %02d.%s", timeinfo->tm_hour, timeinfo->tm_min,
-             timeinfo->tm_mday, germanMonths[monthIdx]);
+     char buf[40];
+    int wday = timeinfo.tm_wday;
+    if (wday < 0 || wday > 6) wday = 0;
+
+    snprintf(buf, sizeof(buf), "%02d:%02d %02d.%02d.%04d %s",
+             timeinfo.tm_hour, timeinfo.tm_min,
+             timeinfo.tm_mday, timeinfo.tm_mon + 1, timeinfo.tm_year + 1900,
+             dayNames[wday]);
     return String(buf);
 }
 

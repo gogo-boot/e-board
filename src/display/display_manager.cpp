@@ -258,13 +258,10 @@ void DisplayManager::updateDepartureHalf(bool isFullUpate,
     ESP_LOGI(TAG, "Updating departure half");
 
     const int16_t contentY = 0; // Start from top (no header)
-    const int16_t contentHeight = screenHeight - DisplayConstants::FOOTER_HEIGHT;
 
     // Draw departure section
     TransportDisplay::drawHalfScreenTransportSection(
-        departures, halfWidth, contentY, halfWidth, contentHeight);
-    TransportDisplay::drawTransportFooter(halfWidth, screenHeight - DisplayConstants::FOOTER_HEIGHT,
-                                          DisplayConstants::FOOTER_HEIGHT);
+        departures, halfWidth, contentY, halfWidth, screenHeight);
 }
 
 // ===== FULL SCREEN DISPLAY METHODS =====
