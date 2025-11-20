@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <icons.h>
 
 enum FooterElements {
     FOOTER_TIME = 1 << 0, // Show current time
@@ -14,6 +15,10 @@ public:
     // Draw footer with specified elements
     // elements: bitwise OR of FooterElements flags
     static void drawFooter(int16_t x, int16_t y, int16_t h, uint8_t elements = FOOTER_TIME | FOOTER_REFRESH);
+
+    // Helper functions to get icon names (for reuse in other display contexts)
+    static icon_name getWiFiIcon();
+    static icon_name getBatteryIcon();
 
 private:
     static String getTimeString();
