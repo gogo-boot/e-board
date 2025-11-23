@@ -77,30 +77,9 @@ void MyWiFiManager::setupWiFiAccessPointAndRestart(WiFiManager& wm) {
     String apName = Util::getUniqueSSID("MyStation");
     ESP_LOGI(TAG, "Starting AP with SSID: %s", apName.c_str());
 
-    bool connected = wm.autoConnect(apName.c_str());
-
-    ESP_LOGI(TAG, "WiFi connected to: %s", WiFi.SSID().c_str());
-    ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
-
-    // Set success message after saving
-    wm.setSaveConfigCallback([]() {
-        ESP_LOGI(TAG, "wifi manager configuration is saved!");
-        // Mark WiFi as configured
-        RTCConfigData& config = ConfigManager::getConfig();
-        config.wifiConfigured = true;
-
-        // Update configuration with network info
-        ConfigManager::setNetwork(WiFi.SSID(), WiFi.localIP().toString());
-
-        // Save WiFi credentials to NVS
-        ConfigManager& configMgr = ConfigManager::getInstance();
-        ESP_LOGI(TAG, "Saving WiFi credentials to NVS:");
-        ESP_LOGI(TAG, "  SSID: %s", WiFi.SSID().c_str());
-        ESP_LOGI(TAG, "  IP: %s", WiFi.localIP().toString().c_str());
-        configMgr.saveToNVS();
-        delay(100); // Give time for logs to be sent
-        ESP.restart();
-    });
+    // Start AP
+    // It holds further process until user configures WiFi
+    wm.autoConnect(apName.c_str());
 
     // Check internet connectivity
     if (hasInternetAccess()) {
@@ -291,40 +270,4 @@ bool MyWiFiManager::hasInternetAccess() {
 
     ESP_LOGW(TAG, "Invalid HTTP response: %s", line.c_str());
     return false;
-}
-
-bool MyWiFiManager::validateWifiAndInternet() {
-    ESP_LOGI(TAG, "=== Starting WiFi and Internet Validation ===");
-
-    // Step 1: Try to connect to WiFi
-    WiFi.begin(); // No parameters = use stored credentials with full scan
-
-    int attempts = 0;
-    const int maxAttempts = 20; // 10 seconds timeout
-
-    while (WiFi.status() != WL_CONNECTED && attempts < maxAttempts) {
-        delay(500);
-        Serial.print(".");
-        attempts++;
-    }
-    Serial.println();
-
-    if (WiFi.status() != WL_CONNECTED) {
-        ESP_LOGE(TAG, "WiFi connection failed after %d attempts", attempts);
-        return false;
-    }
-
-    ESP_LOGI(TAG, "WiFi connected successfully");
-    ESP_LOGI(TAG, "IP address: %s", WiFi.localIP().toString().c_str());
-    ESP_LOGI(TAG, "Signal strength: %d dBm", WiFi.RSSI());
-
-    // Step 2: Verify internet access
-    if (!hasInternetAccess()) {
-        ESP_LOGE(TAG, "Internet access verification failed");
-        WiFi.disconnect();
-        return false;
-    }
-
-    ESP_LOGI(TAG, "=== WiFi and Internet Validation: SUCCESS ===");
-    return true;
 }

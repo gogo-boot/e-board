@@ -22,7 +22,6 @@ public:
 
   // WiFi and internet validation for configuration phase tracking
   static bool hasInternetAccess();
-  static bool validateWifiAndInternet();
 
 private:
   static const int FAST_CONNECT_TIMEOUT_MS = 8000; // 8 seconds for fast connect
