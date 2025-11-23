@@ -90,24 +90,24 @@ void DeviceModeManager::runConfigurationMode() {
 
     pageData.setIPAddress(config.ipAddress);
 
-    if (pageData.getLatitude() == 0.0 && pageData.getLongitude() == 0.0) {
-        float lat, lon;
-        getLocationFromGoogle(lat, lon);
+    // if (pageData.getLatitude() == 0.0 && pageData.getLongitude() == 0.0) {
+    float lat, lon;
+    getLocationFromGoogle(lat, lon);
 
-        ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", lat, lon);
-        String cityName = getCityFromLatLon(lat, lon);
+    ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", lat, lon);
+    String cityName = getCityFromLatLon(lat, lon);
 
-        if (cityName.isEmpty()) {
-            ESP_LOGE(TAG, "Failed to get city name from lat/lon");
-            cityName = "Unknown City";
-        }
-        pageData.setLocation(lat, lon, cityName);
-        ESP_LOGI(TAG, "City name set: %s", cityName.c_str());
-    } else {
-        ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)",
-                 pageData.getCityName().c_str(), pageData.getLatitude(),
-                 pageData.getLongitude());
+    if (cityName.isEmpty()) {
+        ESP_LOGE(TAG, "Failed to get city name from lat/lon");
+        cityName = "Unknown City";
     }
+    pageData.setLocation(lat, lon, cityName);
+    ESP_LOGI(TAG, "City name set: %s", cityName.c_str());
+    // } else {
+    //     ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)",
+    //              pageData.getCityName().c_str(), pageData.getLatitude(),
+    //              pageData.getLongitude());
+    // }
 
     // Get nearby stops for configuration interface
     getNearbyStops(pageData.getLatitude(), pageData.getLongitude());
@@ -337,11 +337,11 @@ bool DeviceModeManager::setupOperationalMode() {
         return false;
     }
 
-    // Set coordinates from saved config
-    ConfigPageData& pageData = ConfigPageData::getInstance();
-    pageData.setLocation(config.latitude, config.longitude, config.cityName);
-    ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)", config.cityName,
-             config.latitude, config.longitude);
+    // // Set coordinates from saved config
+    // ConfigPageData& pageData = ConfigPageData::getInstance();
+    // pageData.setLocation(config.latitude, config.longitude, config.cityName);
+    // ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)", config.cityName,
+    //          config.latitude, config.longitude);
 
     // Check if this is a deep sleep wake-up for fast path
     if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
