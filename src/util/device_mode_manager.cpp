@@ -103,11 +103,6 @@ void DeviceModeManager::runConfigurationMode() {
     }
     pageData.setLocation(lat, lon, cityName);
     ESP_LOGI(TAG, "City name set: %s", cityName.c_str());
-    // } else {
-    //     ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)",
-    //              pageData.getCityName().c_str(), pageData.getLatitude(),
-    //              pageData.getLongitude());
-    // }
 
     // Get nearby stops for configuration interface
     getNearbyStops(pageData.getLatitude(), pageData.getLongitude());
@@ -243,11 +238,10 @@ void DeviceModeManager::updateWeatherFull() {
 
     // Fetch weather data only if needed
     if (config.inTemporaryMode || needsWeatherUpdate) {
-        ConfigPageData& pageData = ConfigPageData::getInstance();
-        ESP_LOGI(TAG, "Fetching weather for location: (%.6f, %.6f)",
-                 pageData.getLatitude(), pageData.getLongitude());
-        if (getGeneralWeatherFull(pageData.getLatitude(),
-                                  pageData.getLongitude(), weather)) {
+        // Use RTC config which persists across deep sleep
+        ESP_LOGI(TAG, "Fetching weather for location: %s (%.6f, %.6f)",
+                 config.cityName, config.latitude, config.longitude);
+        if (getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
             printWeatherInfo(weather);
             hasWeather = true;
             TimingManager::markWeatherUpdated();
@@ -337,12 +331,6 @@ bool DeviceModeManager::setupOperationalMode() {
         return false;
     }
 
-    // // Set coordinates from saved config
-    // ConfigPageData& pageData = ConfigPageData::getInstance();
-    // pageData.setLocation(config.latitude, config.longitude, config.cityName);
-    // ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)", config.cityName,
-    //          config.latitude, config.longitude);
-
     // Check if this is a deep sleep wake-up for fast path
     if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
         ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
@@ -425,11 +413,10 @@ void DeviceModeManager::enterOperationalSleep() {
 // ===== HELPER FUNCTIONS FOR DATA FETCHING =====
 
 bool DeviceModeManager::fetchWeatherData(WeatherInfo& weather) {
-    ConfigPageData& pageData = ConfigPageData::getInstance();
-    ESP_LOGI(TAG, "Fetching weather for location: (%.6f, %.6f)",
-             pageData.getLatitude(), pageData.getLongitude());
-    if (getGeneralWeatherFull(pageData.getLatitude(),
-                              pageData.getLongitude(), weather)) {
+    // Use RTC config which persists across deep sleep
+    ESP_LOGI(TAG, "Fetching weather for location: %s (%.6f, %.6f)",
+             config.cityName, config.latitude, config.longitude);
+    if (getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
         printWeatherInfo(weather);
         return true;
     } else {
