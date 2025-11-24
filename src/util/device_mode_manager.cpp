@@ -406,10 +406,6 @@ void DeviceModeManager::enterOperationalSleep() {
         config.temporaryDisplayMode = 0xFF;
         config.temporaryModeStartTime = 0;
     }
-    // Save WiFi state to RTC memory before hibernating for fast reconnect after deep sleep
-    if (MyWiFiManager::isConnected()) {
-        MyWiFiManager::saveWiFiStateToRTC();
-    }
 
     // Hibernate display to save power
     DisplayManager::hibernate();
