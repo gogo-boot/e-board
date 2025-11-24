@@ -82,31 +82,6 @@ namespace {
         ESP_LOGD(TAG, "Calculated departure time: %s (walking time: %d min)", timeStr, walkingTimeMinutes);
         return String(timeStr);
     }
-
-    // Calculate departure date including walking time for RMV API date parameter
-    // Required to avoid ambiguity when time crosses midnight or for timezone correctness
-    String calculateDepartureDate(int walkingTimeMinutes) {
-        struct tm timeinfo;
-        if (!TimeManager::getCurrentLocalTime(timeinfo)) {
-            ESP_LOGE(TAG, "Failed to get current local time for date calculation");
-            return ""; // Fallback - API will use current date
-        }
-
-        // Convert tm to time_t for adding walking time
-        time_t now = mktime(&timeinfo);
-        now += (walkingTimeMinutes * 60);
-
-        // Convert back to local time
-        localtime_r(&now, &timeinfo);
-
-        // Format as YYYY-MM-DD for RMV API
-        char dateStr[11];
-        snprintf(dateStr, sizeof(dateStr), "%04d-%02d-%02d", timeinfo.tm_year + 1900, timeinfo.tm_mon + 1,
-                 timeinfo.tm_mday);
-
-        ESP_LOGD(TAG, "Calculated departure date: %s", dateStr);
-        return String(dateStr);
-    }
 } // end anonymous namespace
 
 std::vector<Station> stations;
