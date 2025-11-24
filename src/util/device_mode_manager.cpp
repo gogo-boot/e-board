@@ -318,21 +318,23 @@ void DeviceModeManager::updateDepartureFull() {
 bool DeviceModeManager::setupOperationalMode() {
     ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
 
-    ConfigManager& configMgr = ConfigManager::getInstance();
-
     // Set operational mode flag
     ConfigManager::setConfigMode(false);
 
-    // Load complete configuration from NVS
-    if (!configMgr.loadFromNVS()) {
-        ESP_LOGE(TAG, "Failed to load configuration in operational mode!");
+    // Validate RTC config (should already be loaded by system_init)
+    // DO NOT reload from NVS here - it would overwrite RTC memory including:
+    // - WiFi cache state
+    // - Temporary button mode flags
+    // - Loop counters
+    if (!ConfigManager::hasValidConfig()) {
+        ESP_LOGE(TAG, "No valid configuration available!");
         ESP_LOGI(TAG, "Switching to configuration mode...");
         runConfigurationMode();
         return false;
     }
 
     // Check if this is a deep sleep wake-up for fast path
-    if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
+    if (!ConfigManager::isFirstBoot()) {
         ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
         extern unsigned long loopCount;
         loopCount++;
@@ -396,10 +398,19 @@ bool DeviceModeManager::setupConnectivityAndTime() {
 
 
 void DeviceModeManager::enterOperationalSleep() {
+    // Clear temporary mode flag (button press is one-time only)
+    RTCConfigData& config = ConfigManager::getConfig();
+    if (config.inTemporaryMode) {
+        ESP_LOGI(TAG, "Clearing temporary mode flag before sleep");
+        config.inTemporaryMode = false;
+        config.temporaryDisplayMode = 0xFF;
+        config.temporaryModeStartTime = 0;
+    }
     // Save WiFi state to RTC memory before hibernating for fast reconnect after deep sleep
     if (MyWiFiManager::isConnected()) {
         MyWiFiManager::saveWiFiStateToRTC();
     }
+
     // Hibernate display to save power
     DisplayManager::hibernate();
 

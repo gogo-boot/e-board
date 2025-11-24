@@ -33,7 +33,10 @@ RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
     FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY | FILTER_CALLBUS,
     // filterFlags - Default filters
     true, // configMode
-    0 // lastUpdate
+    0, // lastUpdate
+    false, // inTemporaryMode - default to normal mode
+    0xFF, // temporaryDisplayMode - 0xFF = none
+    0 // temporaryModeStartTime - no timestamp
 };
 
 ConfigManager& ConfigManager::getInstance() {
@@ -70,6 +73,10 @@ void ConfigManager::invalidateConfig() {
 
 // It loads the configuration from NVS into RTC memory.
 bool ConfigManager::loadFromNVS() {
+    if (hasValidConfig()) {
+        return true;
+    }
+
     if (!preferences.begin("mystation", true)) {
         // readonly mode
         ESP_LOGE(TAG, "Failed to open NVS for reading");
