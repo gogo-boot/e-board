@@ -4,6 +4,7 @@
 #include <vector>
 #include <Arduino.h>
 #include "util/util.h"
+#include "util/time_manager.h"
 #include <esp_log.h>
 #include <StreamUtils.h>
 #include "config/config_struct.h"
@@ -59,20 +60,52 @@ namespace {
     }
 
     // Calculate departure time including walking time for RMV API time parameter
+    // Uses TimeManager::getCurrentLocalTime() to ensure proper timezone handling
     String calculateDepartureTime(int walkingTimeMinutes) {
-        time_t now;
-        time(&now);
+        struct tm timeinfo;
+        if (!TimeManager::getCurrentLocalTime(timeinfo)) {
+            ESP_LOGE(TAG, "Failed to get current local time for departure calculation");
+            return "00:00"; // Fallback - will likely cause API to return current departures
+        }
 
-        // Add walking time to current time
+        // Convert tm to time_t for adding walking time
+        time_t now = mktime(&timeinfo);
         now += (walkingTimeMinutes * 60);
 
-        struct tm timeinfo;
+        // Convert back to local time (timezone already applied by getCurrentLocalTime)
         localtime_r(&now, &timeinfo);
 
         // Format as HH:MM for RMV API
         char timeStr[6];
         snprintf(timeStr, sizeof(timeStr), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+
+        ESP_LOGD(TAG, "Calculated departure time: %s (walking time: %d min)", timeStr, walkingTimeMinutes);
         return String(timeStr);
+    }
+
+    // Calculate departure date including walking time for RMV API date parameter
+    // Required to avoid ambiguity when time crosses midnight or for timezone correctness
+    String calculateDepartureDate(int walkingTimeMinutes) {
+        struct tm timeinfo;
+        if (!TimeManager::getCurrentLocalTime(timeinfo)) {
+            ESP_LOGE(TAG, "Failed to get current local time for date calculation");
+            return ""; // Fallback - API will use current date
+        }
+
+        // Convert tm to time_t for adding walking time
+        time_t now = mktime(&timeinfo);
+        now += (walkingTimeMinutes * 60);
+
+        // Convert back to local time
+        localtime_r(&now, &timeinfo);
+
+        // Format as YYYY-MM-DD for RMV API
+        char dateStr[11];
+        snprintf(dateStr, sizeof(dateStr), "%04d-%02d-%02d", timeinfo.tm_year + 1900, timeinfo.tm_mon + 1,
+                 timeinfo.tm_mday);
+
+        ESP_LOGD(TAG, "Calculated departure date: %s", dateStr);
+        return String(dateStr);
     }
 } // end anonymous namespace
 
@@ -235,12 +268,12 @@ bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
     // Build products parameter based on active filters
     String productsParam = buildProductsFilter(config.filterFlags);
 
-    // Calculate departure time including walking time for API request
+    // Calculate departure time and date including walking time for API request
     String departureTime = calculateDepartureTime(config.walkingTime);
 
     String url = "https://www.rmv.de/hapi/departureBoard?accessId=" + String(decrypted.c_str()) +
         "&id=" + encodedId +
-        "&format=json&maxJourneys=20" + productsParam +
+        "&format=json&maxJourneys=22&duration=90" + productsParam +
         "&time=" + departureTime;
 
     String urlForLog = url;
