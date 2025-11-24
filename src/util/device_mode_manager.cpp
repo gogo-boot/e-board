@@ -90,24 +90,19 @@ void DeviceModeManager::runConfigurationMode() {
 
     pageData.setIPAddress(config.ipAddress);
 
-    if (pageData.getLatitude() == 0.0 && pageData.getLongitude() == 0.0) {
-        float lat, lon;
-        getLocationFromGoogle(lat, lon);
+    // if (pageData.getLatitude() == 0.0 && pageData.getLongitude() == 0.0) {
+    float lat, lon;
+    getLocationFromGoogle(lat, lon);
 
-        ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", lat, lon);
-        String cityName = getCityFromLatLon(lat, lon);
+    ESP_LOGI(TAG, "Fetching city name from lat/lon: (%f, %f)", lat, lon);
+    String cityName = getCityFromLatLon(lat, lon);
 
-        if (cityName.isEmpty()) {
-            ESP_LOGE(TAG, "Failed to get city name from lat/lon");
-            cityName = "Unknown City";
-        }
-        pageData.setLocation(lat, lon, cityName);
-        ESP_LOGI(TAG, "City name set: %s", cityName.c_str());
-    } else {
-        ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)",
-                 pageData.getCityName().c_str(), pageData.getLatitude(),
-                 pageData.getLongitude());
+    if (cityName.isEmpty()) {
+        ESP_LOGE(TAG, "Failed to get city name from lat/lon");
+        cityName = "Unknown City";
     }
+    pageData.setLocation(lat, lon, cityName);
+    ESP_LOGI(TAG, "City name set: %s", cityName.c_str());
 
     // Get nearby stops for configuration interface
     getNearbyStops(pageData.getLatitude(), pageData.getLongitude());
@@ -243,11 +238,10 @@ void DeviceModeManager::updateWeatherFull() {
 
     // Fetch weather data only if needed
     if (config.inTemporaryMode || needsWeatherUpdate) {
-        ConfigPageData& pageData = ConfigPageData::getInstance();
-        ESP_LOGI(TAG, "Fetching weather for location: (%.6f, %.6f)",
-                 pageData.getLatitude(), pageData.getLongitude());
-        if (getGeneralWeatherFull(pageData.getLatitude(),
-                                  pageData.getLongitude(), weather)) {
+        // Use RTC config which persists across deep sleep
+        ESP_LOGI(TAG, "Fetching weather for location: %s (%.6f, %.6f)",
+                 config.cityName, config.latitude, config.longitude);
+        if (getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
             printWeatherInfo(weather);
             hasWeather = true;
             TimingManager::markWeatherUpdated();
@@ -324,27 +318,23 @@ void DeviceModeManager::updateDepartureFull() {
 bool DeviceModeManager::setupOperationalMode() {
     ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
 
-    ConfigManager& configMgr = ConfigManager::getInstance();
-
     // Set operational mode flag
     ConfigManager::setConfigMode(false);
 
-    // Load complete configuration from NVS
-    if (!configMgr.loadFromNVS()) {
-        ESP_LOGE(TAG, "Failed to load configuration in operational mode!");
+    // Validate RTC config (should already be loaded by system_init)
+    // DO NOT reload from NVS here - it would overwrite RTC memory including:
+    // - WiFi cache state
+    // - Temporary button mode flags
+    // - Loop counters
+    if (!ConfigManager::hasValidConfig()) {
+        ESP_LOGE(TAG, "No valid configuration available!");
         ESP_LOGI(TAG, "Switching to configuration mode...");
         runConfigurationMode();
         return false;
     }
 
-    // Set coordinates from saved config
-    ConfigPageData& pageData = ConfigPageData::getInstance();
-    pageData.setLocation(config.latitude, config.longitude, config.cityName);
-    ESP_LOGI(TAG, "Using saved location: %s (%.6f, %.6f)", config.cityName,
-             config.latitude, config.longitude);
-
     // Check if this is a deep sleep wake-up for fast path
-    if (!ConfigManager::isFirstBoot() && ConfigManager::hasValidConfig()) {
+    if (!ConfigManager::isFirstBoot()) {
         ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
         extern unsigned long loopCount;
         loopCount++;
@@ -408,10 +398,15 @@ bool DeviceModeManager::setupConnectivityAndTime() {
 
 
 void DeviceModeManager::enterOperationalSleep() {
-    // Save WiFi state to RTC memory before hibernating for fast reconnect after deep sleep
-    if (MyWiFiManager::isConnected()) {
-        MyWiFiManager::saveWiFiStateToRTC();
+    // Clear temporary mode flag (button press is one-time only)
+    RTCConfigData& config = ConfigManager::getConfig();
+    if (config.inTemporaryMode) {
+        ESP_LOGI(TAG, "Clearing temporary mode flag before sleep");
+        config.inTemporaryMode = false;
+        config.temporaryDisplayMode = 0xFF;
+        config.temporaryModeStartTime = 0;
     }
+
     // Hibernate display to save power
     DisplayManager::hibernate();
 
@@ -425,11 +420,10 @@ void DeviceModeManager::enterOperationalSleep() {
 // ===== HELPER FUNCTIONS FOR DATA FETCHING =====
 
 bool DeviceModeManager::fetchWeatherData(WeatherInfo& weather) {
-    ConfigPageData& pageData = ConfigPageData::getInstance();
-    ESP_LOGI(TAG, "Fetching weather for location: (%.6f, %.6f)",
-             pageData.getLatitude(), pageData.getLongitude());
-    if (getGeneralWeatherFull(pageData.getLatitude(),
-                              pageData.getLongitude(), weather)) {
+    // Use RTC config which persists across deep sleep
+    ESP_LOGI(TAG, "Fetching weather for location: %s (%.6f, %.6f)",
+             config.cityName, config.latitude, config.longitude);
+    if (getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
         printWeatherInfo(weather);
         return true;
     } else {

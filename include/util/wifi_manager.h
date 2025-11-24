@@ -14,15 +14,8 @@ public:
   static bool isConnected();
   static String getLocalIP();
 
-  // Fast WiFi reconnection methods for deep sleep optimization
-  static bool fastReconnectWiFi();
-  static void saveWiFiStateToRTC();
-  static bool isWiFiStateCached();
-  static void clearWiFiCache();
-
   // WiFi and internet validation for configuration phase tracking
   static bool hasInternetAccess();
-  static bool validateWifiAndInternet();
 
 private:
   static const int FAST_CONNECT_TIMEOUT_MS = 8000; // 8 seconds for fast connect
