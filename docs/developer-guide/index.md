@@ -74,6 +74,7 @@ information.
 
 - [**System Architecture**](architecture.md) - High-level system design
 - [**Boot Process**](boot-process.md) - Detailed boot flow and phases
+- [**Refresh Process**](refresh-process.md) - Wake-up, update, and sleep cycle flow
 - [**Project Structure**](project-structure.md) - Directory organization and modules
 - [**Data Flow**](data-flow.md) - How data moves through the system
 

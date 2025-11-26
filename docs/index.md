@@ -26,6 +26,7 @@ If you want to understand the code, contribute, or modify MyStation:
 
 - [Architecture Overview](developer-guide/index.md) - System design
 - [Boot Process](developer-guide/boot-process.md) - Detailed boot flow
+- [Refresh Process](developer-guide/refresh-process.md) - Wake-up, update, and sleep cycle
 - [Configuration System](developer-guide/configuration-system.md) - How settings are stored
 - [Display System](developer-guide/display-system.md) - E-paper rendering
 - [API Integration](developer-guide/api-integration.md) - External API usage

@@ -58,6 +58,7 @@ const sidebars = {
             items: [
                 'developer-guide/index',
                 'developer-guide/boot-process',
+                'developer-guide/refresh-process',
                 'developer-guide/configuration-layers',
             ],
         },
