@@ -269,6 +269,66 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     uint8_t displayMode = config.displayMode;
 
     ESP_LOGI(TAG, "Calculating sleep duration - Display mode: %d, Current time: %u", displayMode, currentTimeSeconds);
+
+    // ===== HANDLE TEMPORARY MODE =====
+    if (config.inTemporaryMode) {
+        ESP_LOGI(TAG, "Temporary mode active - mode: %d, activated at: %u",
+                 config.temporaryDisplayMode, config.temporaryModeActivationTime);
+
+        // Calculate elapsed time since temp mode activation
+        int elapsed = currentTimeSeconds - config.temporaryModeActivationTime;
+        const int TEMP_MODE_DURATION = 120; // 2 minutes
+        int remaining = TEMP_MODE_DURATION - elapsed;
+
+        // Check if currently in deep sleep period
+        struct tm timeInfo;
+        localtime_r(&now, &timeInfo);
+        int currentMinutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
+        bool isCurrentWeekend = config.weekendMode && (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
+
+        String sleepStart = isCurrentWeekend ? String(config.weekendSleepStart) : String(config.sleepStart);
+        String sleepEnd = isCurrentWeekend ? String(config.weekendSleepEnd) : String(config.sleepEnd);
+        int sleepStartMin = parseTimeString(sleepStart);
+        int sleepEndMin = parseTimeString(sleepEnd);
+        bool inDeepSleepPeriod = isTimeInRange(currentMinutes, sleepStartMin, sleepEndMin);
+        if (remaining > 0 && !inDeepSleepPeriod) {
+            // Still showing temp mode during active hours - wait for 2 minutes to complete
+            ESP_LOGI(TAG, "Temp mode: %d seconds remaining in active hours", remaining);
+            return (uint64_t)max(30, remaining);
+        } else if (remaining > 0 && inDeepSleepPeriod) {
+            // Temp mode active but in deep sleep period - stay until next wake
+            int minutesUntilSleepEnd;
+            if (sleepEndMin > currentMinutes) {
+                minutesUntilSleepEnd = sleepEndMin - currentMinutes;
+            } else {
+                minutesUntilSleepEnd = (24 * 60) - currentMinutes + sleepEndMin;
+            }
+            uint32_t sleepDuration = minutesUntilSleepEnd * 60;
+            ESP_LOGI(TAG, "Temp mode: staying active until deep sleep end (%d seconds)", sleepDuration);
+            return (uint64_t)max(30, (int)sleepDuration);
+        } else if (inDeepSleepPeriod) {
+            // 2 minutes complete but still in deep sleep - stay in temp mode until sleep ends
+            int minutesUntilSleepEnd;
+            if (sleepEndMin > currentMinutes) {
+                minutesUntilSleepEnd = sleepEndMin - currentMinutes;
+            } else {
+                minutesUntilSleepEnd = (24 * 60) - currentMinutes + sleepEndMin;
+            }
+            uint32_t sleepDuration = minutesUntilSleepEnd * 60;
+            ESP_LOGI(TAG, "Temp mode: 2 minutes complete, staying until deep sleep end (%d seconds)", sleepDuration);
+            return (uint64_t)max(30, (int)sleepDuration);
+        } else {
+            // 2 minutes complete and in active hours - exit temp mode and calculate next refresh
+            ESP_LOGI(TAG, "Temp mode: exiting on next wake");
+            config.inTemporaryMode = false;
+            config.temporaryDisplayMode = 0xFF;
+            config.temporaryModeActivationTime = 0;
+
+            // Fall through to normal configured mode calculation below
+        }
+    }
+
+    // ===== NORMAL CONFIGURED MODE =====
     ESP_LOGI(TAG, "Last updates - Weather: %u seconds, Departure: %u seconds",
              getLastWeatherUpdate(), getLastTransportUpdate());
 

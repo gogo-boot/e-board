@@ -143,8 +143,26 @@ void ButtonManager::handleWakeupMode() {
 
         // Store temporary mode information in RTC memory
         RTCConfigData& config = ConfigManager::getConfig();
-        config.inTemporaryMode = true;
-        config.temporaryDisplayMode = buttonMode;
+
+        // Get current time for activation timestamp
+        time_t currentTime;
+        time(&currentTime);
+
+        // Check if same button pressed again (reset timer) or different button (switch mode)
+        if (config.inTemporaryMode && config.temporaryDisplayMode == buttonMode) {
+            ESP_LOGI(TAG, "Same button pressed - resetting temp mode timer");
+            config.temporaryModeActivationTime = (uint32_t)currentTime;
+        } else if (config.inTemporaryMode) {
+            ESP_LOGI(TAG, "Different button pressed - switching temp mode");
+            config.temporaryDisplayMode = buttonMode;
+            config.temporaryModeActivationTime = (uint32_t)currentTime;
+        } else {
+            ESP_LOGI(TAG, "Activating temp mode for first time");
+            config.inTemporaryMode = true;
+            config.temporaryDisplayMode = buttonMode;
+            config.temporaryModeActivationTime = (uint32_t)currentTime;
+        }
+        ESP_LOGI(TAG, "Temp mode activated at time: %u", config.temporaryModeActivationTime);
     }
 #endif
 }
