@@ -114,10 +114,23 @@ namespace BootFlowManager {
             // Get button mode (if device was woken by button press)
             // This is handled by ButtonManager::handleWakeupMode() before we get here
             RTCConfigData& config = ConfigManager::getConfig();
+
+            // DEBUG: Log temp mode state on wake
+            ESP_LOGI(TAG, "=== TEMP MODE DEBUG ON WAKE ===");
+            ESP_LOGI(TAG, "Wakeup cause: %d", esp_sleep_get_wakeup_cause());
+            ESP_LOGI(TAG, "inTemporaryMode: %d", config.inTemporaryMode);
+            ESP_LOGI(TAG, "temporaryDisplayMode: %d", config.temporaryDisplayMode);
+            ESP_LOGI(TAG, "temporaryModeActivationTime: %u", config.temporaryModeActivationTime);
+            ESP_LOGI(TAG, "Configured displayMode: %d", config.displayMode);
+            ESP_LOGI(TAG, "===============================");
+
             int8_t buttonMode = config.inTemporaryMode ? config.temporaryDisplayMode : -1;
 
             // Determine and run operational mode
             uint8_t displayMode = determineDisplayMode(buttonMode);
+
+            ESP_LOGI(TAG, "Display mode determined: %d (buttonMode=%d, configured=%d)",
+                     displayMode, buttonMode, config.displayMode);
             runOperationalMode(displayMode);
 
             // After operational mode completes, enter deep sleep

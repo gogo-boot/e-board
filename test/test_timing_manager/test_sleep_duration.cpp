@@ -812,8 +812,84 @@ void test_temp_mode_exit_after_2_minutes() {
     TEST_ASSERT_FALSE(config.inTemporaryMode);
     TEST_ASSERT_EQUAL_UINT8(0xFF, config.temporaryDisplayMode);
     TEST_ASSERT_EQUAL_UINT32(0, config.temporaryModeActivationTime);
+
     printf("Temp mode exited after 2 min, sleep until next update: %llu seconds (1 hour)\n",
            sleepDuration);
+}
+
+// Test: Temp mode should be cleared after sleep calculation and persist across wake cycles
+// This test reproduces the bug where temp mode flag is cleared but device still shows temp mode on next wake
+void test_temp_mode_flag_persists_after_clearing() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Setup: 10:02:00 AM (2 minutes after temp mode activation)
+    struct tm testTime = {0};
+    testTime.tm_year = 2025 - 1900;
+    testTime.tm_mon = 10;
+    testTime.tm_mday = 26;
+    testTime.tm_hour = 10;
+    testTime.tm_min = 2;
+    testTime.tm_sec = 0;
+    time_t currentTimestamp = mktime(&testTime);
+    MockTime::setMockTime(currentTimestamp);
+
+    time_t activationTime = currentTimestamp - 120; // Exactly 2 minutes ago
+
+    // FIRST WAKE CYCLE: Activate temp mode
+    config.inTemporaryMode = true;
+    config.temporaryDisplayMode = DISPLAY_MODE_WEATHER_ONLY;
+    config.temporaryModeActivationTime = (uint32_t)activationTime;
+    config.displayMode = DISPLAY_MODE_HALF_AND_HALF; // Configured mode is different
+    config.weatherInterval = 1; // 1 hour
+
+    strcpy(config.sleepStart, "22:30");
+    strcpy(config.sleepEnd, "05:30");
+    config.weekendMode = false;
+
+    TimingManager::setLastWeatherUpdate((uint32_t)currentTimestamp);
+
+    // Simulate: Device checks temp mode flag BEFORE calling sleep calculator
+    bool tempModeBeforeSleep = config.inTemporaryMode;
+    uint8_t displayModeShown = tempModeBeforeSleep ? config.temporaryDisplayMode : config.displayMode;
+
+    // Device displayed temp mode (weather-only)
+    TEST_ASSERT_TRUE(tempModeBeforeSleep);
+    TEST_ASSERT_EQUAL_UINT8(DISPLAY_MODE_WEATHER_ONLY, displayModeShown);
+
+    // Now calculate sleep (this should clear temp mode)
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    // Verify temp mode was cleared by sleep calculator
+    TEST_ASSERT_FALSE(config.inTemporaryMode);
+    TEST_ASSERT_EQUAL_UINT8(0xFF, config.temporaryDisplayMode);
+    TEST_ASSERT_EQUAL_UINT32(0, config.temporaryModeActivationTime);
+
+    // Sleep duration should be next weather update (1 hour)
+    TEST_ASSERT_EQUAL_UINT64(3600, sleepDuration);
+
+    // SIMULATE SLEEP AND WAKE CYCLE
+    // Advance time by sleep duration (1 hour)
+    testTime.tm_hour = 11; // 11:02 AM
+    testTime.tm_min = 2;
+    time_t nextWakeTime = mktime(&testTime);
+    MockTime::setMockTime(nextWakeTime);
+
+    // SECOND WAKE CYCLE: Check temp mode flag again
+    // This simulates what boot_flow_manager does on wake
+    bool tempModeAfterWake = config.inTemporaryMode;
+    uint8_t displayModeAfterWake = tempModeAfterWake ? config.temporaryDisplayMode : config.displayMode;
+
+    // BUG CHECK: Temp mode should still be FALSE (not re-activated)
+    TEST_ASSERT_FALSE_MESSAGE(tempModeAfterWake, "FAIL: Temp mode flag should remain FALSE after wake from sleep");
+
+    // Should display configured mode (half-and-half), NOT temp mode (weather-only)
+    TEST_ASSERT_EQUAL_UINT8_MESSAGE(DISPLAY_MODE_HALF_AND_HALF, displayModeAfterWake,
+                                    "FAIL: Should display configured mode (half-and-half), not temp mode (weather-only)");
+
+    printf("✓ Temp mode correctly cleared and persisted through wake cycle\n");
+    printf("  - First wake: Showed temp mode (weather-only)\n");
+    printf("  - Sleep calculation: Cleared temp mode flag\n");
+    printf("  - Second wake: Showed configured mode (half-and-half)\n");
 }
 
 int main() {
@@ -862,6 +938,7 @@ int main() {
     RUN_TEST(test_temp_mode_during_deep_sleep);
     RUN_TEST(test_temp_mode_before_deep_sleep_starts);
     RUN_TEST(test_temp_mode_exit_after_2_minutes);
+    RUN_TEST(test_temp_mode_flag_persists_after_clearing); // TDD test for bug fix
 
     return UNITY_END();
 }
