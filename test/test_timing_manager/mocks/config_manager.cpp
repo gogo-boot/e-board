@@ -7,9 +7,10 @@
 // Mock RTC memory for native testing
 RTCConfigData ConfigManager::rtcConfig = {
     true, // isValid
+    false, // wifiConfigured
     DISPLAY_MODE_HALF_AND_HALF, // displayMode
-    0.0, // latitude
-    0.0, // longitude
+    0.0f, // latitude
+    0.0f, // longitude
     "", // cityName
     "", // ssid
     "", // ipAddress
@@ -29,10 +30,14 @@ RTCConfigData ConfigManager::rtcConfig = {
     "07:00", // weekendSleepEnd
     true, // otaEnabled
     "03:00", // otaCheckTime
-    FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY | FILTER_CALLBUS,
+    (uint16_t)(
+        FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_HIGHFLOOR | FILTER_FERRY | FILTER_CALLBUS),
     // filterFlags
     false, // configMode
-    0 // lastUpdate
+    0, // lastUpdate
+    false, // inTemporaryMode
+    0xFF, // temporaryDisplayMode
+    0 // temporaryModeActivationTime
 };
 
 ConfigManager& ConfigManager::getInstance() {
