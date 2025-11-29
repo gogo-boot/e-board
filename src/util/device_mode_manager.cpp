@@ -398,19 +398,11 @@ bool DeviceModeManager::setupConnectivityAndTime() {
 
 
 void DeviceModeManager::enterOperationalSleep() {
-    // Clear temporary mode flag (button press is one-time only)
-    RTCConfigData& config = ConfigManager::getConfig();
-    if (config.inTemporaryMode) {
-        ESP_LOGI(TAG, "Clearing temporary mode flag before sleep");
-        config.inTemporaryMode = false;
-        config.temporaryDisplayMode = 0xFF;
-        config.temporaryModeStartTime = 0;
-    }
-
     // Hibernate display to save power
     DisplayManager::hibernate();
 
-    // Calculate sleep time using TimingManager based on configured intervals
+    // Calculate sleep time using TimingManager
+    // (TimingManager now handles temporary mode logic)
     uint64_t sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
 
     // On other boards, use regular timer-only deep sleep

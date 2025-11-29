@@ -625,6 +625,197 @@ void test_ota_timestamp_management() {
     printf("OTA timestamp setters/getters verified successfully\n");
 }
 
+// ============================================================================
+// TEMPORARY MODE TESTS
+// ============================================================================
+
+// Test: Temporary mode during active hours - weather only mode
+void test_temp_mode_active_hours_weather_only() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Setup: 10:00 AM Wednesday (active hours)
+    struct tm testTime = {0};
+    testTime.tm_year = 2025 - 1900;
+    testTime.tm_mon = 10; // November (0-based)
+    testTime.tm_mday = 26; // Wednesday
+    testTime.tm_hour = 10;
+    testTime.tm_min = 0;
+    testTime.tm_sec = 0;
+    time_t testTimestamp = mktime(&testTime);
+    MockTime::setMockTime(testTimestamp);
+
+    // Activate temporary mode for weather-only
+    config.inTemporaryMode = true;
+    config.temporaryDisplayMode = DISPLAY_MODE_WEATHER_ONLY;
+    config.temporaryModeActivationTime = (uint32_t)testTimestamp;
+    config.displayMode = DISPLAY_MODE_HALF_AND_HALF; // Configured mode is different
+
+    // Sleep period: 22:30 - 05:30
+    strcpy(config.sleepStart, "22:30");
+    strcpy(config.sleepEnd, "05:30");
+    config.weekendMode = false;
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    // Should sleep for 2 minutes (120 seconds)
+    TEST_ASSERT_EQUAL_UINT64(120, sleepDuration);
+    printf("Temp mode (active hours, just activated): %llu seconds\n", sleepDuration);
+
+    // Cleanup
+    config.inTemporaryMode = false;
+}
+
+// Test: Temporary mode with elapsed time
+void test_temp_mode_active_hours_elapsed_time() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Setup: 10:01:30 AM Wednesday (1 minute 30 seconds after activation)
+    struct tm testTime = {0};
+    testTime.tm_year = 2025 - 1900;
+    testTime.tm_mon = 10;
+    testTime.tm_mday = 26;
+    testTime.tm_hour = 10;
+    testTime.tm_min = 1;
+    testTime.tm_sec = 30;
+    time_t currentTimestamp = mktime(&testTime);
+    MockTime::setMockTime(currentTimestamp);
+
+    // Activation time was 1:30 ago
+    time_t activationTime = currentTimestamp - 90; // 90 seconds ago
+
+    config.inTemporaryMode = true;
+    config.temporaryDisplayMode = DISPLAY_MODE_WEATHER_ONLY;
+    config.temporaryModeActivationTime = (uint32_t)activationTime;
+    config.displayMode = DISPLAY_MODE_DEPARTURE_ONLY;
+
+    strcpy(config.sleepStart, "22:30");
+    strcpy(config.sleepEnd, "05:30");
+    config.weekendMode = false;
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    // Should sleep for remaining 30 seconds (120 - 90 = 30)
+    TEST_ASSERT_EQUAL_UINT64(30, sleepDuration);
+    printf("Temp mode (1:30 elapsed, 30s remaining): %llu seconds\n", sleepDuration);
+
+    config.inTemporaryMode = false;
+}
+
+// Test: Temporary mode during deep sleep period
+void test_temp_mode_during_deep_sleep() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Setup: 1:00 AM Thursday (during deep sleep 22:30 - 05:30)
+    struct tm testTime = {0};
+    testTime.tm_year = 2025 - 1900;
+    testTime.tm_mon = 10;
+    testTime.tm_mday = 27;
+    testTime.tm_hour = 1;
+    testTime.tm_min = 0;
+    testTime.tm_sec = 0;
+    time_t testTimestamp = mktime(&testTime);
+    MockTime::setMockTime(testTimestamp);
+
+    config.inTemporaryMode = true;
+    config.temporaryDisplayMode = DISPLAY_MODE_DEPARTURE_ONLY;
+    config.temporaryModeActivationTime = (uint32_t)testTimestamp;
+    config.displayMode = DISPLAY_MODE_WEATHER_ONLY;
+
+    strcpy(config.sleepStart, "22:30");
+    strcpy(config.sleepEnd, "05:30");
+    config.weekendMode = false;
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    // Should sleep until 05:30 (4.5 hours = 270 minutes = 16200 seconds)
+    uint64_t expectedSleep = (5 * 60 + 30) * 60; // 05:30 in seconds from midnight
+    uint64_t currentMinutes = 1 * 60; // 01:00 in minutes from midnight
+    uint64_t expectedDuration = (expectedSleep / 60 - currentMinutes) * 60;
+
+    TEST_ASSERT_EQUAL_UINT64(expectedDuration, sleepDuration);
+    printf("Temp mode (during deep sleep, stay until 05:30): %llu seconds (~%.1f hours)\n",
+           sleepDuration, sleepDuration / 3600.0);
+
+    config.inTemporaryMode = false;
+}
+
+// Test: Temporary mode activated before deep sleep starts
+void test_temp_mode_before_deep_sleep_starts() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Setup: 22:58 Wednesday (2 minutes before deep sleep at 23:00)
+    struct tm testTime = {0};
+    testTime.tm_year = 2025 - 1900;
+    testTime.tm_mon = 10;
+    testTime.tm_mday = 26;
+    testTime.tm_hour = 22;
+    testTime.tm_min = 58;
+    testTime.tm_sec = 0;
+    time_t testTimestamp = mktime(&testTime);
+    MockTime::setMockTime(testTimestamp);
+
+    config.inTemporaryMode = true;
+    config.temporaryDisplayMode = DISPLAY_MODE_HALF_AND_HALF;
+    config.temporaryModeActivationTime = (uint32_t)testTimestamp;
+    config.displayMode = DISPLAY_MODE_WEATHER_ONLY;
+
+    strcpy(config.sleepStart, "23:00");
+    strcpy(config.sleepEnd, "06:00");
+    config.weekendMode = false;
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    // Should sleep for remaining 2 minutes until 2-minute temp mode completes
+    // Then on next wake, will be in deep sleep period and stay until 06:00
+    TEST_ASSERT_EQUAL_UINT64(120, sleepDuration);
+    printf("Temp mode (before deep sleep): %llu seconds (2 min)\n", sleepDuration);
+
+    config.inTemporaryMode = false;
+}
+
+// Test: Temporary mode exits after 2 minutes in active hours
+void test_temp_mode_exit_after_2_minutes() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Setup: 10:02:00 AM (exactly 2 minutes after activation at 10:00:00)
+    struct tm testTime = {0};
+    testTime.tm_year = 2025 - 1900;
+    testTime.tm_mon = 10;
+    testTime.tm_mday = 26;
+    testTime.tm_hour = 10;
+    testTime.tm_min = 2;
+    testTime.tm_sec = 0;
+    time_t currentTimestamp = mktime(&testTime);
+    MockTime::setMockTime(currentTimestamp);
+
+    time_t activationTime = currentTimestamp - 120; // Exactly 2 minutes ago
+
+    config.inTemporaryMode = true;
+    config.temporaryDisplayMode = DISPLAY_MODE_WEATHER_ONLY;
+    config.temporaryModeActivationTime = (uint32_t)activationTime;
+    config.displayMode = DISPLAY_MODE_WEATHER_ONLY;
+    config.weatherInterval = 1; // 1 hour
+
+    strcpy(config.sleepStart, "22:30");
+    strcpy(config.sleepEnd, "05:30");
+    config.weekendMode = false;
+
+    // Set last weather update to now so next update is in 1 hour
+    TimingManager::setLastWeatherUpdate((uint32_t)currentTimestamp);
+
+    uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
+
+    // Temp mode should be exited, sleep until next weather update (1 hour)
+    TEST_ASSERT_EQUAL_UINT64(3600, sleepDuration);
+
+    // Verify temp mode was cleared
+    TEST_ASSERT_FALSE(config.inTemporaryMode);
+    TEST_ASSERT_EQUAL_UINT8(0xFF, config.temporaryDisplayMode);
+    TEST_ASSERT_EQUAL_UINT32(0, config.temporaryModeActivationTime);
+    printf("Temp mode exited after 2 min, sleep until next update: %llu seconds (1 hour)\n",
+           sleepDuration);
+}
+
 int main() {
     UNITY_BEGIN();
 
@@ -664,6 +855,13 @@ int main() {
     RUN_TEST(test_ota_during_transport_inactive_hours);
     RUN_TEST(test_ota_on_weekend);
     RUN_TEST(test_ota_timestamp_management);
+
+    // Temporary mode tests
+    RUN_TEST(test_temp_mode_active_hours_weather_only);
+    RUN_TEST(test_temp_mode_active_hours_elapsed_time);
+    RUN_TEST(test_temp_mode_during_deep_sleep);
+    RUN_TEST(test_temp_mode_before_deep_sleep_starts);
+    RUN_TEST(test_temp_mode_exit_after_2_minutes);
 
     return UNITY_END();
 }
