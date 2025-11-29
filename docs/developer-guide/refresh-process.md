@@ -3,31 +3,52 @@
 ```mermaid
 flowchart TD
     PrepareToSleep[Hibernate Display and Wifi Modem]
-%%  Getting Configured Display Mode
-    Start([Wake Up]) --> StartOperation
-    StartOperation([Start Opration Mode]) --> GetDisplayMode[Get Configured Display Mode]
-    GetDisplayMode -->|Weather Departure halfhalf Screen Mode| IfDepartureActive{{If Departure in Active Time}}
-    GetDisplayMode -->|Weather Full Screen Mode| GetWeather[Get Weather Data] --> UpdateWeather[Update Weather Full Display] --> PrepareToSleep
-    GetDisplayMode -->|Departure Full Screen Mode| GetDeparture[Get Departure Data] --> UpdateDeparture[Update Departure Full Display] --> PrepareToSleep
+%%  Check Temporary Mode First
+    Start([Wake Up]) --> CheckTempMode{{Temporary Mode\nActive?}}
+    CheckTempMode -->|Yes| GetTempDisplayMode[Get Temporary Display Mode]
+    CheckTempMode -->|No| GetConfiguredDisplayMode[Get Configured Display Mode]
+%%  Temporary Mode Paths - Always fetch data
+    GetTempDisplayMode -->|Weather Only| GetWeather[Get Weather Data]
+    GetTempDisplayMode -->|Departure Only| GetDeparture[Get Departure Data]
+    GetTempDisplayMode -->|Half & Half| TempCheckActive{{Departure in\nActive Time?}}
+    TempCheckActive -->|Yes| GetWeatherAndDeparture[Get Weather & Departure Data]
+    TempCheckActive -->|No| GetWeather
+%%  Configured Mode Paths - Check if update needed first
+    GetConfiguredDisplayMode -->|Weather Departure halfhalf Screen Mode| IfDepartureActive{{Departure in\nActive Time?}}
+    GetConfiguredDisplayMode -->|Weather Full Screen Mode| CheckWeatherNeeded{{Time to update\nWeather?}}
+    GetConfiguredDisplayMode -->|Departure Full Screen Mode| CheckDepartureNeeded{{Time to update\nDeparture?}}
+    CheckWeatherNeeded -->|Yes| GetWeather
+    CheckWeatherNeeded -->|No| PrepareToSleep
+    CheckDepartureNeeded -->|Yes| GetDeparture
+    CheckDepartureNeeded -->|No| PrepareToSleep
 %%  Half Half Mode / If Departure is in Active Time
-    IfDepartureActive -->|yes| IfNeedWeatherDeparture{{Time to update Weather \n && Time to update Departure}}
-    IfDepartureActive -->|no| IfNeedWeatherUpdate{{Time to update Weather}}
+    IfDepartureActive -->|Yes| IfNeedWeatherDeparture{{Time to update Weather \n && Time to update Departure}}
+    IfDepartureActive -->|No| IfNeedWeatherUpdate{{Time to update Weather}}
 %%  If Departure is in Active Time / If Time to update Weather & Departure
-    IfNeedWeatherDeparture -->|no| IfNeedDepartureUpdate{{Time to update Departure}}
-    IfNeedWeatherDeparture -->|yes| GetWeatherDepartureData[Get weather data \n Get departure Data] --> DisplayWeatherDeparture[Update Weather & Departure] --> PrepareToSleep
+    IfNeedWeatherDeparture -->|Yes| GetWeatherAndDeparture
+    IfNeedWeatherDeparture -->|No| IfNeedDepartureUpdate{{Time to update Departure}}
 %%  If Time to update Weather & Departure / If Time to update Departure
-    IfNeedDepartureUpdate -->|no| IfTimeToUpdateWeather{{Time to update Weather}}
-    IfNeedDepartureUpdate -->|yes| GetDepartureData[Get Departure Data] --> DisplayDepartureHalf[Update Departure Half] --> PrepareToSleep
+    IfNeedDepartureUpdate -->|Yes| GetDeparture
+    IfNeedDepartureUpdate -->|No| IfTimeToUpdateWeather{{Time to update Weather}}
 %%  If Time to update Departure / If Time to update Weather
-    IfTimeToUpdateWeather -->|yes| GetWeatherData[Get Weather Data] --> DisplayWeatherHalf[Update Weather Half] --> PrepareToSleep
-    IfTimeToUpdateWeather -->|no| PrepareToSleep
+    IfTimeToUpdateWeather -->|Yes| GetWeather
+    IfTimeToUpdateWeather -->|No| PrepareToSleep
 %%  If Departure is in Active Time / Time to update Weather
-    IfNeedWeatherUpdate -->|no| PrepareToSleep
-    IfNeedWeatherUpdate -->|yes| GetWeather
-    PrepareToSleep --> CalculateSleepDuration[Calculate Sleep Duration Based on Next Required Update]
+    IfNeedWeatherUpdate -->|Yes| GetWeather
+    IfNeedWeatherUpdate -->|No| PrepareToSleep
+%%  Shared Display Logic
+    GetWeather --> UpdateWeatherDisplay[Update Weather Display]
+    GetDeparture --> UpdateDepartureDisplay[Update Departure Display]
+    GetWeatherAndDeparture --> UpdateBothDisplays[Update Weather & Departure]
+    UpdateWeatherDisplay --> PrepareToSleep
+    UpdateDepartureDisplay --> PrepareToSleep
+    UpdateBothDisplays --> PrepareToSleep
+    PrepareToSleep --> CalculateSleepDuration[Calculate Sleep Duration\nBased on Configured Mode or Temp Mode]
     CalculateSleepDuration --> DeepSleep[Enter Deep Sleep]
     style Start fill: #99ff99
     style DeepSleep fill: #9999ff
+    style CheckTempMode fill: #ffcc99
+    style GetTempDisplayMode fill: #ffcc99
 ```
 
 Pseudo Code for Sleep Preparation
