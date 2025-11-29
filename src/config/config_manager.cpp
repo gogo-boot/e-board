@@ -36,7 +36,7 @@ RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
     0, // lastUpdate
     false, // inTemporaryMode - default to normal mode
     0xFF, // temporaryDisplayMode - 0xFF = none
-    0 // temporaryModeStartTime - no timestamp
+    0 // temporaryModeActivationTime - no timestamp
 };
 
 ConfigManager& ConfigManager::getInstance() {

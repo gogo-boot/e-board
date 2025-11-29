@@ -5,8 +5,8 @@
 // Button manager for temporary display mode switching (ESP32-S3 only)
 class ButtonManager {
 public:
-    // Timeout for temporary mode (2 minutes in seconds)
-    static constexpr uint32_t TEMPORARY_MODE_TIMEOUT = 120;
+    // Duration for temporary mode in active hours (2 minutes in seconds)
+    static constexpr uint32_t TEMP_MODE_ACTIVE_DURATION = 120;
 
     // Debounce delay in milliseconds
     static constexpr uint32_t DEBOUNCE_DELAY_MS = 50;
