@@ -305,26 +305,13 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
             }
             uint32_t sleepDuration = minutesUntilSleepEnd * 60;
             ESP_LOGI(TAG, "Temp mode: staying active until deep sleep end (%d seconds)", sleepDuration);
+            return (uint64_t)max(30, (int)sleepDuration);
         } else {
-            // 2 minutes complete and in active hours - exit temp mode and calculate next refresh
-            ESP_LOGI(TAG, "Temp mode: exiting on next wake");
-            ESP_LOGI(TAG, "Temp mode before clear: inTemporaryMode=%d, displayMode=%d, activationTime=%u",
-                     config.inTemporaryMode, config.temporaryDisplayMode, config.temporaryModeActivationTime);
-
-            config.inTemporaryMode = false;
-            config.temporaryDisplayMode = 0xFF;
-            config.temporaryModeActivationTime = 0;
-            // CRITICAL: Force memory barriers to ensure RTC writes complete before sleep
-            // Without this, RTC RAM might not persist the cleared values
-            asm volatile("" ::: "memory"); // Compiler memory barrier - prevents reordering
-            __sync_synchronize(); // CPU memory barrier - forces write completion
-
-            // Give hardware time to complete RTC RAM writes (ESP32 RTC writes aren't instant)
-            esp_rom_delay_us(2000); // 2ms delay for RTC write to complete
-
-            ESP_LOGI(TAG, "Temp mode after clear: inTemporaryMode=%d, displayMode=%d, activationTime=%u",
-                     config.inTemporaryMode, config.temporaryDisplayMode, config.temporaryModeActivationTime);
-            ESP_LOGI(TAG, "Memory barriers applied - RTC writes should be complete");
+            // 2 minutes complete and in active hours
+            // Temp mode should already be cleared by ButtonManager::handleWakeupMode()
+            // This path is a fallback that shouldn't normally be reached
+            ESP_LOGW(TAG, "Temp mode still active in sleep calculator after 2 minutes");
+            ESP_LOGW(TAG, "Flag should have been cleared by button manager - falling through to normal mode");
 
             // Fall through to normal configured mode calculation below
         }

@@ -136,17 +136,18 @@ uint64_t ButtonManager::getButtonMask() {
 
 void ButtonManager::handleWakeupMode() {
 #ifdef BOARD_ESP32_S3
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // Get current time for timestamp calculations
+    time_t currentTime;
+    time(&currentTime);
+
     // Check if device was woken by button press (temporary display mode)
     int8_t buttonMode = getWakeupButtonMode();
+
     if (buttonMode >= 0) {
+        // Button press detected
         ESP_LOGI(TAG, "Woken by button press! Temporary display mode: %d", buttonMode);
-
-        // Store temporary mode information in RTC memory
-        RTCConfigData& config = ConfigManager::getConfig();
-
-        // Get current time for activation timestamp
-        time_t currentTime;
-        time(&currentTime);
 
         // Check if same button pressed again (reset timer) or different button (switch mode)
         if (config.inTemporaryMode && config.temporaryDisplayMode == buttonMode) {
@@ -163,6 +164,41 @@ void ButtonManager::handleWakeupMode() {
             config.temporaryModeActivationTime = (uint32_t)currentTime;
         }
         ESP_LOGI(TAG, "Temp mode activated at time: %u", config.temporaryModeActivationTime);
+    } else {
+        // No button press (timer wake or other cause)
+        // Check if existing temp mode should be cleared due to time expiration
+        if (config.inTemporaryMode) {
+            int elapsed = (int)(currentTime - config.temporaryModeActivationTime);
+            const int TEMP_MODE_DURATION = TEMP_MODE_ACTIVE_DURATION; // 120 seconds
+
+            ESP_LOGI(TAG, "Timer wake with active temp mode - checking expiration");
+            ESP_LOGI(TAG, "  Temp mode elapsed time: %d seconds (limit: %d seconds)",
+                     elapsed, TEMP_MODE_DURATION);
+
+            if (elapsed >= TEMP_MODE_DURATION) {
+                // Temp mode has expired - clear it BEFORE display decision
+                ESP_LOGI(TAG, "Temp mode expired - clearing flags");
+                ESP_LOGI(TAG, "  Before clear: inTemporaryMode=%d, displayMode=%d, activationTime=%u",
+                         config.inTemporaryMode, config.temporaryDisplayMode,
+                         config.temporaryModeActivationTime);
+
+                config.inTemporaryMode = false;
+                config.temporaryDisplayMode = 0xFF;
+                config.temporaryModeActivationTime = 0;
+
+                // Force memory barriers to ensure RTC writes complete
+                asm volatile("" ::: "memory");
+                __sync_synchronize();
+                esp_rom_delay_us(2000); // 2ms delay for RTC write
+
+                ESP_LOGI(TAG, "  After clear: inTemporaryMode=%d, displayMode=%d, activationTime=%u",
+                         config.inTemporaryMode, config.temporaryDisplayMode, config.temporaryModeActivationTime);
+                ESP_LOGI(TAG, "Temp mode cleared - will display configured mode");
+            } else {
+                ESP_LOGI(TAG, "Temp mode still active - %d seconds remaining",
+                         TEMP_MODE_DURATION - elapsed);
+            }
+        }
     }
 #endif
 }
