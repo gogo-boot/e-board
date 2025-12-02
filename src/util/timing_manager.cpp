@@ -295,8 +295,8 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
             // Still showing temp mode during active hours - wait for 2 minutes to complete
             ESP_LOGI(TAG, "Temp mode: %d seconds remaining in active hours", remaining);
             return (uint64_t)max(30, remaining);
-        } else if (remaining > 0 && inDeepSleepPeriod) {
-            // Temp mode active but in deep sleep period - stay until next wake
+        } else if (inDeepSleepPeriod) {
+            // In deep sleep period - stay in temp mode until sleep ends
             int minutesUntilSleepEnd;
             if (sleepEndMin > currentMinutes) {
                 minutesUntilSleepEnd = sleepEndMin - currentMinutes;
@@ -306,23 +306,12 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
             uint32_t sleepDuration = minutesUntilSleepEnd * 60;
             ESP_LOGI(TAG, "Temp mode: staying active until deep sleep end (%d seconds)", sleepDuration);
             return (uint64_t)max(30, (int)sleepDuration);
-        } else if (inDeepSleepPeriod) {
-            // 2 minutes complete but still in deep sleep - stay in temp mode until sleep ends
-            int minutesUntilSleepEnd;
-            if (sleepEndMin > currentMinutes) {
-                minutesUntilSleepEnd = sleepEndMin - currentMinutes;
-            } else {
-                minutesUntilSleepEnd = (24 * 60) - currentMinutes + sleepEndMin;
-            }
-            uint32_t sleepDuration = minutesUntilSleepEnd * 60;
-            ESP_LOGI(TAG, "Temp mode: 2 minutes complete, staying until deep sleep end (%d seconds)", sleepDuration);
-            return (uint64_t)max(30, (int)sleepDuration);
         } else {
-            // 2 minutes complete and in active hours - exit temp mode and calculate next refresh
-            ESP_LOGI(TAG, "Temp mode: exiting on next wake");
-            config.inTemporaryMode = false;
-            config.temporaryDisplayMode = 0xFF;
-            config.temporaryModeActivationTime = 0;
+            // 2 minutes complete and in active hours
+            // Temp mode should already be cleared by ButtonManager::handleWakeupMode()
+            // This path is a fallback that shouldn't normally be reached
+            ESP_LOGW(TAG, "Temp mode still active in sleep calculator after 2 minutes");
+            ESP_LOGW(TAG, "Flag should have been cleared by button manager - falling through to normal mode");
 
             // Fall through to normal configured mode calculation below
         }
