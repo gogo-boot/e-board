@@ -63,6 +63,10 @@ private:
     static uint32_t adjustForTransportActiveHours(uint32_t nearestUpdate, uint32_t nextTransport, uint32_t nextWeather,
                                                   uint32_t nextOTA,
                                                   uint32_t currentTime, bool& isOTAUpdate);
-    static uint32_t adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t currentTime, bool isOTAUpdate);
+    static uint32_t adjustForSleepPeriod(uint32_t nearestUpdate, bool isOTAUpdate);
     static bool isWeekend(time_t timestamp);
+    static bool isInDeepSleepPeriod();
+    static uint16_t getCurrentMin();
+    static uint16_t getSleepStartMin();
+    static uint16_t getSleepEndMin();
 };

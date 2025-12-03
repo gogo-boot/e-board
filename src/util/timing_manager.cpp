@@ -74,14 +74,14 @@ uint32_t TimingManager::findNearestUpdateTime(uint32_t weather, uint32_t transpo
 bool TimingManager::isTransportActiveAtTime(uint32_t timestamp) {
     RTCConfigData& config = ConfigManager::getConfig();
 
-    struct tm timeInfo;
+    tm timeInfo;
     time_t time = (time_t)timestamp;
     localtime_r(&time, &timeInfo);
 
-    bool isWeekend = isWeekend(timestamp);
+    bool weekend = isWeekend(timestamp);
 
-    String start = isWeekend ? String(config.weekendTransportStart) : String(config.transportActiveStart);
-    String end = isWeekend ? String(config.weekendTransportEnd) : String(config.transportActiveEnd);
+    String start = weekend ? String(config.weekendTransportStart) : String(config.transportActiveStart);
+    String end = weekend ? String(config.weekendTransportEnd) : String(config.transportActiveEnd);
 
     int minutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
     int startMin = parseTimeString(start);
@@ -185,32 +185,25 @@ uint32_t TimingManager::adjustForTransportActiveHours(uint32_t nearestUpdate, ui
     return nextValidUpdate;
 }
 
-uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t currentTime, bool isOTAUpdate) {
+uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, bool isOTAUpdate) {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Get update time info
-    struct tm updateTimeInfo;
+    tm updateTimeInfo;
     time_t updateTime = (time_t)nearestUpdate;
     localtime_r(&updateTime, &updateTimeInfo);
-    int updateMinutes = updateTimeInfo.tm_hour * 60 + updateTimeInfo.tm_min;
+    uint16_t updateMinutes = updateTimeInfo.tm_hour * 60 + updateTimeInfo.tm_min;
 
-    // Determine if update time is weekend
-    bool isUpdateWeekend = isWeekend(updateTime);
-
-    // Get sleep period configuration
-    String sleepStart = isUpdateWeekend ? String(config.weekendSleepStart) : String(config.sleepStart);
-    String sleepEnd = isUpdateWeekend ? String(config.weekendSleepEnd) : String(config.sleepEnd);
-
-    int sleepStartMin = parseTimeString(sleepStart);
-    int sleepEndMin = parseTimeString(sleepEnd);
+    uint16_t sleepStartMin = getSleepStartMin();
+    uint16_t sleepEndMin = getSleepEndMin();
 
     // Check if update is in sleep period
     if (!isTimeInRange(updateMinutes, sleepStartMin, sleepEndMin)) {
         return nearestUpdate; // Not in sleep period
     }
 
-    ESP_LOGI(TAG, "Next update (%d:%02d) falls within sleep period (%s - %s)",
-             updateTimeInfo.tm_hour, updateTimeInfo.tm_min, sleepStart.c_str(), sleepEnd.c_str());
+    ESP_LOGI(TAG, "Next update (%d:%02d) falls within sleep period (%d - %d)",
+             updateTimeInfo.tm_hour, updateTimeInfo.tm_min, sleepStartMin, sleepEndMin);
 
     // OTA updates bypass sleep period
     if (isOTAUpdate) {
@@ -228,9 +221,12 @@ uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t cu
     }
 
     // Check if sleep crosses weekend boundary
-    struct tm sleepEndTimeInfo;
+    tm sleepEndTimeInfo;
     time_t sleepEndTime = (time_t)sleepEndSeconds;
     localtime_r(&sleepEndTime, &sleepEndTimeInfo);
+
+    // Determine if update time is weekend
+    bool isUpdateWeekend = isWeekend(updateTime);
     bool isSleepEndWeekend = isWeekend(sleepEndTime);
 
     if (isSleepEndWeekend != isUpdateWeekend) {
@@ -283,21 +279,17 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
         int remaining = TEMP_MODE_DURATION - elapsed;
 
         // Check if currently in deep sleep period
-        struct tm timeInfo;
-        localtime_r(&now, &timeInfo);
-        int currentMinutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
-        bool isCurrentWeekend = config.weekendMode && (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
+        int currentMinutes = getCurrentMin();
+        int sleepEndMin = getSleepEndMin();
+        bool inDeepSleepPeriod = isInDeepSleepPeriod();
 
-        String sleepStart = isCurrentWeekend ? String(config.weekendSleepStart) : String(config.sleepStart);
-        String sleepEnd = isCurrentWeekend ? String(config.weekendSleepEnd) : String(config.sleepEnd);
-        int sleepStartMin = parseTimeString(sleepStart);
-        int sleepEndMin = parseTimeString(sleepEnd);
-        bool inDeepSleepPeriod = isTimeInRange(currentMinutes, sleepStartMin, sleepEndMin);
         if (remaining > 0 && !inDeepSleepPeriod) {
             // Still showing temp mode during active hours - wait for 2 minutes to complete
             ESP_LOGI(TAG, "Temp mode: %d seconds remaining in active hours", remaining);
             return (uint64_t)max(30, remaining);
-        } else if (inDeepSleepPeriod) {
+        }
+
+        if (inDeepSleepPeriod) {
             // In deep sleep period - stay in temp mode until sleep ends
             int minutesUntilSleepEnd;
             if (sleepEndMin > currentMinutes) {
@@ -308,15 +300,14 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
             uint32_t sleepDuration = minutesUntilSleepEnd * 60;
             ESP_LOGI(TAG, "Temp mode: staying active until deep sleep end (%d seconds)", sleepDuration);
             return (uint64_t)max(30, (int)sleepDuration);
-        } else {
-            // 2 minutes complete and in active hours
-            // Temp mode should already be cleared by ButtonManager::handleWakeupMode()
-            // This path is a fallback that shouldn't normally be reached
-            ESP_LOGW(TAG, "Temp mode still active in sleep calculator after 2 minutes");
-            ESP_LOGW(TAG, "Flag should have been cleared by button manager - falling through to normal mode");
-
-            // Fall through to normal configured mode calculation below
         }
+        // 2 minutes complete and in active hours
+        // Temp mode should already be cleared by ButtonManager::handleWakeupMode()
+        // This path is a fallback that shouldn't normally be reached
+        ESP_LOGW(TAG, "Temp mode still active in sleep calculator after 2 minutes");
+        ESP_LOGW(TAG, "Flag should have been cleared by button manager - falling through to normal mode");
+
+        // Fall through to normal configured mode calculation below
     }
 
     // ===== NORMAL CONFIGURED MODE =====
@@ -397,6 +388,29 @@ bool TimingManager::isTransportActiveTime() {
     int endMinutes = parseTimeString(activeEnd);
 
     return isTimeInRange(currentMinutes, startMinutes, endMinutes);
+}
+
+uint16_t TimingManager::getCurrentMin() {
+    time_t now = GET_CURRENT_TIME();
+    tm timeInfo;
+    localtime_r(&now, &timeInfo);
+    return timeInfo.tm_hour * 60 + timeInfo.tm_min;;
+}
+
+uint16_t TimingManager::getSleepStartMin() {
+    RTCConfigData& config = ConfigManager::getConfig();
+    String sleepStart = isWeekend() ? String(config.weekendSleepStart) : String(config.sleepStart);
+    return parseTimeString(sleepStart);
+}
+
+uint16_t TimingManager::getSleepEndMin() {
+    RTCConfigData& config = ConfigManager::getConfig();
+    String sleepEnd = isWeekend() ? String(config.weekendSleepEnd) : String(config.sleepEnd);
+    return parseTimeString(sleepEnd);
+}
+
+bool TimingManager::isInDeepSleepPeriod() {
+    return isTimeInRange(getCurrentMin(), getSleepStartMin(), getSleepEndMin());
 }
 
 bool TimingManager::isWeekend() {
