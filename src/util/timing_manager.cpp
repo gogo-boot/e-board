@@ -22,22 +22,8 @@ RTC_DATA_ATTR uint32_t lastOTACheck = 0;
 // Helper Functions for Sleep Duration Calculation
 // ============================================================================
 
-bool TimingManager::isWeekendTime(time_t timestamp) {
-    RTCConfigData& config = ConfigManager::getConfig();
-    if (!config.weekendMode) {
-        return false;
-    }
-    struct tm timeInfo;
-    localtime_r(&timestamp, &timeInfo);
-    return (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
-}
 
-uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
-    // Weather updates needed for weather_only (1) and half_and_half (0) modes
-    if (displayMode != 0 && displayMode != 1) {
-        return 0;
-    }
-
+uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds) {
     RTCConfigData& config = ConfigManager::getConfig();
     uint32_t lastUpdate = getLastWeatherUpdate();
     uint32_t intervalSeconds = config.weatherInterval * 3600; // hours to seconds
@@ -50,12 +36,7 @@ uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds, 
     return nextUpdate;
 }
 
-uint32_t TimingManager::calculateNextTransportUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
-    // Departure updates needed for departure_only (2) and half_and_half (0) modes
-    if (displayMode != 0 && displayMode != 2) {
-        return 0;
-    }
-
+uint32_t TimingManager::calculateNextTransportUpdate(uint32_t currentTimeSeconds) {
     RTCConfigData& config = ConfigManager::getConfig();
     uint32_t lastUpdate = getLastTransportUpdate();
     uint32_t intervalSeconds = config.transportInterval * 60; // minutes to seconds
@@ -76,7 +57,10 @@ uint32_t TimingManager::findNearestUpdateTime(uint32_t weather, uint32_t transpo
     if (transport > 0 && (nearest == 0 || transport < nearest)) nearest = transport;
     if (ota > 0 && (nearest == 0 || ota < nearest)) nearest = ota;
 
-    // Fallback if no updates scheduled
+    // Fallback if no updates scheduled; log all parameters and nearest value
+    ESP_LOGI(TAG, "findNearestUpdateTime params: weather=%u, transport=%u, ota=%u, nearest=%u", weather, transport, ota,
+             nearest);
+
     if (nearest == 0) {
         time_t now = GET_CURRENT_TIME();
         nearest = (uint32_t)now + 60; // Wake in 1 minute
@@ -84,136 +68,142 @@ uint32_t TimingManager::findNearestUpdateTime(uint32_t weather, uint32_t transpo
         return nearest;
     }
 
-    // Log what we found
-    if (weather > 0 && transport > 0 && ota > 0) {
-        ESP_LOGI(TAG, "All updates needed - nearest at: %u seconds", nearest);
-    } else if (weather > 0 && transport > 0) {
-        ESP_LOGI(TAG, "Weather and departure updates needed - nearest at: %u seconds", nearest);
-    } else if (weather > 0 && ota > 0) {
-        ESP_LOGI(TAG, "Weather and OTA updates needed - nearest at: %u seconds", nearest);
-    } else if (transport > 0 && ota > 0) {
-        ESP_LOGI(TAG, "Departure and OTA updates needed - nearest at: %u seconds", nearest);
-    } else if (transport > 0) {
-        ESP_LOGI(TAG, "Only departure update needed at: %u seconds", nearest);
-    } else if (weather > 0) {
-        ESP_LOGI(TAG, "Only weather update needed at: %u seconds", nearest);
-    } else {
-        ESP_LOGI(TAG, "Only OTA update needed at: %u seconds", nearest);
-    }
-
     return nearest;
 }
 
+bool TimingManager::isTransportActiveAtTime(uint32_t timestamp) {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    tm timeInfo;
+    time_t time = (time_t)timestamp;
+    localtime_r(&time, &timeInfo);
+
+    bool weekend = isWeekend(timestamp);
+
+    String start = weekend ? String(config.weekendTransportStart) : String(config.transportActiveStart);
+    String end = weekend ? String(config.weekendTransportEnd) : String(config.transportActiveEnd);
+
+    int minutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
+    int startMin = parseTimeString(start);
+    int endMin = parseTimeString(end);
+
+    bool isActive = isTimeInRange(minutes, startMin, endMin);
+
+    // Special case: boundary check - treat end boundary as inactive if no previous update
+    if (isActive && minutes == endMin && getLastTransportUpdate() == 0) {
+        ESP_LOGD(TAG, "At end boundary of active hours with no previous update - treating as inactive");
+        return false;
+    }
+
+    return isActive;
+}
+
+uint32_t TimingManager::calculateNextActiveTransportTime(uint32_t currentTime) {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    struct tm currentTm;
+    time_t now = (time_t)currentTime;
+    localtime_r(&now, &currentTm);
+
+    int currentMin = currentTm.tm_hour * 60 + currentTm.tm_min;
+    bool isCurrentWeekend = config.weekendMode && (currentTm.tm_wday == 0 || currentTm.tm_wday == 6);
+
+    String start = isCurrentWeekend ? String(config.weekendTransportStart) : String(config.transportActiveStart);
+    int startMin = parseTimeString(start);
+
+    uint32_t nextActiveTime;
+
+    if (currentMin < startMin) {
+        // Active period starts later today
+        int minutesUntil = startMin - currentMin;
+        nextActiveTime = currentTime + (minutesUntil * 60);
+        ESP_LOGD(TAG, "Transport active starts in %d minutes", minutesUntil);
+    } else {
+        // Active period starts tomorrow
+        int minutesToMidnight = (24 * 60) - currentMin;
+
+        // Check if tomorrow is weekend
+        int nextDayOfWeek = (currentTm.tm_wday + 1) % 7;
+        bool isTomorrowWeekend = config.weekendMode && (nextDayOfWeek == 0 || nextDayOfWeek == 6);
+        String tomorrowStart = isTomorrowWeekend
+                                   ? String(config.weekendTransportStart)
+                                   : String(config.transportActiveStart);
+        int tomorrowStartMin = parseTimeString(tomorrowStart);
+
+        nextActiveTime = currentTime + ((minutesToMidnight + tomorrowStartMin) * 60);
+        ESP_LOGD(TAG, "Transport active starts tomorrow at %02d:%02d", tomorrowStartMin / 60, tomorrowStartMin % 60);
+    }
+
+    ESP_LOGI(TAG, "Next transport active time: %u", nextActiveTime);
+    return nextActiveTime;
+}
+
+// Adjust nearest update time based on transport active hours
+// If transport update is outside active hours, skip to next valid update
+// (weather, OTA, or next active period)
 uint32_t TimingManager::adjustForTransportActiveHours(uint32_t nearestUpdate, uint32_t nextTransport,
                                                       uint32_t nextWeather, uint32_t nextOTA,
                                                       uint32_t currentTime, bool& isOTAUpdate) {
-    // Only adjust if the nearest update is a transport update
+    // Only process if nearest update is a transport update
     if (nextTransport == 0 || nearestUpdate != nextTransport) {
-        return nearestUpdate;
+        return nearestUpdate; // Not a transport update - no adjustment needed
     }
 
-    RTCConfigData& config = ConfigManager::getConfig();
-
-    // Get time info for nearest update
-    struct tm timeInfo;
-    time_t updateTime = (time_t)nearestUpdate;
-    localtime_r(&updateTime, &timeInfo);
-    int updateMinutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
-
-    // Determine if this is weekend time
-    bool isWeekend = isWeekendTime(updateTime);
-
-    // Get appropriate transport active hours
-    String activeStart = isWeekend ? String(config.weekendTransportStart) : String(config.transportActiveStart);
-    String activeEnd = isWeekend ? String(config.weekendTransportEnd) : String(config.transportActiveEnd);
-
-    int activeStartMin = parseTimeString(activeStart);
-    int activeEndMin = parseTimeString(activeEnd);
-
-    bool isActive = isTimeInRange(updateMinutes, activeStartMin, activeEndMin);
-
-    // Special case: boundary check
-    if (isActive && updateMinutes == activeEndMin && getLastTransportUpdate() == 0) {
-        isActive = false;
-        ESP_LOGI(TAG, "At end boundary of active hours with no previous update - treating as inactive");
+    // Check if transport update falls within active hours
+    if (isTransportActiveAtTime(nearestUpdate)) {
+        ESP_LOGD(TAG, "Transport update is within active hours - no adjustment needed");
+        return nearestUpdate; // Transport is active - keep it
     }
 
-    if (isActive) {
-        return nearestUpdate; // No adjustment needed
-    }
-
-    // Transport is inactive - calculate next active period
+    // Transport is inactive - skip to next valid update
     ESP_LOGI(TAG, "Departure update outside transport active hours");
 
-    struct tm currentTm;
-    time_t currentTimeT = (time_t)currentTime;
-    localtime_r(&currentTimeT, &currentTm);
-    int currentMinutes = currentTm.tm_hour * 60 + currentTm.tm_min;
-    bool isCurrentWeekend = config.weekendMode && (currentTm.tm_wday == 0 || currentTm.tm_wday == 6);
+    // Find next valid update from alternatives (weather, OTA, or next active period)
+    uint32_t nextValidUpdate = UINT32_MAX;
 
-    // Get next active start time
-    String nextActiveStart = isCurrentWeekend
-                                 ? String(config.weekendTransportStart)
-                                 : String(config.transportActiveStart);
-    int nextActiveStartMin = parseTimeString(nextActiveStart);
-
-    uint32_t nextActiveSeconds;
-    if (currentMinutes < nextActiveStartMin) {
-        // Active period starts later today
-        int minutesUntil = nextActiveStartMin - currentMinutes;
-        nextActiveSeconds = currentTime + (minutesUntil * 60);
-    } else {
-        // Active period starts tomorrow
-        int minutesUntilMidnight = (24 * 60) - currentMinutes;
-        int nextDayOfWeek = (currentTm.tm_wday + 1) % 7;
-        bool isTomorrowWeekend = config.weekendMode && (nextDayOfWeek == 0 || nextDayOfWeek == 6);
-
-        nextActiveStart = isTomorrowWeekend
-                              ? String(config.weekendTransportStart)
-                              : String(config.transportActiveStart);
-        nextActiveStartMin = parseTimeString(nextActiveStart);
-        nextActiveSeconds = currentTime + ((minutesUntilMidnight + nextActiveStartMin) * 60);
+    // Check weather update
+    if (nextWeather > 0 && nextWeather < nextValidUpdate) {
+        nextValidUpdate = nextWeather;
+        ESP_LOGD(TAG, "Alternative: weather update at %u", nextWeather);
     }
 
-    ESP_LOGI(TAG, "Next transport active period starts at: %u seconds", nextActiveSeconds);
+    // Check OTA update
+    if (nextOTA > 0 && nextOTA < nextValidUpdate) {
+        nextValidUpdate = nextOTA;
+        ESP_LOGD(TAG, "Alternative: OTA update at %u", nextOTA);
+    }
+    // If no weather or OTA, calculate next transport active period
+    if (nextValidUpdate == UINT32_MAX) {
+        nextValidUpdate = calculateNextActiveTransportTime(currentTime);
+        ESP_LOGI(TAG, "No weather/OTA - using next transport active period");
+    }
 
-    // Choose earliest of: next active period, weather, or OTA (OTA bypasses transport restrictions)
-    uint32_t candidateWake = nextActiveSeconds;
-    if (nextWeather > 0) candidateWake = min(candidateWake, nextWeather);
-    if (nextOTA > 0) candidateWake = min(candidateWake, nextOTA);
+    // Update OTA flag if OTA became the nearest
+    isOTAUpdate = (nextOTA > 0 && nextValidUpdate == nextOTA);
 
-    // Update isOTAUpdate flag if OTA became nearest
-    isOTAUpdate = (nextOTA > 0 && candidateWake == nextOTA);
-
-    return candidateWake;
+    ESP_LOGI(TAG, "Adjusted wake time: %u (isOTA=%d)", nextValidUpdate, isOTAUpdate);
+    return nextValidUpdate;
 }
 
-uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t currentTime, bool isOTAUpdate) {
+uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, bool isOTAUpdate) {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Get update time info
-    struct tm updateTimeInfo;
+    tm updateTimeInfo;
     time_t updateTime = (time_t)nearestUpdate;
     localtime_r(&updateTime, &updateTimeInfo);
-    int updateMinutes = updateTimeInfo.tm_hour * 60 + updateTimeInfo.tm_min;
+    uint16_t updateMinutes = updateTimeInfo.tm_hour * 60 + updateTimeInfo.tm_min;
 
-    // Determine if update time is weekend
-    bool isUpdateWeekend = isWeekendTime(updateTime);
-
-    // Get sleep period configuration
-    String sleepStart = isUpdateWeekend ? String(config.weekendSleepStart) : String(config.sleepStart);
-    String sleepEnd = isUpdateWeekend ? String(config.weekendSleepEnd) : String(config.sleepEnd);
-
-    int sleepStartMin = parseTimeString(sleepStart);
-    int sleepEndMin = parseTimeString(sleepEnd);
+    uint16_t sleepStartMin = getSleepStartMin();
+    uint16_t sleepEndMin = getSleepEndMin();
 
     // Check if update is in sleep period
     if (!isTimeInRange(updateMinutes, sleepStartMin, sleepEndMin)) {
         return nearestUpdate; // Not in sleep period
     }
 
-    ESP_LOGI(TAG, "Next update (%d:%02d) falls within sleep period (%s - %s)",
-             updateTimeInfo.tm_hour, updateTimeInfo.tm_min, sleepStart.c_str(), sleepEnd.c_str());
+    ESP_LOGI(TAG, "Next update (%d:%02d) falls within sleep period (%d - %d)",
+             updateTimeInfo.tm_hour, updateTimeInfo.tm_min, sleepStartMin, sleepEndMin);
 
     // OTA updates bypass sleep period
     if (isOTAUpdate) {
@@ -231,10 +221,13 @@ uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t cu
     }
 
     // Check if sleep crosses weekend boundary
-    struct tm sleepEndTimeInfo;
+    tm sleepEndTimeInfo;
     time_t sleepEndTime = (time_t)sleepEndSeconds;
     localtime_r(&sleepEndTime, &sleepEndTimeInfo);
-    bool isSleepEndWeekend = isWeekendTime(sleepEndTime);
+
+    // Determine if update time is weekend
+    bool isUpdateWeekend = isWeekend(updateTime);
+    bool isSleepEndWeekend = isWeekend(sleepEndTime);
 
     if (isSleepEndWeekend != isUpdateWeekend) {
         ESP_LOGI(TAG, "Sleep crosses weekend boundary - adjusting sleep end time");
@@ -266,9 +259,14 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     time_t now = GET_CURRENT_TIME();
     uint32_t currentTimeSeconds = (uint32_t)now;
     RTCConfigData& config = ConfigManager::getConfig();
-    uint8_t displayMode = config.displayMode;
 
-    ESP_LOGI(TAG, "Calculating sleep duration - Display mode: %d, Current time: %u", displayMode, currentTimeSeconds);
+    // Get effective display mode (considers temporary mode)
+    uint8_t displayMode = getEffectiveDisplayMode();
+
+    ESP_LOGI(
+        TAG,
+        "Calculating sleep duration - Effective Display mode: %d (temp=%d, configured=%d), Current time: %u",
+        displayMode, config.inTemporaryMode, config.displayMode, currentTimeSeconds);
 
     // ===== HANDLE TEMPORARY MODE =====
     if (config.inTemporaryMode) {
@@ -281,21 +279,17 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
         int remaining = TEMP_MODE_DURATION - elapsed;
 
         // Check if currently in deep sleep period
-        struct tm timeInfo;
-        localtime_r(&now, &timeInfo);
-        int currentMinutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
-        bool isCurrentWeekend = config.weekendMode && (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
+        int currentMinutes = getCurrentMin();
+        int sleepEndMin = getSleepEndMin();
+        bool inDeepSleepPeriod = isInDeepSleepPeriod();
 
-        String sleepStart = isCurrentWeekend ? String(config.weekendSleepStart) : String(config.sleepStart);
-        String sleepEnd = isCurrentWeekend ? String(config.weekendSleepEnd) : String(config.sleepEnd);
-        int sleepStartMin = parseTimeString(sleepStart);
-        int sleepEndMin = parseTimeString(sleepEnd);
-        bool inDeepSleepPeriod = isTimeInRange(currentMinutes, sleepStartMin, sleepEndMin);
         if (remaining > 0 && !inDeepSleepPeriod) {
             // Still showing temp mode during active hours - wait for 2 minutes to complete
             ESP_LOGI(TAG, "Temp mode: %d seconds remaining in active hours", remaining);
             return (uint64_t)max(30, remaining);
-        } else if (inDeepSleepPeriod) {
+        }
+
+        if (inDeepSleepPeriod) {
             // In deep sleep period - stay in temp mode until sleep ends
             int minutesUntilSleepEnd;
             if (sleepEndMin > currentMinutes) {
@@ -306,15 +300,14 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
             uint32_t sleepDuration = minutesUntilSleepEnd * 60;
             ESP_LOGI(TAG, "Temp mode: staying active until deep sleep end (%d seconds)", sleepDuration);
             return (uint64_t)max(30, (int)sleepDuration);
-        } else {
-            // 2 minutes complete and in active hours
-            // Temp mode should already be cleared by ButtonManager::handleWakeupMode()
-            // This path is a fallback that shouldn't normally be reached
-            ESP_LOGW(TAG, "Temp mode still active in sleep calculator after 2 minutes");
-            ESP_LOGW(TAG, "Flag should have been cleared by button manager - falling through to normal mode");
-
-            // Fall through to normal configured mode calculation below
         }
+        // 2 minutes complete and in active hours
+        // Temp mode should already be cleared by ButtonManager::handleWakeupMode()
+        // This path is a fallback that shouldn't normally be reached
+        ESP_LOGW(TAG, "Temp mode still active in sleep calculator after 2 minutes");
+        ESP_LOGW(TAG, "Flag should have been cleared by button manager - falling through to normal mode");
+
+        // Fall through to normal configured mode calculation below
     }
 
     // ===== NORMAL CONFIGURED MODE =====
@@ -322,12 +315,33 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
              getLastWeatherUpdate(), getLastTransportUpdate());
 
     // Step 1: Calculate next update times for each type
-    uint32_t nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds, displayMode);
-    uint32_t nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds, displayMode);
+    // it returns 0 if that update type is not needed
+    uint32_t nextWeatherUpdate = 0;
+    uint32_t nextTransportUpdate = 0;
     uint32_t nextOTACheck = calculateNextOTACheckTime(currentTimeSeconds);
+    uint32_t nearestUpdate = 0;
+
+    switch (displayMode) {
+    case DISPLAY_MODE_HALF_AND_HALF:
+        ESP_LOGI(TAG, "Display mode: HALF AND HALF");
+        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
+        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        break;
+    case DISPLAY_MODE_WEATHER_ONLY:
+        ESP_LOGI(TAG, "Display mode: WEATHER ONLY");
+        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
+        break;
+    case DISPLAY_MODE_TRANSPORT_ONLY:
+        ESP_LOGI(TAG, "Display mode: TRANSPORT ONLY");
+        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        break;
+    default:
+        ESP_LOGI(TAG, "Unknown display mode: %d ", displayMode);
+        break;
+    }
 
     // Step 2: Find the nearest update time
-    uint32_t nearestUpdate = findNearestUpdateTime(nextWeatherUpdate, nextTransportUpdate, nextOTACheck);
+    nearestUpdate = findNearestUpdateTime(nextWeatherUpdate, nextTransportUpdate, nextOTACheck);
     bool isOTAUpdate = (nextOTACheck > 0 && nearestUpdate == nextOTACheck);
 
     // Step 3: Adjust for transport active hours (if nearest is transport)
@@ -336,7 +350,7 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
                                                   currentTimeSeconds, isOTAUpdate);
 
     // Step 4: Adjust for sleep period (OTA bypasses sleep)
-    nearestUpdate = adjustForSleepPeriod(nearestUpdate, currentTimeSeconds, isOTAUpdate);
+    nearestUpdate = adjustForSleepPeriod(nearestUpdate, isOTAUpdate);
 
     // Step 5: Calculate final sleep duration with minimum threshold
     uint64_t sleepDurationSeconds;
@@ -376,18 +390,43 @@ bool TimingManager::isTransportActiveTime() {
     return isTimeInRange(currentMinutes, startMinutes, endMinutes);
 }
 
+uint16_t TimingManager::getCurrentMin() {
+    time_t now = GET_CURRENT_TIME();
+    tm timeInfo;
+    localtime_r(&now, &timeInfo);
+    return timeInfo.tm_hour * 60 + timeInfo.tm_min;;
+}
+
+uint16_t TimingManager::getSleepStartMin() {
+    RTCConfigData& config = ConfigManager::getConfig();
+    String sleepStart = isWeekend() ? String(config.weekendSleepStart) : String(config.sleepStart);
+    return parseTimeString(sleepStart);
+}
+
+uint16_t TimingManager::getSleepEndMin() {
+    RTCConfigData& config = ConfigManager::getConfig();
+    String sleepEnd = isWeekend() ? String(config.weekendSleepEnd) : String(config.sleepEnd);
+    return parseTimeString(sleepEnd);
+}
+
+bool TimingManager::isInDeepSleepPeriod() {
+    return isTimeInRange(getCurrentMin(), getSleepStartMin(), getSleepEndMin());
+}
+
 bool TimingManager::isWeekend() {
+    return isWeekend(GET_CURRENT_TIME());
+}
+
+bool TimingManager::isWeekend(time_t timestamp) {
     RTCConfigData& config = ConfigManager::getConfig();
     if (!config.weekendMode) {
-        return false; // Weekend mode disabled
+        return false;
     }
-
-    time_t now = GET_CURRENT_TIME();
-    struct tm timeinfo;
-    localtime_r(&now, &timeinfo);
+    struct tm timeInfo;
+    localtime_r(&timestamp, &timeInfo);
 
     // tm_wday: 0 = Sunday, 6 = Saturday
-    return (timeinfo.tm_wday == 0 || timeinfo.tm_wday == 6);
+    return (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
 }
 
 void TimingManager::markWeatherUpdated() {
@@ -444,7 +483,27 @@ bool TimingManager::isTimeForTransportUpdate() {
     return needUpdate;
 }
 
-// Private helper functions
+uint8_t TimingManager::getEffectiveDisplayMode() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // If in temporary mode, use temporary display mode
+    if (config.inTemporaryMode) {
+        ESP_LOGD(TAG, "Using temporary display mode: %d", config.temporaryDisplayMode);
+        return config.temporaryDisplayMode;
+    }
+
+    if (config.displayMode == DISPLAY_MODE_TRANSPORT_ONLY || config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+        return config.displayMode;
+    } else {
+        // DISPLAY_MODE_HALF_AND_HALF;
+        if (isTransportActiveTime()) {
+            return config.displayMode;
+        } else {
+            return DISPLAY_MODE_WEATHER_ONLY;
+        }
+    }
+}
+
 int TimingManager::parseTimeString(const String& timeStr) {
     // Parse "HH:MM" format to minutes since midnight
     int colonPos = timeStr.indexOf(':');

@@ -1,3 +1,36 @@
+## Display Refresh and Sleep Process
+
+Boot Process and Sleep Duration is working tightly together. it runs in different phases and cycles. each of them
+must ensure only its own process responsibility. If it is not ensured, it may cause unexpected behavior like missing
+data update or excessive power consumption.
+
+- Boot Process runs when device wakes up from sleep. which is current-time based process. When it wakes up, it
+  checks the current display mode and decides which data to fetch and update the display.
+- _Sleep Duration_ is calculated based on current display mode. Current Display mode is not always the same display mode
+  of when it wakes-up in the future. so there are some edge cases to consider.
+
+### Sleep Duration Calculation
+
+1. It gets the current display mode from configuration.
+    - It doesn't reflect temporary display mode.
+    - If the display mode is "half-and-half", it does reflect weekdays and weekends transport active time range.
+      if it is in transport active time range, it returns _half-and-half_ display mode.
+      if it is not in transport active time range, it returns _weather-only_ display mode.
+1. It gets next required wake-up time according to current display mode.
+    - If the display mode is "weather-only", it gets next weather update time.
+    - If the display mode is "transport-only", it gets next transport update time.
+    - If the display mode is "half-and-half", it gets both next weather and transport update time. and it returns which
+      is sooner.
+1. It doesn't always get desired wake-up time due to edge cases:
+    - If the display mode is "half-and-half", it gets next transport wakes-up time. but it can be out of transport
+      active time range. In this case, it should get next weather update time.
+    - regardless any display mode, it can get wake-up time which falls in deep-sleep time range, which is not desired.
+      In this case, it should get the end of deep-sleep time range as wake-up time.
+    - regardless any display mode, the OTA Update may be scheduled regardless deep-sleep time range. in this case, it
+      should get the OTA Update time as wake-up time.
+1. One more thing to consider. there is temporary view mode. If temporary mode is active, it returns current time +
+   temporary display time which is usually 2 minutes. so it wakes up soon to restore the configured display mode.
+
 ### Boot Process Flow
 
 ```mermaid

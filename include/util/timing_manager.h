@@ -34,6 +34,9 @@ public:
     static bool isTimeForWeatherUpdate();
     static bool isTimeForTransportUpdate();
 
+    // Get effective display mode (considers temporary mode)
+    static uint8_t getEffectiveDisplayMode();
+
     // RTC timestamp management (public for testing)
     static uint32_t getLastWeatherUpdate();
     static uint32_t getLastTransportUpdate();
@@ -49,14 +52,21 @@ private:
     static int getCurrentMinutesSinceMidnight();
     static bool isTimeInRange(int currentMinutes, int startMinutes, int endMinutes);
     static uint32_t calculateNextOTACheckTime(uint32_t currentTimeSeconds);
+    // Transport active hours helpers
+    static bool isTransportActiveAtTime(uint32_t timestamp);
+    static uint32_t calculateNextActiveTransportTime(uint32_t currentTime);
 
     // Sleep duration calculation helpers
-    static uint32_t calculateNextWeatherUpdate(uint32_t currentTimeSeconds, uint8_t displayMode);
-    static uint32_t calculateNextTransportUpdate(uint32_t currentTimeSeconds, uint8_t displayMode);
+    static uint32_t calculateNextWeatherUpdate(uint32_t currentTimeSeconds);
+    static uint32_t calculateNextTransportUpdate(uint32_t currentTimeSeconds);
     static uint32_t findNearestUpdateTime(uint32_t weather, uint32_t transport, uint32_t ota);
     static uint32_t adjustForTransportActiveHours(uint32_t nearestUpdate, uint32_t nextTransport, uint32_t nextWeather,
                                                   uint32_t nextOTA,
                                                   uint32_t currentTime, bool& isOTAUpdate);
-    static uint32_t adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t currentTime, bool isOTAUpdate);
-    static bool isWeekendTime(time_t timestamp);
+    static uint32_t adjustForSleepPeriod(uint32_t nearestUpdate, bool isOTAUpdate);
+    static bool isWeekend(time_t timestamp);
+    static bool isInDeepSleepPeriod();
+    static uint16_t getCurrentMin();
+    static uint16_t getSleepStartMin();
+    static uint16_t getSleepEndMin();
 };
