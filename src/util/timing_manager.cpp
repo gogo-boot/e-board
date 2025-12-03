@@ -301,7 +301,7 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
 
     // Step 2: Compare with OTA check time and use the nearest update
     bool isOTAUpdate = false;
-    if (nextOTACheck > 0 && (nextUpdate == 0 || nextOTACheck < nextUpdate)) {
+    if (nextOTACheck > 0 && (nextUpdate == 0 || nextOTACheck <= nextUpdate)) {
         nextUpdate = nextOTACheck;
         isOTAUpdate = true;
         ESP_LOGI(TAG, "OTA check is the nearest update at: %u", nextOTACheck);
