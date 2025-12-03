@@ -46,8 +46,13 @@ void enterDeepSleep(uint64_t sleepTimeSeconds) {
         ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
         TimeManager::setupNTPTime();
     }
-    ESP_LOGI(TAG, "Entering deep sleep for %u seconds (%llu minutes)",
-             sleepTimeSeconds, sleepTimeSeconds / 60);
+
+    time_t now;
+    time(&now);
+    struct tm timeInfo;
+    localtime_r(&now, &timeInfo);
+    ESP_LOGI(TAG, "Entering deep sleep for %llu seconds (%llu minutes) at %02d:%02d:%02d",
+             sleepTimeSeconds, sleepTimeSeconds / 60, timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
 
     // Configure timer wakeup
     esp_sleep_enable_timer_wakeup(sleepTimeSeconds * 1000000ULL); // Convert seconds to microseconds

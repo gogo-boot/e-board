@@ -138,54 +138,7 @@ uint32_t TimingManager::calculateNextActiveTransportTime(uint32_t currentTime) {
     return nextActiveTime;
 }
 
-// Adjust nearest update time based on transport active hours
-// If transport update is outside active hours, skip to next valid update
-// (weather, OTA, or next active period)
-uint32_t TimingManager::adjustForTransportActiveHours(uint32_t nearestUpdate, uint32_t nextTransport,
-                                                      uint32_t nextWeather, uint32_t nextOTA,
-                                                      uint32_t currentTime, bool& isOTAUpdate) {
-    // Only process if nearest update is a transport update
-    if (nextTransport == 0 || nearestUpdate != nextTransport) {
-        return nearestUpdate; // Not a transport update - no adjustment needed
-    }
-
-    // Check if transport update falls within active hours
-    if (isTransportActiveAtTime(nearestUpdate)) {
-        ESP_LOGD(TAG, "Transport update is within active hours - no adjustment needed");
-        return nearestUpdate; // Transport is active - keep it
-    }
-
-    // Transport is inactive - skip to next valid update
-    ESP_LOGI(TAG, "Departure update outside transport active hours");
-
-    // Find next valid update from alternatives (weather, OTA, or next active period)
-    uint32_t nextValidUpdate = UINT32_MAX;
-
-    // Check weather update
-    if (nextWeather > 0 && nextWeather < nextValidUpdate) {
-        nextValidUpdate = nextWeather;
-        ESP_LOGD(TAG, "Alternative: weather update at %u", nextWeather);
-    }
-
-    // Check OTA update
-    if (nextOTA > 0 && nextOTA < nextValidUpdate) {
-        nextValidUpdate = nextOTA;
-        ESP_LOGD(TAG, "Alternative: OTA update at %u", nextOTA);
-    }
-    // If no weather or OTA, calculate next transport active period
-    if (nextValidUpdate == UINT32_MAX) {
-        nextValidUpdate = calculateNextActiveTransportTime(currentTime);
-        ESP_LOGI(TAG, "No weather/OTA - using next transport active period");
-    }
-
-    // Update OTA flag if OTA became the nearest
-    isOTAUpdate = (nextOTA > 0 && nextValidUpdate == nextOTA);
-
-    ESP_LOGI(TAG, "Adjusted wake time: %u (isOTA=%d)", nextValidUpdate, isOTAUpdate);
-    return nextValidUpdate;
-}
-
-uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, bool isOTAUpdate) {
+uint32_t TimingManager::adjustForDeepSleepPeriod(uint32_t nearestUpdate, bool isOTAUpdate) {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Get update time info
@@ -198,7 +151,7 @@ uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, bool isOTAU
     uint16_t sleepEndMin = getSleepEndMin();
 
     // Check if update is in sleep period
-    if (!isTimeInRange(updateMinutes, sleepStartMin, sleepEndMin)) {
+    if (!isInDeepSleepPeriod(nearestUpdate)) {
         return nearestUpdate; // Not in sleep period
     }
 
@@ -263,10 +216,9 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     // Get effective display mode (considers temporary mode)
     uint8_t displayMode = getEffectiveDisplayMode();
 
-    ESP_LOGI(
-        TAG,
-        "Calculating sleep duration - Effective Display mode: %d (temp=%d, configured=%d), Current time: %u",
-        displayMode, config.inTemporaryMode, config.displayMode, currentTimeSeconds);
+    ESP_LOGI(TAG,
+             "Calculating sleep duration - Effective Display mode: %d (temp=%d, configured=%d), Current time: %u",
+             displayMode, config.inTemporaryMode, config.displayMode, currentTimeSeconds);
 
     // ===== HANDLE TEMPORARY MODE =====
     if (config.inTemporaryMode) {
@@ -316,46 +268,52 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
 
     // Step 1: Calculate next update times for each type
     // it returns 0 if that update type is not needed
-    uint32_t nextWeatherUpdate = 0;
-    uint32_t nextTransportUpdate = 0;
     uint32_t nextOTACheck = calculateNextOTACheckTime(currentTimeSeconds);
-    uint32_t nearestUpdate = 0;
+    uint32_t nextUpdate = 0;
 
     switch (displayMode) {
     case DISPLAY_MODE_HALF_AND_HALF:
         ESP_LOGI(TAG, "Display mode: HALF AND HALF");
-        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
-        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        nextUpdate = min(calculateNextWeatherUpdate(currentTimeSeconds),
+                         calculateNextTransportUpdate(currentTimeSeconds));
+        if (!isTransportActiveAtTime(nextUpdate)) {
+            nextUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
+            ESP_LOGI(TAG, "Next update is transport outside active hours - using weather update at %u", nextUpdate);
+        }
         break;
     case DISPLAY_MODE_WEATHER_ONLY:
         ESP_LOGI(TAG, "Display mode: WEATHER ONLY");
-        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
+        nextUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
         break;
     case DISPLAY_MODE_TRANSPORT_ONLY:
         ESP_LOGI(TAG, "Display mode: TRANSPORT ONLY");
-        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        nextUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        if (!isTransportActiveAtTime(nextUpdate)) {
+            nextUpdate = calculateNextActiveTransportTime(currentTimeSeconds);
+            ESP_LOGI(TAG, "Next transport update outside active hours - sleeping until active period at %u",
+                     nextUpdate);
+        }
         break;
     default:
         ESP_LOGI(TAG, "Unknown display mode: %d ", displayMode);
         break;
     }
 
-    // Step 2: Find the nearest update time
-    nearestUpdate = findNearestUpdateTime(nextWeatherUpdate, nextTransportUpdate, nextOTACheck);
-    bool isOTAUpdate = (nextOTACheck > 0 && nearestUpdate == nextOTACheck);
+    // Step 2: Compare with OTA check time and use the nearest update
+    bool isOTAUpdate = false;
+    if (nextOTACheck > 0 && (nextUpdate == 0 || nextOTACheck <= nextUpdate)) {
+        nextUpdate = nextOTACheck;
+        isOTAUpdate = true;
+        ESP_LOGI(TAG, "OTA check is the nearest update at: %u", nextOTACheck);
+    }
 
-    // Step 3: Adjust for transport active hours (if nearest is transport)
-    nearestUpdate = adjustForTransportActiveHours(nearestUpdate, nextTransportUpdate,
-                                                  nextWeatherUpdate, nextOTACheck,
-                                                  currentTimeSeconds, isOTAUpdate);
+    // Step 3: Adjust for sleep period (OTA bypasses sleep)
+    nextUpdate = adjustForDeepSleepPeriod(nextUpdate, isOTAUpdate);
 
-    // Step 4: Adjust for sleep period (OTA bypasses sleep)
-    nearestUpdate = adjustForSleepPeriod(nearestUpdate, isOTAUpdate);
-
-    // Step 5: Calculate final sleep duration with minimum threshold
+    // Step 4: Calculate final sleep duration with minimum threshold
     uint64_t sleepDurationSeconds;
-    if (nearestUpdate > currentTimeSeconds) {
-        sleepDurationSeconds = (uint64_t)(nearestUpdate - currentTimeSeconds);
+    if (nextUpdate > currentTimeSeconds) {
+        sleepDurationSeconds = (uint64_t)(nextUpdate - currentTimeSeconds);
     } else {
         sleepDurationSeconds = 30; // Minimum if time is in the past
     }
@@ -411,6 +369,15 @@ uint16_t TimingManager::getSleepEndMin() {
 
 bool TimingManager::isInDeepSleepPeriod() {
     return isTimeInRange(getCurrentMin(), getSleepStartMin(), getSleepEndMin());
+}
+
+
+bool TimingManager::isInDeepSleepPeriod(uint32_t timestamp) {
+    tm timeInfo;
+    time_t time = (time_t)timestamp;
+    localtime_r(&time, &timeInfo);
+    uint32_t updateMinutes = timeInfo.tm_hour * 60 + timeInfo.tm_min;
+    return isTimeInRange(updateMinutes, getSleepStartMin(), getSleepEndMin());
 }
 
 bool TimingManager::isWeekend() {
@@ -486,21 +453,17 @@ bool TimingManager::isTimeForTransportUpdate() {
 uint8_t TimingManager::getEffectiveDisplayMode() {
     RTCConfigData& config = ConfigManager::getConfig();
 
-    // If in temporary mode, use temporary display mode
-    if (config.inTemporaryMode) {
-        ESP_LOGD(TAG, "Using temporary display mode: %d", config.temporaryDisplayMode);
-        return config.temporaryDisplayMode;
-    }
-
-    if (config.displayMode == DISPLAY_MODE_TRANSPORT_ONLY || config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+    switch (config.displayMode) {
+    case DISPLAY_MODE_TRANSPORT_ONLY:
+    case DISPLAY_MODE_WEATHER_ONLY:
         return config.displayMode;
-    } else {
-        // DISPLAY_MODE_HALF_AND_HALF;
+    case DISPLAY_MODE_HALF_AND_HALF:
         if (isTransportActiveTime()) {
-            return config.displayMode;
-        } else {
-            return DISPLAY_MODE_WEATHER_ONLY;
+            return DISPLAY_MODE_HALF_AND_HALF;
         }
+        return DISPLAY_MODE_WEATHER_ONLY;
+    default:
+        return DISPLAY_MODE_WEATHER_ONLY;
     }
 }
 
@@ -522,7 +485,7 @@ int TimingManager::getCurrentMinutesSinceMidnight() {
     return timeinfo.tm_hour * 60 + timeinfo.tm_min;
 }
 
-bool TimingManager::isTimeInRange(int currentMinutes, int startMinutes, int endMinutes) {
+bool TimingManager::isTimeInRange(uint32_t currentMinutes, uint32_t startMinutes, uint32_t endMinutes) {
     if (startMinutes <= endMinutes) {
         // Same day range (e.g., 06:00 to 22:00)
         return currentMinutes >= startMinutes && currentMinutes <= endMinutes;

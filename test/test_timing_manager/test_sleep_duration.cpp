@@ -38,7 +38,7 @@ void setUp(void) {
 
     // Reset configuration to known state before each test
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 0; // half_and_half
+    config.displayMode = DISPLAY_MODE_HALF_AND_HALF; // half_and_half
     config.weatherInterval = 1; // 1 hours
     config.transportInterval = 3; // 3 minutes
     config.weekendMode = true;
@@ -73,7 +73,7 @@ void test_getNextSleepDurationSeconds_weather_only_mode() {
 
     // Test weather-only mode (displayMode = 1)
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 1; // weather_only
+    config.displayMode = DISPLAY_MODE_WEATHER_ONLY; // weather_only
 
     TimingManager::setLastWeatherUpdate((uint32_t)morningTime);
 
@@ -89,7 +89,7 @@ void test_getNextSleepDurationSeconds_departure_only_mode() {
 
     // Test departure-only mode (displayMode = 2)
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 2; // departure_only
+    config.displayMode = DISPLAY_MODE_TRANSPORT_ONLY; // departure_only
 
     TimingManager::setLastTransportUpdate((uint32_t)morningTime);
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
@@ -104,7 +104,7 @@ void test_getNextSleepDurationSeconds_departure_only_mode_inactive() {
 
     // Test departure-only mode (displayMode = 2)
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 2; // departure_only
+    config.displayMode = DISPLAY_MODE_TRANSPORT_ONLY; // departure_only
     config.otaEnabled = false; // Disable OTA for this test
 
     TimingManager::setLastTransportUpdate((uint32_t)morningTime);
@@ -120,7 +120,7 @@ void test_minimum_sleep_duration_enforced() {
 
     // Test that minimum sleep duration is always enforced
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 2; // departure_only
+    config.displayMode = DISPLAY_MODE_TRANSPORT_ONLY; // departure_only
     config.transportInterval = 1; // 1 minute - very frequent updates
 
     TimingManager::setLastWeatherUpdate(0);
@@ -145,7 +145,7 @@ void test_with_previous_transport_update() {
     TimingManager::setLastTransportUpdate(twoMinutesAgo);
 
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 2; // departure_only
+    config.displayMode = DISPLAY_MODE_TRANSPORT_ONLY; // departure_only
     config.transportInterval = 5; // 5 minutes
     strcpy(config.transportActiveStart, "00:00"); // Active all day
     strcpy(config.transportActiveEnd, "23:59");
@@ -177,7 +177,7 @@ void test_with_both_previous_updates() {
     TimingManager::setLastTransportUpdate(twoMinutesAgo);
 
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 0; // half_and_half
+    config.displayMode = DISPLAY_MODE_HALF_AND_HALF; // half_and_half
     config.weatherInterval = 2; // 2 hours
     config.transportInterval = 5; // 5 minutes
     strcpy(config.transportActiveStart, "00:00"); // Active all day
@@ -203,7 +203,7 @@ void test_weather_update_overdue() {
     TimingManager::setLastTransportUpdate(0);
 
     RTCConfigData& config = ConfigManager::getConfig();
-    config.displayMode = 1; // weather_only
+    config.displayMode = DISPLAY_MODE_WEATHER_ONLY; // weather_only
     config.weatherInterval = 2; // 2 hours
 
     uint64_t sleepDuration = TimingManager::getNextSleepDurationSeconds();
@@ -522,7 +522,7 @@ void test_ota_scheduled_tomorrow() {
     config.otaEnabled = true;
     strcpy(config.otaCheckTime, "03:00"); // Already passed today, next is tomorrow
     config.weatherInterval = 1; // 1 hour
-    config.displayMode = 1; // weather only
+    config.displayMode = DISPLAY_MODE_WEATHER_ONLY; // weather only
 
     TimingManager::setLastWeatherUpdate((uint32_t)afternoon);
     TimingManager::setLastTransportUpdate(0);
@@ -546,7 +546,7 @@ void test_ota_and_weather_coincide() {
     config.otaEnabled = true;
     strcpy(config.otaCheckTime, "03:00"); // OTA at 3:00 AM
     config.weatherInterval = 1; // 1 hour
-    config.displayMode = 1; // weather only
+    config.displayMode = DISPLAY_MODE_WEATHER_ONLY; // weather only
 
     // Weather was updated at 2:00 AM, next update at 3:00 AM (same as OTA)
     TimingManager::setLastWeatherUpdate((uint32_t)earlyMorning);
@@ -572,7 +572,7 @@ void test_ota_during_transport_inactive_hours() {
     strcpy(config.otaCheckTime, "03:00");
     strcpy(config.transportActiveStart, "06:00");
     strcpy(config.transportActiveEnd, "09:00");
-    config.displayMode = 2; // departure only
+    config.displayMode = DISPLAY_MODE_TRANSPORT_ONLY; // departure only
     config.weatherInterval = 10; // won't interfere
 
     TimingManager::setLastWeatherUpdate(0);
