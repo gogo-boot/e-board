@@ -22,15 +22,6 @@ RTC_DATA_ATTR uint32_t lastOTACheck = 0;
 // Helper Functions for Sleep Duration Calculation
 // ============================================================================
 
-bool TimingManager::isWeekendTime(time_t timestamp) {
-    RTCConfigData& config = ConfigManager::getConfig();
-    if (!config.weekendMode) {
-        return false;
-    }
-    struct tm timeInfo;
-    localtime_r(&timestamp, &timeInfo);
-    return (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
-}
 
 uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds) {
     RTCConfigData& config = ConfigManager::getConfig();
@@ -87,7 +78,7 @@ bool TimingManager::isTransportActiveAtTime(uint32_t timestamp) {
     time_t time = (time_t)timestamp;
     localtime_r(&time, &timeInfo);
 
-    bool isWeekend = isWeekendTime(timestamp);
+    bool isWeekend = isWeekend(timestamp);
 
     String start = isWeekend ? String(config.weekendTransportStart) : String(config.transportActiveStart);
     String end = isWeekend ? String(config.weekendTransportEnd) : String(config.transportActiveEnd);
@@ -204,7 +195,7 @@ uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t cu
     int updateMinutes = updateTimeInfo.tm_hour * 60 + updateTimeInfo.tm_min;
 
     // Determine if update time is weekend
-    bool isUpdateWeekend = isWeekendTime(updateTime);
+    bool isUpdateWeekend = isWeekend(updateTime);
 
     // Get sleep period configuration
     String sleepStart = isUpdateWeekend ? String(config.weekendSleepStart) : String(config.sleepStart);
@@ -240,7 +231,7 @@ uint32_t TimingManager::adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t cu
     struct tm sleepEndTimeInfo;
     time_t sleepEndTime = (time_t)sleepEndSeconds;
     localtime_r(&sleepEndTime, &sleepEndTimeInfo);
-    bool isSleepEndWeekend = isWeekendTime(sleepEndTime);
+    bool isSleepEndWeekend = isWeekend(sleepEndTime);
 
     if (isSleepEndWeekend != isUpdateWeekend) {
         ESP_LOGI(TAG, "Sleep crosses weekend boundary - adjusting sleep end time");
@@ -409,17 +400,19 @@ bool TimingManager::isTransportActiveTime() {
 }
 
 bool TimingManager::isWeekend() {
+    return isWeekend(GET_CURRENT_TIME());
+}
+
+bool TimingManager::isWeekend(time_t timestamp) {
     RTCConfigData& config = ConfigManager::getConfig();
     if (!config.weekendMode) {
-        return false; // Weekend mode disabled
+        return false;
     }
-
-    time_t now = GET_CURRENT_TIME();
-    struct tm timeinfo;
-    localtime_r(&now, &timeinfo);
+    struct tm timeInfo;
+    localtime_r(&timestamp, &timeInfo);
 
     // tm_wday: 0 = Sunday, 6 = Saturday
-    return (timeinfo.tm_wday == 0 || timeinfo.tm_wday == 6);
+    return (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
 }
 
 void TimingManager::markWeatherUpdated() {

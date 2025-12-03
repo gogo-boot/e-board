@@ -52,7 +52,7 @@ private:
     static int getCurrentMinutesSinceMidnight();
     static bool isTimeInRange(int currentMinutes, int startMinutes, int endMinutes);
     static uint32_t calculateNextOTACheckTime(uint32_t currentTimeSeconds);
-     // Transport active hours helpers
+    // Transport active hours helpers
     static bool isTransportActiveAtTime(uint32_t timestamp);
     static uint32_t calculateNextActiveTransportTime(uint32_t currentTime);
 
@@ -64,5 +64,5 @@ private:
                                                   uint32_t nextOTA,
                                                   uint32_t currentTime, bool& isOTAUpdate);
     static uint32_t adjustForSleepPeriod(uint32_t nearestUpdate, uint32_t currentTime, bool isOTAUpdate);
-    static bool isWeekendTime(time_t timestamp);
+    static bool isWeekend(time_t timestamp);
 };
