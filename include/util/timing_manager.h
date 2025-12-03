@@ -54,8 +54,8 @@ private:
     static uint32_t calculateNextOTACheckTime(uint32_t currentTimeSeconds);
 
     // Sleep duration calculation helpers
-    static uint32_t calculateNextWeatherUpdate(uint32_t currentTimeSeconds, uint8_t displayMode);
-    static uint32_t calculateNextTransportUpdate(uint32_t currentTimeSeconds, uint8_t displayMode);
+    static uint32_t calculateNextWeatherUpdate(uint32_t currentTimeSeconds);
+    static uint32_t calculateNextTransportUpdate(uint32_t currentTimeSeconds);
     static uint32_t findNearestUpdateTime(uint32_t weather, uint32_t transport, uint32_t ota);
     static uint32_t adjustForTransportActiveHours(uint32_t nearestUpdate, uint32_t nextTransport, uint32_t nextWeather,
                                                   uint32_t nextOTA,

@@ -32,11 +32,7 @@ bool TimingManager::isWeekendTime(time_t timestamp) {
     return (timeInfo.tm_wday == 0 || timeInfo.tm_wday == 6);
 }
 
-uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
-    if (displayMode != DISPLAY_MODE_HALF_AND_HALF && displayMode != DISPLAY_MODE_WEATHER_ONLY) {
-        return 0;
-    }
-
+uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds) {
     RTCConfigData& config = ConfigManager::getConfig();
     uint32_t lastUpdate = getLastWeatherUpdate();
     uint32_t intervalSeconds = config.weatherInterval * 3600; // hours to seconds
@@ -49,11 +45,7 @@ uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds, 
     return nextUpdate;
 }
 
-uint32_t TimingManager::calculateNextTransportUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
-    if (displayMode != DISPLAY_MODE_HALF_AND_HALF && displayMode != DISPLAY_MODE_DEPARTURE_ONLY) {
-        return 0;
-    }
-
+uint32_t TimingManager::calculateNextTransportUpdate(uint32_t currentTimeSeconds) {
     RTCConfigData& config = ConfigManager::getConfig();
     uint32_t lastUpdate = getLastTransportUpdate();
     uint32_t intervalSeconds = config.transportInterval * 60; // minutes to seconds
@@ -325,12 +317,33 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
              getLastWeatherUpdate(), getLastTransportUpdate());
 
     // Step 1: Calculate next update times for each type
-    uint32_t nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds, displayMode);
-    uint32_t nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds, displayMode);
+    // it returns 0 if that update type is not needed
+    uint32_t nextWeatherUpdate = 0;
+    uint32_t nextTransportUpdate = 0;
     uint32_t nextOTACheck = calculateNextOTACheckTime(currentTimeSeconds);
+    uint32_t nearestUpdate = 0;
+
+    switch (displayMode) {
+    case DISPLAY_MODE_HALF_AND_HALF:
+        ESP_LOGI(TAG, "Display mode: HALF AND HALF");
+        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
+        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        break;
+    case DISPLAY_MODE_WEATHER_ONLY:
+        ESP_LOGI(TAG, "Display mode: WEATHER ONLY");
+        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
+        break;
+    case DISPLAY_MODE_TRANSPORT_ONLY:
+        ESP_LOGI(TAG, "Display mode: TRANSPORT ONLY");
+        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        break;
+    default:
+        ESP_LOGI(TAG, "Unknown display mode: %d ", displayMode);
+        break;
+    }
 
     // Step 2: Find the nearest update time
-    uint32_t nearestUpdate = findNearestUpdateTime(nextWeatherUpdate, nextTransportUpdate, nextOTACheck);
+    nearestUpdate = findNearestUpdateTime(nextWeatherUpdate, nextTransportUpdate, nextOTACheck);
     bool isOTAUpdate = (nextOTACheck > 0 && nearestUpdate == nextOTACheck);
 
     // Step 3: Adjust for transport active hours (if nearest is transport)
@@ -456,7 +469,7 @@ uint8_t TimingManager::getEffectiveDisplayMode() {
         return config.temporaryDisplayMode;
     }
 
-    if (config.displayMode == DISPLAY_MODE_DEPARTURE_ONLY || config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+    if (config.displayMode == DISPLAY_MODE_TRANSPORT_ONLY || config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
         return config.displayMode;
     } else {
         // DISPLAY_MODE_HALF_AND_HALF;
