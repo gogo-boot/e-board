@@ -13,6 +13,8 @@ data update or excessive power consumption.
 
 1. It gets the current display mode from configuration.
     - It doesn't reflect temporary display mode.
+    - If the display mode is "weather-only", it returns _weather-only_ display mode.
+    - If the display mode is "transport-only", it returns _transport-only_ display mode
     - If the display mode is "half-and-half", it does reflect weekdays and weekends transport active time range.
       if it is in transport active time range, it returns _half-and-half_ display mode.
       if it is not in transport active time range, it returns _weather-only_ display mode.

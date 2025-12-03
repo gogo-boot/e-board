@@ -263,10 +263,9 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     // Get effective display mode (considers temporary mode)
     uint8_t displayMode = getEffectiveDisplayMode();
 
-    ESP_LOGI(
-        TAG,
-        "Calculating sleep duration - Effective Display mode: %d (temp=%d, configured=%d), Current time: %u",
-        displayMode, config.inTemporaryMode, config.displayMode, currentTimeSeconds);
+    ESP_LOGI(TAG,
+             "Calculating sleep duration - Effective Display mode: %d (temp=%d, configured=%d), Current time: %u",
+             displayMode, config.inTemporaryMode, config.displayMode, currentTimeSeconds);
 
     // ===== HANDLE TEMPORARY MODE =====
     if (config.inTemporaryMode) {
@@ -316,24 +315,22 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
 
     // Step 1: Calculate next update times for each type
     // it returns 0 if that update type is not needed
-    uint32_t nextWeatherUpdate = 0;
-    uint32_t nextTransportUpdate = 0;
     uint32_t nextOTACheck = calculateNextOTACheckTime(currentTimeSeconds);
-    uint32_t nearestUpdate = 0;
+    uint32_t nextUpdate = 0;
 
     switch (displayMode) {
     case DISPLAY_MODE_HALF_AND_HALF:
         ESP_LOGI(TAG, "Display mode: HALF AND HALF");
-        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
-        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        nextUpdate = min(calculateNextWeatherUpdate(currentTimeSeconds),
+                         calculateNextTransportUpdate(currentTimeSeconds));
         break;
     case DISPLAY_MODE_WEATHER_ONLY:
         ESP_LOGI(TAG, "Display mode: WEATHER ONLY");
-        nextWeatherUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
+        nextUpdate = calculateNextWeatherUpdate(currentTimeSeconds);
         break;
     case DISPLAY_MODE_TRANSPORT_ONLY:
         ESP_LOGI(TAG, "Display mode: TRANSPORT ONLY");
-        nextTransportUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        nextUpdate = calculateNextTransportUpdate(currentTimeSeconds);
         break;
     default:
         ESP_LOGI(TAG, "Unknown display mode: %d ", displayMode);
@@ -341,21 +338,20 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     }
 
     // Step 2: Find the nearest update time
-    nearestUpdate = findNearestUpdateTime(nextWeatherUpdate, nextTransportUpdate, nextOTACheck);
-    bool isOTAUpdate = (nextOTACheck > 0 && nearestUpdate == nextOTACheck);
+    bool isOTAUpdate = (nextOTACheck > 0 && nextUpdate == nextOTACheck);
 
     // Step 3: Adjust for transport active hours (if nearest is transport)
-    nearestUpdate = adjustForTransportActiveHours(nearestUpdate, nextTransportUpdate,
-                                                  nextWeatherUpdate, nextOTACheck,
-                                                  currentTimeSeconds, isOTAUpdate);
+    // nextUpdate = adjustForTransportActiveHours(nextUpdate, nextTransportUpdate,
+    //                                            nextWeatherUpdate, nextOTACheck,
+    //                                            currentTimeSeconds, isOTAUpdate);
 
     // Step 4: Adjust for sleep period (OTA bypasses sleep)
-    nearestUpdate = adjustForSleepPeriod(nearestUpdate, isOTAUpdate);
+    nextUpdate = adjustForSleepPeriod(nextUpdate, isOTAUpdate);
 
     // Step 5: Calculate final sleep duration with minimum threshold
     uint64_t sleepDurationSeconds;
-    if (nearestUpdate > currentTimeSeconds) {
-        sleepDurationSeconds = (uint64_t)(nearestUpdate - currentTimeSeconds);
+    if (nextUpdate > currentTimeSeconds) {
+        sleepDurationSeconds = (uint64_t)(nextUpdate - currentTimeSeconds);
     } else {
         sleepDurationSeconds = 30; // Minimum if time is in the past
     }
@@ -486,21 +482,17 @@ bool TimingManager::isTimeForTransportUpdate() {
 uint8_t TimingManager::getEffectiveDisplayMode() {
     RTCConfigData& config = ConfigManager::getConfig();
 
-    // If in temporary mode, use temporary display mode
-    if (config.inTemporaryMode) {
-        ESP_LOGD(TAG, "Using temporary display mode: %d", config.temporaryDisplayMode);
-        return config.temporaryDisplayMode;
-    }
-
-    if (config.displayMode == DISPLAY_MODE_TRANSPORT_ONLY || config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+    switch (config.displayMode) {
+    case DISPLAY_MODE_TRANSPORT_ONLY:
+    case DISPLAY_MODE_WEATHER_ONLY:
         return config.displayMode;
-    } else {
-        // DISPLAY_MODE_HALF_AND_HALF;
+    case DISPLAY_MODE_HALF_AND_HALF:
         if (isTransportActiveTime()) {
-            return config.displayMode;
-        } else {
-            return DISPLAY_MODE_WEATHER_ONLY;
+            return DISPLAY_MODE_HALF_AND_HALF;
         }
+        return DISPLAY_MODE_WEATHER_ONLY;
+    default:
+        return DISPLAY_MODE_WEATHER_ONLY;
     }
 }
 
