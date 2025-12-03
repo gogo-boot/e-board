@@ -89,7 +89,7 @@ int8_t ButtonManager::getWakeupButtonMode() {
         return DISPLAY_MODE_WEATHER_ONLY;
     } else if (wakeup_pin_mask & (1ULL << Pins::BUTTON_DEPARTURE_ONLY)) {
         ESP_LOGI(TAG, "Woken by BUTTON_DEPARTURE_ONLY (GPIO %d)", Pins::BUTTON_DEPARTURE_ONLY);
-        return DISPLAY_MODE_DEPARTURE_ONLY;
+        return DISPLAY_MODE_TRANSPORT_ONLY;
     }
 
     ESP_LOGW(TAG, "EXT1 wakeup from unknown button: 0x%llx", wakeup_pin_mask);

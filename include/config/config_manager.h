@@ -92,7 +92,7 @@ constexpr size_t MAX_TRANSPORT_FILTERS = 8;
 // Display mode constants
 #define DISPLAY_MODE_HALF_AND_HALF  0
 #define DISPLAY_MODE_WEATHER_ONLY   1
-#define DISPLAY_MODE_DEPARTURE_ONLY 2
+#define DISPLAY_MODE_TRANSPORT_ONLY 2
 
 class ConfigManager {
 public:

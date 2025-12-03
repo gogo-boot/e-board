@@ -686,7 +686,7 @@ void test_temp_mode_active_hours_elapsed_time() {
     config.inTemporaryMode = true;
     config.temporaryDisplayMode = DISPLAY_MODE_WEATHER_ONLY;
     config.temporaryModeActivationTime = (uint32_t)activationTime;
-    config.displayMode = DISPLAY_MODE_DEPARTURE_ONLY;
+    config.displayMode = DISPLAY_MODE_TRANSPORT_ONLY;
 
     strcpy(config.sleepStart, "22:30");
     strcpy(config.sleepEnd, "05:30");
@@ -717,7 +717,7 @@ void test_temp_mode_during_deep_sleep() {
     MockTime::setMockTime(testTimestamp);
 
     config.inTemporaryMode = true;
-    config.temporaryDisplayMode = DISPLAY_MODE_DEPARTURE_ONLY;
+    config.temporaryDisplayMode = DISPLAY_MODE_TRANSPORT_ONLY;
     config.temporaryModeActivationTime = (uint32_t)testTimestamp;
     config.displayMode = DISPLAY_MODE_WEATHER_ONLY;
 

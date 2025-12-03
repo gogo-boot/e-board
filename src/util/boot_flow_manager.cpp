@@ -94,7 +94,7 @@ namespace BootFlowManager {
             DeviceModeManager::updateWeatherFull();
             break;
 
-        case DISPLAY_MODE_DEPARTURE_ONLY:
+        case DISPLAY_MODE_TRANSPORT_ONLY:
             ESP_LOGI(TAG, "Starting Departure-only full screen mode");
             DeviceModeManager::updateDepartureFull();
             break;
