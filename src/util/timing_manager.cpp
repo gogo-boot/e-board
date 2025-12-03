@@ -33,8 +33,7 @@ bool TimingManager::isWeekendTime(time_t timestamp) {
 }
 
 uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
-    // Weather updates needed for weather_only (1) and half_and_half (0) modes
-    if (displayMode != 0 && displayMode != 1) {
+    if (displayMode != DISPLAY_MODE_HALF_AND_HALF && displayMode != DISPLAY_MODE_WEATHER_ONLY) {
         return 0;
     }
 
@@ -51,8 +50,7 @@ uint32_t TimingManager::calculateNextWeatherUpdate(uint32_t currentTimeSeconds, 
 }
 
 uint32_t TimingManager::calculateNextTransportUpdate(uint32_t currentTimeSeconds, uint8_t displayMode) {
-    // Departure updates needed for departure_only (2) and half_and_half (0) modes
-    if (displayMode != 0 && displayMode != 2) {
+    if (displayMode != DISPLAY_MODE_HALF_AND_HALF && displayMode != DISPLAY_MODE_DEPARTURE_ONLY) {
         return 0;
     }
 
