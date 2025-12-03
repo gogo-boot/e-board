@@ -288,6 +288,11 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     case DISPLAY_MODE_TRANSPORT_ONLY:
         ESP_LOGI(TAG, "Display mode: TRANSPORT ONLY");
         nextUpdate = calculateNextTransportUpdate(currentTimeSeconds);
+        if (!isTransportActiveAtTime(nextUpdate)) {
+            nextUpdate = calculateNextActiveTransportTime(currentTimeSeconds);
+            ESP_LOGI(TAG, "Next transport update outside active hours - sleeping until active period at %u",
+                     nextUpdate);
+        }
         break;
     default:
         ESP_LOGI(TAG, "Unknown display mode: %d ", displayMode);
