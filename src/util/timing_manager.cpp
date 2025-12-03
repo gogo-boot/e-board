@@ -66,29 +66,15 @@ uint32_t TimingManager::findNearestUpdateTime(uint32_t weather, uint32_t transpo
     if (transport > 0 && (nearest == 0 || transport < nearest)) nearest = transport;
     if (ota > 0 && (nearest == 0 || ota < nearest)) nearest = ota;
 
-    // Fallback if no updates scheduled
+    // Fallback if no updates scheduled; log all parameters and nearest value
+    ESP_LOGI(TAG, "findNearestUpdateTime params: weather=%u, transport=%u, ota=%u, nearest=%u", weather, transport, ota,
+             nearest);
+
     if (nearest == 0) {
         time_t now = GET_CURRENT_TIME();
         nearest = (uint32_t)now + 60; // Wake in 1 minute
         ESP_LOGI(TAG, "No updates configured - fallback wake in 60 seconds at: %u", nearest);
         return nearest;
-    }
-
-    // Log what we found
-    if (weather > 0 && transport > 0 && ota > 0) {
-        ESP_LOGI(TAG, "All updates needed - nearest at: %u seconds", nearest);
-    } else if (weather > 0 && transport > 0) {
-        ESP_LOGI(TAG, "Weather and departure updates needed - nearest at: %u seconds", nearest);
-    } else if (weather > 0 && ota > 0) {
-        ESP_LOGI(TAG, "Weather and OTA updates needed - nearest at: %u seconds", nearest);
-    } else if (transport > 0 && ota > 0) {
-        ESP_LOGI(TAG, "Departure and OTA updates needed - nearest at: %u seconds", nearest);
-    } else if (transport > 0) {
-        ESP_LOGI(TAG, "Only departure update needed at: %u seconds", nearest);
-    } else if (weather > 0) {
-        ESP_LOGI(TAG, "Only weather update needed at: %u seconds", nearest);
-    } else {
-        ESP_LOGI(TAG, "Only OTA update needed at: %u seconds", nearest);
     }
 
     return nearest;
