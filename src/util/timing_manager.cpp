@@ -266,9 +266,14 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
     time_t now = GET_CURRENT_TIME();
     uint32_t currentTimeSeconds = (uint32_t)now;
     RTCConfigData& config = ConfigManager::getConfig();
-    uint8_t displayMode = config.displayMode;
 
-    ESP_LOGI(TAG, "Calculating sleep duration - Display mode: %d, Current time: %u", displayMode, currentTimeSeconds);
+    // Get effective display mode (considers temporary mode)
+    uint8_t displayMode = getEffectiveDisplayMode();
+
+    ESP_LOGI(
+        TAG,
+        "Calculating sleep duration - Effective Display mode: %d (temp=%d, configured=%d), Current time: %u",
+        displayMode, config.inTemporaryMode, config.displayMode, currentTimeSeconds);
 
     // ===== HANDLE TEMPORARY MODE =====
     if (config.inTemporaryMode) {
@@ -442,6 +447,27 @@ bool TimingManager::isTimeForTransportUpdate() {
              lastUpdate, currentTime, config.transportInterval, needUpdate ? "YES" : "NO");
 
     return needUpdate;
+}
+
+uint8_t TimingManager::getEffectiveDisplayMode() {
+    RTCConfigData& config = ConfigManager::getConfig();
+
+    // If in temporary mode, use temporary display mode
+    if (config.inTemporaryMode) {
+        ESP_LOGD(TAG, "Using temporary display mode: %d", config.temporaryDisplayMode);
+        return config.temporaryDisplayMode;
+    }
+
+    if (config.displayMode == DISPLAY_MODE_DEPARTURE_ONLY || config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+        return config.displayMode;
+    } else {
+        // DISPLAY_MODE_HALF_AND_HALF;
+        if (isTransportActiveTime()) {
+            return config.displayMode;
+        } else {
+            return DISPLAY_MODE_WEATHER_ONLY;
+        }
+    }
 }
 
 // Private helper functions

@@ -34,6 +34,9 @@ public:
     static bool isTimeForWeatherUpdate();
     static bool isTimeForTransportUpdate();
 
+    // Get effective display mode (considers temporary mode)
+    static uint8_t getEffectiveDisplayMode();
+
     // RTC timestamp management (public for testing)
     static uint32_t getLastWeatherUpdate();
     static uint32_t getLastTransportUpdate();
