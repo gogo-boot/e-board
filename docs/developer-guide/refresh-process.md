@@ -21,6 +21,8 @@ data update or excessive power consumption.
 1. It gets next required wake-up time according to current display mode.
     - If the display mode is "weather-only", it gets next weather update time.
     - If the display mode is "transport-only", it gets next transport update time.
+        - if the next transport update time is out of transport active time range, it should get next day transport
+          active time.
     - If the display mode is "half-and-half", it gets both next weather and transport update time. and it returns which
       is sooner.
 1. It doesn't always get desired wake-up time due to edge cases:

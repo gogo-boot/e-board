@@ -299,15 +299,18 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
         break;
     }
 
-    bool isDeepSleep = isInDeepSleepPeriod(nextUpdate);
+    // Step 2: Compare with OTA check time and use the nearest update
+    bool isOTAUpdate = false;
+    if (nextOTACheck > 0 && (nextUpdate == 0 || nextOTACheck < nextUpdate)) {
+        nextUpdate = nextOTACheck;
+        isOTAUpdate = true;
+        ESP_LOGI(TAG, "OTA check is the nearest update at: %u", nextOTACheck);
+    }
 
-    // Step 2: Find the nearest update time
-    bool isOTAUpdate = (nextOTACheck > 0 && nextUpdate == nextOTACheck);
-
-    // Step 4: Adjust for sleep period (OTA bypasses sleep)
+    // Step 3: Adjust for sleep period (OTA bypasses sleep)
     nextUpdate = adjustForDeepSleepPeriod(nextUpdate, isOTAUpdate);
 
-    // Step 5: Calculate final sleep duration with minimum threshold
+    // Step 4: Calculate final sleep duration with minimum threshold
     uint64_t sleepDurationSeconds;
     if (nextUpdate > currentTimeSeconds) {
         sleepDurationSeconds = (uint64_t)(nextUpdate - currentTimeSeconds);
