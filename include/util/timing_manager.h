@@ -52,6 +52,9 @@ private:
     static int getCurrentMinutesSinceMidnight();
     static bool isTimeInRange(int currentMinutes, int startMinutes, int endMinutes);
     static uint32_t calculateNextOTACheckTime(uint32_t currentTimeSeconds);
+     // Transport active hours helpers
+    static bool isTransportActiveAtTime(uint32_t timestamp);
+    static uint32_t calculateNextActiveTransportTime(uint32_t currentTime);
 
     // Sleep duration calculation helpers
     static uint32_t calculateNextWeatherUpdate(uint32_t currentTimeSeconds);
