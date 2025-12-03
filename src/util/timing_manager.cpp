@@ -350,7 +350,7 @@ uint64_t TimingManager::getNextSleepDurationSeconds() {
                                                   currentTimeSeconds, isOTAUpdate);
 
     // Step 4: Adjust for sleep period (OTA bypasses sleep)
-    nearestUpdate = adjustForSleepPeriod(nearestUpdate, currentTimeSeconds, isOTAUpdate);
+    nearestUpdate = adjustForSleepPeriod(nearestUpdate, isOTAUpdate);
 
     // Step 5: Calculate final sleep duration with minimum threshold
     uint64_t sleepDurationSeconds;
