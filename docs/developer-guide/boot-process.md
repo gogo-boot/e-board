@@ -2,6 +2,36 @@
 
 This document describes the detailed boot process and flow of MyStation, including the three-phase configuration system.
 
+## Boot Life Cycle
+
+Boot Process has its life cycle as follows:
+
+To be implemented:
+
+1. OnInit: System Initialization Phase
+    - Print Wake-up Diagnostics
+    - Check If factory Reset is desired
+    - Initialize Display - To Move
+    - Initialize WebServer if needed - To Move
+    - Initialize Font - To Move
+    - Initialize Battery Monitoring
+    - Load configuration from NVS
+1. OnStart: Before Operational Phase
+    - Configuration Phase 1 if needed : Wifi Manager Configuration
+    - Configuration Phase 2 if needed : Application Configuration
+    - OTA Update Check by checking scheduled time with RTC clock time
+    - Setup by pressing buttons can change display mode - To make
+    - Set temporary display mode if needed - To Move
+1. OnRunning: Operational Phase
+    - Fetch Data from APIs and Update Display
+1. OnStop: After Operational Phase
+    - Calculate next wake-up time - To Move
+    - clean up temporary states if needed - To make
+    - Setup by pressing buttons can be woken up - To Move
+1. OnShutDown: Deep Sleep Phase
+    - Turn off peripherals - To Move
+    - Enter deep sleep mode - To Move
+
 ## Overview
 
 MyStation uses a sophisticated multi-phase boot process that adapts based on the device's configuration state. This
