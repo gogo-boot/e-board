@@ -8,23 +8,25 @@ Boot Process has its life cycle as follows:
 
 To be implemented:
 
-1. OnInit: System Initialization Phase
+1. OnInit: System Initialization Phase which prepares for other phases
+    - Initialize Serial Communication if needed - To Move
     - Print Wake-up Diagnostics
     - Check If factory Reset is desired
     - Initialize Display - To Move
-    - Initialize WebServer if needed - To Move
     - Initialize Font - To Move
     - Initialize Battery Monitoring
     - Load configuration from NVS
-1. OnStart: Before Operational Phase
-    - Configuration Phase 1 if needed : Wifi Manager Configuration
-    - Configuration Phase 2 if needed : Application Configuration
-    - OTA Update Check by checking scheduled time with RTC clock time
-    - Setup by pressing buttons can change display mode - To make
+1. OnStart: Before Operational Phase which doesn't need Internet
+    - Start configuration Phase 1 if needed : Wifi Manager Configuration
+    - Setup by pressing buttons changes display mode while running - To make
     - Set temporary display mode if needed - To Move
-1. OnRunning: Operational Phase
+1. OnRunning: Operational Phase which needs Internet
+    - Start configuration Phase 2 if needed : Application Configuration
+        - Start WebServer if needed - To Move
+    - Set up Time if it needed - To Move
+    - OTA Update Check by checking scheduled time with RTC clock time
     - Fetch Data from APIs and Update Display
-1. OnStop: After Operational Phase
+1. OnStop: Prepare to Deep Sleep Phase
     - Calculate next wake-up time - To Move
     - clean up temporary states if needed - To make
     - Setup by pressing buttons can be woken up - To Move
