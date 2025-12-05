@@ -8,6 +8,7 @@
 #include "util/sleep_utils.h"
 #include "util/system_init.h"
 #include "util/timing_manager.h"
+#include "config/config_manager.h"
 
 static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
 static const char* TAG = "ACTIVITY_MGR";

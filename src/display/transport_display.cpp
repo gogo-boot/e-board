@@ -10,6 +10,8 @@
 #include <icons.h>
 #include <WiFi.h>
 
+#include "config/config_manager.h"
+
 static const char* TAG = "TRANSPORT_DISPLAY";
 
 // Display layout constants

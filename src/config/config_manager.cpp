@@ -1,5 +1,4 @@
 #include "config/config_manager.h"
-#include <esp_log.h>
 #include <vector>
 
 static const char* TAG = "CONFIG_MGR";

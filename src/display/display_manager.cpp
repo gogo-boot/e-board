@@ -1,8 +1,9 @@
 #include "display/display_manager.h"
 
 #include <Arduino.h>
-#include <esp_log.h>
 
+#include "config/config_manager.h"
+#include "config/pins.h"
 #include "display/text_utils.h"
 #include "display/transport_display.h"
 #include "display/weather_general_half.h"
@@ -13,8 +14,6 @@
 
 // Include e-paper display libraries
 #include <gdey/GxEPD2_750_GDEY075T7.h>
-
-#include "config/pins.h"
 
 // Font includes for German character support
 #include <U8g2_for_Adafruit_GFX.h>
