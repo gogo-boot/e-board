@@ -82,9 +82,6 @@ void DeviceModeManager::runConfigurationMode() {
         MyWiFiManager::reconnectWiFi();
     }
 
-    // Setup time synchronization
-    TimeManager::setupNTPTime();
-
     // Get location if not already saved
     ConfigPageData& pageData = ConfigPageData::getInstance();
 
