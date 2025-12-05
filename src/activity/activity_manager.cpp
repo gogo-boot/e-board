@@ -11,13 +11,26 @@
 #include "util/timing_manager.h"
 
 static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
+static const char* TAG = "ACTIVITY_MGR";
 
 Lifecycle ActivityManager::getCurrentActivityLifecycle() {
     return currentLifecycle;
 }
 
 void ActivityManager::setCurrentActivityLifecycle(Lifecycle status) {
+    ESP_LOGI(TAG, "Current Lifecycle : %s", lifecycleToString(status));
     currentLifecycle = status;
+}
+
+const char* ActivityManager::lifecycleToString(Lifecycle lifecycle) {
+    switch (lifecycle) {
+    case Lifecycle::ON_INIT: return "ON_INIT";
+    case Lifecycle::ON_START: return "ON_START";
+    case Lifecycle::ON_RUNNING: return "ON_RUNNING";
+    case Lifecycle::ON_STOP: return "ON_STOP";
+    case Lifecycle::ON_SHUTDOWN: return "ON_SHUTDOWN";
+    default: return "UNKNOWN";
+    }
 }
 
 void ActivityManager::onInit() {
@@ -33,6 +46,7 @@ void ActivityManager::onInit() {
 
 void ActivityManager::onStart() {
     setCurrentActivityLifecycle(Lifecycle::ON_START);
+
     // Start configuration Phase 1 if needed : Wifi Manager Configuration
     ConfigPhase phase = DeviceModeManager::getCurrentPhase();
     if (phase == PHASE_WIFI_SETUP) {
@@ -41,7 +55,7 @@ void ActivityManager::onStart() {
     // Setup by pressing buttons changes display mode while running - To make
 
     // Set up Time if it needed - To Move
-    TimeManager::setupNTPTime();
+    DeviceModeManager::setupConnectivityAndTime();
 
     // Set temporary display mode if needed - To Move
     ButtonManager::handleWakeupMode();
@@ -69,6 +83,7 @@ uint64_t sleepTimeSeconds = 0;
 
 void ActivityManager::onStop() {
     setCurrentActivityLifecycle(Lifecycle::ON_STOP);
+
     // Calculate next wake-up time - To Move
     sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
 
@@ -80,6 +95,7 @@ void ActivityManager::onStop() {
 
 void ActivityManager::onShutdown() {
     setCurrentActivityLifecycle(Lifecycle::ON_SHUTDOWN);
+
     // Turn off peripherals - To Move
     DisplayManager::hibernate();
     // Enter deep sleep mode - To Move

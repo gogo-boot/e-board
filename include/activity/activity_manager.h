@@ -19,5 +19,6 @@ public:
     static void onShutdown();
 
 private:
+    static const char* lifecycleToString(Lifecycle status);
     static void setCurrentActivityLifecycle(Lifecycle status);
 };
