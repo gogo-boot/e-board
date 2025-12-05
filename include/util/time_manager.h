@@ -7,7 +7,7 @@ public:
     static String getGermanDateTimeString();
     static void printCurrentTime();
     static bool isTimeSet();
-    static bool getCurrentLocalTime(struct tm& timeinfo);
+    static bool getCurrentLocalTime(tm& timeinfo);
 
     // Enhanced time management for deep sleep optimization
     static bool needsPeriodicSync();

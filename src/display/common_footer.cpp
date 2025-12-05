@@ -42,7 +42,7 @@ void CommonFooter::drawFooter(int16_t x, int16_t y, int16_t h, uint8_t elements)
 String CommonFooter::getTimeString() {
     String footerText = "";
     if (TimeManager::isTimeSet()) {
-        struct tm timeinfo;
+        tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
             char timeStr[20];
             strftime(timeStr, sizeof(timeStr), "%H:%M", &timeinfo);

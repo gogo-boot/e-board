@@ -22,7 +22,7 @@ public:
         return true;
     }
 
-    static bool getCurrentLocalTime(struct tm& timeinfo) {
+    static bool getCurrentLocalTime(tm& timeinfo) {
         time_t now = time(nullptr);
         localtime_r(&now, &timeinfo);
         return true;

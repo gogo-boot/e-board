@@ -31,19 +31,11 @@
 
 #include <Arduino.h>
 #include <WebServer.h>
-#include <SPI.h>
-#include <esp_log.h>
 
+#include "activity/activity_manager.h"
 // Configuration
-#include "config/config_struct.h"
 #include "config/config_manager.h"
 #include "config/pins.h"
-
-// System modules
-#include "util/system_init.h"
-#include "util/ota_manager.h"
-#include "util/boot_flow_manager.h"
-#include "util/button_manager.h"
 
 // Display
 #include <GxEPD2_BW.h>
@@ -74,20 +66,15 @@ RTC_DATA_ATTR unsigned long loopCount = 0;
 // =============================================================================
 
 void setup() {
-    // 1. Initialize system (hardware, logging, diagnostics, configuration)
-    SystemInit::initialize();
-
-    // 2. Check for OTA updates (if scheduled)
-    OTAManager::checkAndApplyUpdate();
-
-    // 3. Handle button wakeup mode (if device woken by button press)
-    ButtonManager::handleWakeupMode();
-
-    // 4. Initialize boot flow manager with shared components
-    BootFlowManager::initialize(server, display, u8g2);
-
-    // 5. Execute boot flow (Phase 1/2/3)
-    BootFlowManager::handleBootFlow();
+    // OnInit: System Initialization Phase which prepares for other phases
+    ActivityManager::onInit();
+    ActivityManager::onStart();
+    ActivityManager::onRunning();
+    // Only proceed to shutdown if NOT in configuration mode
+    if (!ConfigManager::isConfigMode()) {
+        ActivityManager::onStop();
+        ActivityManager::onShutdown();
+    }
 }
 
 void loop() {

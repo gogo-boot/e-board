@@ -1,9 +1,10 @@
 #pragma once
 
-#include <Arduino.h>
-
 namespace SystemInit {
-    void initialize();
+    void initSerialConnector();
     void printWakeupCause();
-    bool checkAndHandleFactoryReset();
+    void factoryResetIfDesired();
+    void initDisplay();
+    void initFont();
+    void loadNvsConfig();
 }

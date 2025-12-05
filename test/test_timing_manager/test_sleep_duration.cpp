@@ -6,7 +6,7 @@
 
 // Helper function to create a specific time_t from date/time components
 time_t createTime(int year, int month, int day, int hour, int minute, int second) {
-    struct tm timeinfo = {};
+    tm timeinfo = {};
     timeinfo.tm_year = year - 1900; // Years since 1900
     timeinfo.tm_mon = month - 1; // Months since January (0-11)
     timeinfo.tm_mday = day; // Day of month (1-31)
@@ -21,7 +21,7 @@ time_t createTime(int year, int month, int day, int hour, int minute, int second
 // Helper function to modify the time of current day
 time_t setTimeToday(int hour, int minute, int second = 0) {
     time_t now = time(nullptr);
-    struct tm* timeinfo = localtime(&now); // Get current time as tm structure
+    tm* timeinfo = localtime(&now); // Get current time as tm structure
 
     // Modify only the time components, keep the date
     timeinfo->tm_hour = hour;
@@ -634,7 +634,7 @@ void test_temp_mode_active_hours_weather_only() {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Setup: 10:00 AM Wednesday (active hours)
-    struct tm testTime = {0};
+    tm testTime = {0};
     testTime.tm_year = 2025 - 1900;
     testTime.tm_mon = 10; // November (0-based)
     testTime.tm_mday = 26; // Wednesday
@@ -670,7 +670,7 @@ void test_temp_mode_active_hours_elapsed_time() {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Setup: 10:01:30 AM Wednesday (1 minute 30 seconds after activation)
-    struct tm testTime = {0};
+    tm testTime = {0};
     testTime.tm_year = 2025 - 1900;
     testTime.tm_mon = 10;
     testTime.tm_mday = 26;
@@ -706,7 +706,7 @@ void test_temp_mode_during_deep_sleep() {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Setup: 1:00 AM Thursday (during deep sleep 22:30 - 05:30)
-    struct tm testTime = {0};
+    tm testTime = {0};
     testTime.tm_year = 2025 - 1900;
     testTime.tm_mon = 10;
     testTime.tm_mday = 27;
@@ -744,7 +744,7 @@ void test_temp_mode_before_deep_sleep_starts() {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Setup: 22:58 Wednesday (2 minutes before deep sleep at 23:00)
-    struct tm testTime = {0};
+    tm testTime = {0};
     testTime.tm_year = 2025 - 1900;
     testTime.tm_mon = 10;
     testTime.tm_mday = 26;
@@ -778,7 +778,7 @@ void test_temp_mode_exit_after_2_minutes() {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Setup: 10:02:00 AM (exactly 2 minutes after activation at 10:00:00)
-    struct tm testTime = {0};
+    tm testTime = {0};
     testTime.tm_year = 2025 - 1900;
     testTime.tm_mon = 10;
     testTime.tm_mday = 26;
@@ -833,7 +833,7 @@ void test_temp_mode_flag_persists_after_clearing() {
     RTCConfigData& config = ConfigManager::getConfig();
 
     // Setup: 10:02:00 AM (2 minutes after temp mode activation)
-    struct tm testTime = {0};
+    tm testTime = {0};
     testTime.tm_year = 2025 - 1900;
     testTime.tm_mon = 10;
     testTime.tm_mday = 26;

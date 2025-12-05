@@ -2,7 +2,6 @@
 #define TRANSPORT_DISPLAY_H
 
 #include <Arduino.h>
-#include "config/config_manager.h"
 #include "api/rmv_api.h"
 
 /**

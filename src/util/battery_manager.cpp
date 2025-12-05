@@ -1,6 +1,5 @@
 #include "util/battery_manager.h"
 #include "config/pins.h"
-#include <esp_log.h>
 
 #ifdef BOARD_ESP32_S3
 #include <esp_adc_cal.h>

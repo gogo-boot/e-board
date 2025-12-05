@@ -1,4 +1,6 @@
 #include "util/factory_reset.h"
+#include "config/pins.h"
+#include <nvs_flash.h>
 
 bool FactoryReset::checkFactoryResetButton() {
 #ifdef BOARD_ESP32_S3

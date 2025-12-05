@@ -1,11 +1,6 @@
 #include "util/wifi_manager.h"
 #include "config/config_manager.h"
-#include "config/config_page_data.h"
 #include "util/util.h"
-#include <esp_log.h>
-#include <Preferences.h>
-
-#include "config/config_struct.h"
 
 static const char* TAG = "WIFI_MGR";
 

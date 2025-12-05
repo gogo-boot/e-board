@@ -4,12 +4,10 @@
 #include <WebServer.h>
 #include <HTTPClient.h>
 #include <StreamUtils.h>
-#include "config/config_struct.h"
 #include "config/config_manager.h"
 #include "config/config_page_data.h"
 #include "util/util.h"
 #include "sec/aes_crypto.h"
-#include <esp_log.h>
 #include "util/sleep_utils.h"
 
 static const char* TAG = "CONFIG";

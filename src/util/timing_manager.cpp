@@ -6,10 +6,10 @@
 #define GET_CURRENT_TIME() MockTime::now()
 #else
 #include "util/time_manager.h"
-#include <esp_log.h>
 #define GET_CURRENT_TIME() ({ time_t t; time(&t); t; })
 #endif
 #include <time.h>
+#include "config/config_manager.h"
 
 static const char* TAG = "TIMING_MGR";
 
@@ -101,7 +101,7 @@ bool TimingManager::isTransportActiveAtTime(uint32_t timestamp) {
 uint32_t TimingManager::calculateNextActiveTransportTime(uint32_t currentTime) {
     RTCConfigData& config = ConfigManager::getConfig();
 
-    struct tm currentTm;
+    tm currentTm;
     time_t now = (time_t)currentTime;
     localtime_r(&now, &currentTm);
 
@@ -389,7 +389,7 @@ bool TimingManager::isWeekend(time_t timestamp) {
     if (!config.weekendMode) {
         return false;
     }
-    struct tm timeInfo;
+    tm timeInfo;
     localtime_r(&timestamp, &timeInfo);
 
     // tm_wday: 0 = Sunday, 6 = Saturday
@@ -479,7 +479,7 @@ int TimingManager::parseTimeString(const String& timeStr) {
 
 int TimingManager::getCurrentMinutesSinceMidnight() {
     time_t now = GET_CURRENT_TIME();
-    struct tm timeinfo;
+    tm timeinfo;
     localtime_r(&now, &timeinfo);
 
     return timeinfo.tm_hour * 60 + timeinfo.tm_min;
@@ -539,7 +539,7 @@ uint32_t TimingManager::calculateNextOTACheckTime(uint32_t currentTimeSeconds) {
 
     // Get current time info
     time_t currentTime = (time_t)currentTimeSeconds;
-    struct tm currentTm;
+    tm currentTm;
     localtime_r(&currentTime, &currentTm);
     int currentMinutes = currentTm.tm_hour * 60 + currentTm.tm_min;
 

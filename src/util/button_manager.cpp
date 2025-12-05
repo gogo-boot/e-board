@@ -1,12 +1,11 @@
 #include "util/button_manager.h"
 #include "config/pins.h"
 #include "config/config_manager.h"
-#include <esp_log.h>
 #include <driver/rtc_io.h>
 
 static const char* TAG = "BUTTON";
 
-void ButtonManager::init() {
+void ButtonManager::setWakupableButtons() {
 #ifdef BOARD_ESP32_S3
     ESP_LOGI(TAG, "Initializing button manager...");
 

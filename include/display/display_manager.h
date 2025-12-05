@@ -1,7 +1,6 @@
 #pragma once
 #include "api/dwd_weather_api.h"
 #include "api/rmv_api.h"
-#include "config/config_manager.h"
 
 // Display constants - centralized configuration
 namespace DisplayConstants {

@@ -2,36 +2,20 @@
 #include "util/device_mode_manager.h"
 #include "util/wifi_manager.h"
 #include "config/config_manager.h"
-#include <esp_log.h>
+#include <WebServer.h>
+#include <U8g2_for_Adafruit_GFX.h>
 
 static const char* TAG = "BOOT_FLOW";
 
 namespace BootFlowManager {
-    // Static references to shared components
-    static WebServer* serverPtr = nullptr;
-    static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>* displayPtr = nullptr;
-    static U8G2_FOR_ADAFRUIT_GFX* u8g2Ptr = nullptr;
-
     // RTC memory for persistent state across deep sleep
     RTC_DATA_ATTR static bool hasValidConfig = false;
 
     // Forward declarations for internal functions
-    static void handlePhaseWifiSetup();
-    static void handlePhaseAppSetup();
-    static void handlePhaseComplete();
     static uint8_t determineDisplayMode(int8_t buttonMode);
     static void runOperationalMode(uint8_t displayMode);
 
-    void initialize(WebServer& webServer,
-                    GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>& display,
-                    U8G2_FOR_ADAFRUIT_GFX& u8g2) {
-        serverPtr = &webServer;
-        displayPtr = &display;
-        u8g2Ptr = &u8g2;
-        ESP_LOGI(TAG, "Boot flow manager initialized");
-    }
-
-    static void handlePhaseWifiSetup() {
+    void handlePhaseWifiSetup() {
         ESP_LOGI(TAG, "==========================================");
         ESP_LOGI(TAG, "=== PHASE 1: WiFi Setup ===");
         ESP_LOGI(TAG, "==========================================");
@@ -47,7 +31,7 @@ namespace BootFlowManager {
         MyWiFiManager::setupWiFiAccessPointAndRestart(wm);
     }
 
-    static void handlePhaseAppSetup() {
+    void handlePhaseAppSetup() {
         ESP_LOGI(TAG, "Phase 2: Application Setup Required");
 
         // Verify WiFi still works and has internet before proceeding
@@ -106,7 +90,7 @@ namespace BootFlowManager {
         }
     }
 
-    static void handlePhaseComplete() {
+    void handlePhaseComplete() {
         ESP_LOGI(TAG, "Phase 3: All configured - Running operational mode");
 
         // Verify configuration is still valid
@@ -139,30 +123,6 @@ namespace BootFlowManager {
             // Configuration became invalid - go back to configuration
             ESP_LOGW(TAG, "Configuration validation failed - entering configuration mode");
             DeviceModeManager::runConfigurationMode();
-        }
-    }
-
-    void handleBootFlow() {
-        // Determine device mode based on saved configuration
-        ConfigPhase phase = DeviceModeManager::getCurrentPhase();
-
-        switch (phase) {
-        case PHASE_WIFI_SETUP:
-            handlePhaseWifiSetup();
-            break;
-
-        case PHASE_APP_SETUP:
-            handlePhaseAppSetup();
-            break;
-
-        case PHASE_COMPLETE:
-            handlePhaseComplete();
-            break;
-
-        default:
-            ESP_LOGE(TAG, "Unknown phase: %d", phase);
-            handlePhaseWifiSetup();
-            break;
         }
     }
 } // namespace BootFlowManager

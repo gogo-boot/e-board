@@ -1,6 +1,5 @@
 #include "util/weather_print.h"
 #include <Arduino.h>
-#include <esp_log.h>
 #include "config/config_manager.h"
 
 static const char* TAG = "WEATHER";

@@ -3,7 +3,6 @@
 #include "util/button_manager.h"
 #include <WiFi.h>
 #include <esp_sleep.h>
-#include <esp_log.h>
 #include <time.h>
 
 static const char* TAG = "SLEEP";
@@ -49,7 +48,7 @@ void enterDeepSleep(uint64_t sleepTimeSeconds) {
 
     time_t now;
     time(&now);
-    struct tm timeInfo;
+    tm timeInfo;
     localtime_r(&now, &timeInfo);
     ESP_LOGI(TAG, "Entering deep sleep for %llu seconds (%llu minutes) at %02d:%02d:%02d",
              sleepTimeSeconds, sleepTimeSeconds / 60, timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);

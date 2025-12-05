@@ -1,5 +1,4 @@
 #include "config/config_page_data.h"
-#include <esp_log.h>
 
 static const char* TAG = "CONFIG_PAGE_DATA";
 

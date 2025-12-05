@@ -1,6 +1,5 @@
 #pragma once
 #include <Arduino.h>
-#include <esp_sleep.h>
 
 // Button manager for temporary display mode switching (ESP32-S3 only)
 class ButtonManager {
@@ -12,7 +11,7 @@ public:
     static constexpr uint32_t DEBOUNCE_DELAY_MS = 50;
 
     // Initialize button GPIO pins
-    static void init();
+    static void setWakupableButtons();
 
     // Check which button caused EXT1 wakeup from deep sleep
     // Returns the display mode corresponding to the button, or -1 if no button
