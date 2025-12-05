@@ -54,10 +54,10 @@ void ActivityManager::onStart() {
     }
     // Setup by pressing buttons changes display mode while running - To make
 
-    // Set up Time if it needed - To Move
+    // Set up Time if it needed
     DeviceModeManager::setupConnectivityAndTime();
 
-    // Set temporary display mode if needed - To Move
+    // Set temporary display mode if needed
     ButtonManager::handleWakeupMode();
 }
 
@@ -69,6 +69,11 @@ void ActivityManager::onRunning() {
     ConfigPhase phase = DeviceModeManager::getCurrentPhase();
     if (phase == PHASE_APP_SETUP) {
         BootFlowManager::handlePhaseAppSetup();
+
+        ConfigManager::setConfigMode(true);
+        // STOP HERE - don't progress to onStop/onShutdown
+        // The web server will run in loop() for configuration
+        return;
     }
     // OTA Update Check by checking scheduled time with RTC clock time
     OTAManager::checkAndApplyUpdate();
@@ -88,16 +93,17 @@ void ActivityManager::onStop() {
     sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
 
     // clean up temporary states if needed - To make
+    ConfigManager::setConfigMode(false);
 
-    // Setup by pressing buttons can be woken up - To Move
+    // Setup by pressing buttons can be woken up
     ButtonManager::setWakupableButtons();
 }
 
 void ActivityManager::onShutdown() {
     setCurrentActivityLifecycle(Lifecycle::ON_SHUTDOWN);
 
-    // Turn off peripherals - To Move
+    // Turn off peripherals
     DisplayManager::hibernate();
-    // Enter deep sleep mode - To Move
+    // Enter deep sleep mode
     enterDeepSleep(sleepTimeSeconds);
 }

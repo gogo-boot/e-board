@@ -70,8 +70,11 @@ void setup() {
     ActivityManager::onInit();
     ActivityManager::onStart();
     ActivityManager::onRunning();
-    ActivityManager::onStop();
-    ActivityManager::onShutdown();
+    // Only proceed to shutdown if NOT in configuration mode
+    if (!ConfigManager::isConfigMode()) {
+        ActivityManager::onStop();
+        ActivityManager::onShutdown();
+    }
 }
 
 void loop() {
