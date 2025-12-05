@@ -31,20 +31,11 @@
 
 #include <Arduino.h>
 #include <WebServer.h>
-#include <SPI.h>
-#include <esp_log.h>
 
 #include "activity/activity_manager.h"
 // Configuration
-#include "config/config_struct.h"
 #include "config/config_manager.h"
 #include "config/pins.h"
-
-// System modules
-#include "util/system_init.h"
-#include "util/ota_manager.h"
-#include "util/boot_flow_manager.h"
-#include "util/button_manager.h"
 
 // Display
 #include <GxEPD2_BW.h>

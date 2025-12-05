@@ -2,7 +2,6 @@
 #include "util/device_mode_manager.h"
 #include "util/wifi_manager.h"
 #include "config/config_manager.h"
-#include <esp_log.h>
 
 static const char* TAG = "BOOT_FLOW";
 
@@ -18,15 +17,6 @@ namespace BootFlowManager {
     // Forward declarations for internal functions
     static uint8_t determineDisplayMode(int8_t buttonMode);
     static void runOperationalMode(uint8_t displayMode);
-
-    void initialize(WebServer& webServer,
-                    GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>& display,
-                    U8G2_FOR_ADAFRUIT_GFX& u8g2) {
-        serverPtr = &webServer;
-        displayPtr = &display;
-        u8g2Ptr = &u8g2;
-        ESP_LOGI(TAG, "Boot flow manager initialized");
-    }
 
     void handlePhaseWifiSetup() {
         ESP_LOGI(TAG, "==========================================");
@@ -136,30 +126,6 @@ namespace BootFlowManager {
             // Configuration became invalid - go back to configuration
             ESP_LOGW(TAG, "Configuration validation failed - entering configuration mode");
             DeviceModeManager::runConfigurationMode();
-        }
-    }
-
-    void handleBootFlow() {
-        // Determine device mode based on saved configuration
-        ConfigPhase phase = DeviceModeManager::getCurrentPhase();
-
-        switch (phase) {
-        case PHASE_WIFI_SETUP:
-            handlePhaseWifiSetup();
-            break;
-
-        case PHASE_APP_SETUP:
-            handlePhaseAppSetup();
-            break;
-
-        case PHASE_COMPLETE:
-            handlePhaseComplete();
-            break;
-
-        default:
-            ESP_LOGE(TAG, "Unknown phase: %d", phase);
-            handlePhaseWifiSetup();
-            break;
         }
     }
 } // namespace BootFlowManager
