@@ -36,5 +36,8 @@ namespace BootFlowManager {
      * - Executes operational mode if fully configured
      */
     void handleBootFlow();
+    void handlePhaseWifiSetup();
+    void handlePhaseAppSetup();
+    void handlePhaseComplete();
 }
 

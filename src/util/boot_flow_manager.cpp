@@ -16,9 +16,6 @@ namespace BootFlowManager {
     RTC_DATA_ATTR static bool hasValidConfig = false;
 
     // Forward declarations for internal functions
-    static void handlePhaseWifiSetup();
-    static void handlePhaseAppSetup();
-    static void handlePhaseComplete();
     static uint8_t determineDisplayMode(int8_t buttonMode);
     static void runOperationalMode(uint8_t displayMode);
 
@@ -31,7 +28,7 @@ namespace BootFlowManager {
         ESP_LOGI(TAG, "Boot flow manager initialized");
     }
 
-    static void handlePhaseWifiSetup() {
+    void handlePhaseWifiSetup() {
         ESP_LOGI(TAG, "==========================================");
         ESP_LOGI(TAG, "=== PHASE 1: WiFi Setup ===");
         ESP_LOGI(TAG, "==========================================");
@@ -47,7 +44,7 @@ namespace BootFlowManager {
         MyWiFiManager::setupWiFiAccessPointAndRestart(wm);
     }
 
-    static void handlePhaseAppSetup() {
+    void handlePhaseAppSetup() {
         ESP_LOGI(TAG, "Phase 2: Application Setup Required");
 
         // Verify WiFi still works and has internet before proceeding
@@ -106,7 +103,7 @@ namespace BootFlowManager {
         }
     }
 
-    static void handlePhaseComplete() {
+    void handlePhaseComplete() {
         ESP_LOGI(TAG, "Phase 3: All configured - Running operational mode");
 
         // Verify configuration is still valid
