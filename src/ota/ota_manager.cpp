@@ -1,7 +1,7 @@
-#include "util/ota_manager.h"
 #include "config/config_manager.h"
 #include "util/time_manager.h"
 #include "util/timing_manager.h"
+#include "ota/ota_manager.h"
 #include "ota/ota_update.h"
 #include <ctime>
 

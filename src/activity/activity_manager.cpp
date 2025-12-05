@@ -4,7 +4,7 @@
 #include "util/boot_flow_manager.h"
 #include "util/button_manager.h"
 #include "util/device_mode_manager.h"
-#include "util/ota_manager.h"
+#include "ota/ota_manager.h"
 #include "util/sleep_utils.h"
 #include "util/system_init.h"
 #include "util/timing_manager.h"
