@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include "config/config_manager.h"
 
 enum class UpdateType {
     WEATHER_ONLY,

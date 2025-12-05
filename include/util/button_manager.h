@@ -1,6 +1,5 @@
 #pragma once
 #include <Arduino.h>
-#include <esp_sleep.h>
 
 // Button manager for temporary display mode switching (ESP32-S3 only)
 class ButtonManager {

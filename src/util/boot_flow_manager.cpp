@@ -2,15 +2,12 @@
 #include "util/device_mode_manager.h"
 #include "util/wifi_manager.h"
 #include "config/config_manager.h"
+#include <WebServer.h>
+#include <U8g2_for_Adafruit_GFX.h>
 
 static const char* TAG = "BOOT_FLOW";
 
 namespace BootFlowManager {
-    // Static references to shared components
-    static WebServer* serverPtr = nullptr;
-    static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>* displayPtr = nullptr;
-    static U8G2_FOR_ADAFRUIT_GFX* u8g2Ptr = nullptr;
-
     // RTC memory for persistent state across deep sleep
     RTC_DATA_ATTR static bool hasValidConfig = false;
 

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <WebServer.h>
-#include <GxEPD2_BW.h>
-#include <U8g2_for_Adafruit_GFX.h>
 
 /**
  * Boot Flow Manager

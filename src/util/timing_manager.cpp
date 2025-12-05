@@ -9,6 +9,7 @@
 #define GET_CURRENT_TIME() ({ time_t t; time(&t); t; })
 #endif
 #include <time.h>
+#include "config/config_manager.h"
 
 static const char* TAG = "TIMING_MGR";
 
