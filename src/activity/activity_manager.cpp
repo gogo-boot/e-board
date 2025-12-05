@@ -65,13 +65,12 @@ void ActivityManager::onRunning() {
     setCurrentActivityLifecycle(Lifecycle::ON_RUNNING);
 
     // Start configuration Phase 2 if needed : Application Configuration
-    //   - Todo Start WebServer if needed - To Move
     ConfigPhase phase = DeviceModeManager::getCurrentPhase();
     if (phase == PHASE_APP_SETUP) {
         BootFlowManager::handlePhaseAppSetup();
 
         ConfigManager::setConfigMode(true);
-        // STOP HERE - don't progress to onStop/onShutdown
+        // STOP HERE - don't progress further
         // The web server will run in loop() for configuration
         return;
     }
