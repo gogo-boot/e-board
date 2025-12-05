@@ -1,6 +1,5 @@
 #include "util/transport_print.h"
 #include <Arduino.h>
-#include <esp_log.h>
 
 // Include e-paper display libraries
 #include <GxEPD2_BW.h>

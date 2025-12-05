@@ -100,7 +100,7 @@ String WeatherUtil::formatDateText(const String& isoTime) {
 
 String WeatherUtil::getCurrentDateString() {
     if (TimeManager::isTimeSet()) {
-        struct tm timeinfo;
+        tm timeinfo;
         if (TimeManager::getCurrentLocalTime(timeinfo)) {
             static const char* dayNames[] = {
                 "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
@@ -125,7 +125,7 @@ String WeatherUtil::getDayOfWeekFromDateString(const String& dateStr, int format
     } else {
         return "";
     }
-    struct tm timeinfo = {};
+    tm timeinfo = {};
     timeinfo.tm_year = year - 1900;
     timeinfo.tm_mon = month - 1;
     timeinfo.tm_mday = day;

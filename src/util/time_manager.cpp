@@ -1,5 +1,4 @@
 #include "util/time_manager.h"
-#include <esp_log.h>
 #include <time.h>
 #include <esp_sntp.h>
 
@@ -31,14 +30,14 @@ void TimeManager::setupNTPTime() {
     }
 
     // Verify timezone is applied correctly
-    struct tm timeinfo;
+    tm timeinfo;
     localtime_r(&now, &timeinfo);
     ESP_LOGI(TAG, "NTP time set (German time): %04d-%02d-%02d %02d:%02d:%02d",
              timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
              timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
     // Also log UTC time for comparison
-    struct tm utc_timeinfo;
+    tm utc_timeinfo;
     gmtime_r(&now, &utc_timeinfo);
     ESP_LOGI(TAG, "UTC time: %04d-%02d-%02d %02d:%02d:%02d",
              utc_timeinfo.tm_year + 1900, utc_timeinfo.tm_mon + 1, utc_timeinfo.tm_mday,
@@ -46,7 +45,7 @@ void TimeManager::setupNTPTime() {
 }
 
 String TimeManager::getGermanDateTimeString() {
-    struct tm timeinfo;
+    tm timeinfo;
     if (!getCurrentLocalTime(timeinfo)) {
         ESP_LOGW(TAG, "Failed to get local time for German date/time string");
         return String("--:-- --.--.---- -------");
@@ -55,7 +54,7 @@ String TimeManager::getGermanDateTimeString() {
     static const char* dayNames[] = {
         "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
     };
-     char buf[40];
+    char buf[40];
     int wday = timeinfo.tm_wday;
     if (wday < 0 || wday > 6) wday = 0;
 
@@ -79,7 +78,7 @@ bool TimeManager::isTimeSet() {
     return now > 8 * 3600 * 2; // Check if year > 1971
 }
 
-bool TimeManager::getCurrentLocalTime(struct tm& timeinfo) {
+bool TimeManager::getCurrentLocalTime(tm& timeinfo) {
     if (!isTimeSet()) {
         ESP_LOGW(TAG, "Time not set, cannot get current local time");
         return false;
@@ -91,7 +90,7 @@ bool TimeManager::getCurrentLocalTime(struct tm& timeinfo) {
     localtime_r(&now, &timeinfo);
 
     // Check if timezone conversion worked by comparing with UTC
-    struct tm utc_timeinfo;
+    tm utc_timeinfo;
     gmtime_r(&now, &utc_timeinfo);
 
     // Calculate hour difference
@@ -208,7 +207,7 @@ bool TimeManager::setupNTPTimeWithRetry(int maxRetries) {
 
         if (now >= 8 * 3600 * 2) {
             // Success - time is set
-            struct tm timeinfo;
+            tm timeinfo;
             localtime_r(&now, &timeinfo);
             ESP_LOGI(TAG, "NTP sync successful on attempt %d - German time: %04d-%02d-%02d %02d:%02d:%02d",
                      attempt, timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,

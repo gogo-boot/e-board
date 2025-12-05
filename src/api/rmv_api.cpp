@@ -62,7 +62,7 @@ namespace {
     // Calculate departure time including walking time for RMV API time parameter
     // Uses TimeManager::getCurrentLocalTime() to ensure proper timezone handling
     String calculateDepartureTime(int walkingTimeMinutes) {
-        struct tm timeinfo;
+        tm timeinfo;
         if (!TimeManager::getCurrentLocalTime(timeinfo)) {
             ESP_LOGE(TAG, "Failed to get current local time for departure calculation");
             return "00:00"; // Fallback - will likely cause API to return current departures

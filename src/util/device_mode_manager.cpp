@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include <WebServer.h>
 #include <WiFiManager.h>
-#include <esp_log.h>
 
 #include "api/dwd_weather_api.h"
 #include "api/google_api.h"
@@ -17,7 +16,6 @@
 #include "util/sleep_utils.h"
 #include "util/time_manager.h"
 #include "util/timing_manager.h"
-#include "util/util.h"
 #include "util/weather_print.h"
 #include "util/wifi_manager.h"
 
