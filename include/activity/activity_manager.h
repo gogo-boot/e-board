@@ -1,5 +1,4 @@
 #pragma once
-#include <Arduino.h>
 
 enum class Lifecycle {
     ON_INIT,

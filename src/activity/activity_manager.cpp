@@ -1,6 +1,7 @@
 #include "activity/activity_manager.h"
+#include "util/system_init.h"
 
-Lifecycle ActivityManager::currentLifecycle = Lifecycle::ON_INIT;
+static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
 
 Lifecycle ActivityManager::getCurrentActivityLifecycle() {
     return currentLifecycle;
@@ -12,6 +13,7 @@ void ActivityManager::setCurrentActivityLifecycle(Lifecycle status) {
 
 void ActivityManager::onInit() {
     setCurrentActivityLifecycle(Lifecycle::ON_INIT);
+    SystemInit::initialize();
 }
 
 void ActivityManager::onStart() {
@@ -26,7 +28,6 @@ void ActivityManager::onStop() {
     setCurrentActivityLifecycle(Lifecycle::ON_STOP);
 }
 
-}
 void ActivityManager::onShutdown() {
     setCurrentActivityLifecycle(Lifecycle::ON_SHUTDOWN);
 }
