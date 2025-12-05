@@ -1,4 +1,7 @@
 #include "activity/activity_manager.h"
+
+#include "util/battery_manager.h"
+#include "util/button_manager.h"
 #include "util/system_init.h"
 
 static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
@@ -13,7 +16,13 @@ void ActivityManager::setCurrentActivityLifecycle(Lifecycle status) {
 
 void ActivityManager::onInit() {
     setCurrentActivityLifecycle(Lifecycle::ON_INIT);
-    SystemInit::initialize();
+    SystemInit::initSerialConnector();
+    SystemInit::printWakeupCause();
+    SystemInit::factoryResetIfDesired();
+    SystemInit::initDisplay();
+    SystemInit::initFont();
+    BatteryManager::init();;
+    SystemInit::loadNvsConfig();
 }
 
 void ActivityManager::onStart() {
@@ -26,6 +35,7 @@ void ActivityManager::onRunning() {
 
 void ActivityManager::onStop() {
     setCurrentActivityLifecycle(Lifecycle::ON_STOP);
+    ButtonManager::init();
 }
 
 void ActivityManager::onShutdown() {
