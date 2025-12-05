@@ -34,6 +34,7 @@
 #include <SPI.h>
 #include <esp_log.h>
 
+#include "activity/activity_manager.h"
 // Configuration
 #include "config/config_struct.h"
 #include "config/config_manager.h"
@@ -74,20 +75,12 @@ RTC_DATA_ATTR unsigned long loopCount = 0;
 // =============================================================================
 
 void setup() {
-    // 1. Initialize system (hardware, logging, diagnostics, configuration)
-    SystemInit::initialize();
-
-    // 2. Check for OTA updates (if scheduled)
-    OTAManager::checkAndApplyUpdate();
-
-    // 3. Handle button wakeup mode (if device woken by button press)
-    ButtonManager::handleWakeupMode();
-
-    // 4. Initialize boot flow manager with shared components
-    BootFlowManager::initialize(server, display, u8g2);
-
-    // 5. Execute boot flow (Phase 1/2/3)
-    BootFlowManager::handleBootFlow();
+    // OnInit: System Initialization Phase which prepares for other phases
+    ActivityManager::onInit();
+    ActivityManager::onStart();
+    ActivityManager::onRunning();
+    ActivityManager::onStop();
+    ActivityManager::onShutdown();
 }
 
 void loop() {
