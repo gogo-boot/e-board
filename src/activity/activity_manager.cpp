@@ -74,6 +74,9 @@ void ActivityManager::onRunning() {
         // The web server will run in loop() for configuration
         return;
     }
+    // clean up temporary states if needed
+    ConfigManager::setConfigMode(false);
+
     // OTA Update Check by checking scheduled time with RTC clock time
     OTAManager::checkAndApplyUpdate();
 
@@ -90,9 +93,6 @@ void ActivityManager::onStop() {
 
     // Calculate next wake-up time - To Move
     sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
-
-    // clean up temporary states if needed - To make
-    ConfigManager::setConfigMode(false);
 
     // Setup by pressing buttons can be woken up
     ButtonManager::setWakupableButtons();
