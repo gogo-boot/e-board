@@ -346,9 +346,6 @@ bool DeviceModeManager::setupOperationalMode() {
 }
 
 bool DeviceModeManager::setupConnectivityAndTime() {
-    // Connect to WiFi in station mode
-    MyWiFiManager::reconnectWiFi();
-
     if (MyWiFiManager::isConnected()) {
         // Enhanced time synchronization logic for deep sleep optimization
         bool timeIsSet = TimeManager::isTimeSet();

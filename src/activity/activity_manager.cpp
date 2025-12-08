@@ -9,6 +9,7 @@
 #include "util/system_init.h"
 #include "util/timing_manager.h"
 #include "config/config_manager.h"
+#include "util/wifi_manager.h"
 
 static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
 static const char* TAG = "ACTIVITY_MGR";
@@ -53,6 +54,11 @@ void ActivityManager::onStart() {
         BootFlowManager::handlePhaseWifiSetup();
     }
     // Setup by pressing buttons changes display mode while running - To make
+
+    // Start Wifi connection. If gets failed, show Wifi Error Screen
+    MyWiFiManager::reconnectWiFi();
+
+    DisplayManager::displayErrorIfWifiConnectionError();
 
     // Set up Time if it needed
     DeviceModeManager::setupConnectivityAndTime();

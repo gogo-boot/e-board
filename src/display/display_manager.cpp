@@ -18,6 +18,12 @@
 // Font includes for German character support
 #include <U8g2_for_Adafruit_GFX.h>
 
+#include "WiFiManager.h"
+
+// Include bitmap icons
+#include "icons.h"
+#include "util/battery_manager.h"
+
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
 extern U8G2_FOR_ADAFRUIT_GFX u8g2;
@@ -573,4 +579,146 @@ void DisplayManager::displayPhase2AppSetup() {
     ESP_LOGI(TAG, "Phase 2 app setup instructions displayed with QR code");
 }
 
+// ===== ERROR DISPLAY METHODS =====
 
+/**
+ * @brief Display an error icon centered on the screen
+ *
+ * @param iconName The icon to display (from icon_name_t enum)
+ * @param iconSize The size of the icon in pixels (16, 24, 32, 48, or 64)
+ * @param message Optional error message to display below the icon
+ */
+static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, const char* message = nullptr) {
+    // Get screen dimensions
+    int16_t centerX = DisplayManager::isInitialized() ? (display.width() / 2) : (800 / 2);
+    // Default to 800 if not initialized
+    int16_t centerY = DisplayManager::isInitialized() ? (display.height() / 2) : (480 / 2);
+    // Default to 480 if not initialized
+
+    // Calculate icon position (centered)
+    int16_t iconX = centerX - (iconSize / 2);
+    int16_t iconY = centerY - (iconSize / 2);
+
+    ESP_LOGI(TAG, "Displaying error icon at center (%d, %d) with size %d", iconX, iconY, iconSize);
+
+    // Get bitmap data
+    const unsigned char* bitmap = getBitmap(iconName, iconSize);
+    if (!bitmap) {
+        ESP_LOGE(TAG, "Failed to get bitmap for icon %d at size %d", iconName, iconSize);
+        return;
+    }
+
+    // Draw the icon centered
+    display.drawInvertedBitmap(iconX, iconY, bitmap, iconSize, iconSize, GxEPD_BLACK);
+
+    // Draw optional error message below icon
+    if (message) {
+        u8g2.setFont(u8g2_font_helvB10_tf); // 10pt bold font
+        u8g2.setForegroundColor(GxEPD_BLACK);
+        u8g2.setBackgroundColor(GxEPD_WHITE);
+
+        // Calculate text wrapping
+        int16_t maxWidth = DisplayManager::isInitialized() ? display.width() - 40 : 760; // 20px margin on each side
+        int16_t lineHeight = 20; // Line spacing
+        int16_t startY = iconY + iconSize + 30; // Start 30px below icon
+
+        // Split message into lines that fit within maxWidth
+        String msg = String(message);
+        int16_t currentY = startY;
+        int start = 0;
+        while (start < msg.length()) {
+            int end = msg.length();
+            String line = msg.substring(start, end);
+
+            // Find the longest substring that fits
+            while (u8g2.getUTF8Width(line.c_str()) > maxWidth && end > start) {
+                // Try to break at space
+                int lastSpace = line.lastIndexOf(' ');
+                if (lastSpace > 0) {
+                    end = start + lastSpace;
+                } else {
+                    end--;
+                }
+                line = msg.substring(start, end);
+            }
+
+            // Draw the line centered
+            int16_t textWidth = u8g2.getUTF8Width(line.c_str());
+            int16_t textX = centerX - (textWidth / 2);
+            u8g2.setCursor(textX, currentY);
+            u8g2.print(line);
+
+            // Move to next line
+            start = end;
+            if (start < msg.length() && msg.charAt(start) == ' ') {
+                start++; // Skip the space
+            }
+            currentY += lineHeight;
+        }
+    }
+}
+
+void DisplayManager::displayErrorIfWifiConnectionError() {
+    ESP_LOGI(TAG, "Checking WiFi connection status");
+
+    if (WiFi.status() != WL_CONNECTED) {
+        ESP_LOGW(TAG, "WiFi not connected - displaying error");
+
+        // Initialize for full refresh if needed
+        if (!initialized) {
+            initForFullRefresh(DisplayOrientation::LANDSCAPE);
+        }
+
+        display.setFullWindow();
+        display.firstPage();
+        do {
+            display.fillScreen(GxEPD_WHITE);
+
+            // Template: Change icon, size, and message here
+            // Available icons: wifi_off, wifi_x, wifi_1_bar, wifi_2_bar, wifi_3_bar
+            // Available sizes: 16, 24, 32, 48, 64
+            displayCenteredErrorIcon(
+                wifi_off, // Icon name
+                64, // Icon size
+                "Bitte überprüfen Sie Ihren WLAN-Router oder führen Sie einen Factory-Reset durch, um einen neuen Router zu verbinden."
+                // Error message (German: "No WiFi connection")
+            );
+        } while (display.nextPage());
+
+        ESP_LOGI(TAG, "WiFi error displayed");
+    } else {
+        ESP_LOGI(TAG, "WiFi connected - no error to display");
+    }
+}
+
+void DisplayManager::displayErrorIfBatteryLow() {
+    ESP_LOGI(TAG, "Checking battery status");
+
+    // BatteryManager::getBatteryVoltage() <= BatteryManager::BATTERY_VOLTAGE_MIN;
+    if (BatteryManager::getBatteryVoltage() <= 3.0f) {
+        ESP_LOGW(TAG, "Battery low - displaying error");
+
+        // Initialize for full refresh if needed
+        if (!initialized) {
+            initForFullRefresh(DisplayOrientation::LANDSCAPE);
+        }
+
+        display.setFullWindow();
+        display.firstPage();
+        do {
+            display.fillScreen(GxEPD_WHITE);
+            // Template: Change icon, size, and message here
+            // Available battery icons: Battery_1, Battery_2, Battery_3, Battery_4, Battery_5, battery_alert_0deg
+            // Available sizes: 16, 24, 32, 48, 64
+            displayCenteredErrorIcon(
+                battery_alert_0deg, // Icon name
+                64, // Icon size
+                "Bitte laden Sie den Akku" // Error message (German: "Battery low")
+            );
+        } while (display.nextPage());
+
+        ESP_LOGI(TAG, "Battery low error displayed");
+    } else {
+        ESP_LOGI(TAG, "Battery OK - no error to display");
+    }
+}
