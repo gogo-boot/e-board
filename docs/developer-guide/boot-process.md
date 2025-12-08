@@ -20,7 +20,7 @@ flowchart TD
 
 **Key Actions**:
 
-1. OnInit: System Initialization Phase which prepares for other phases
+1. OnInit: System Initialization Phase which initializes for other phases
     - Initialize Serial Communication if needed
     - Print Wake-up Diagnostics
     - Check If factory Reset is desired
@@ -28,12 +28,12 @@ flowchart TD
     - Initialize Font
     - Initialize Battery Monitoring
     - Load configuration from NVS
-1. OnStart: Before Operational Phase which doesn't need Internet
+1. OnStart: Before Operational Phase which doesn't have Internet access
     - Start configuration Phase 1 if needed : Wifi Manager Configuration
     - Setup by pressing buttons changes display mode while running - To make
     - Set up Time if it needed
     - Set temporary display mode if needed - To Move
-1. OnRunning: Operational Phase which needs Internet
+1. OnRunning: Operational Phase which has Internet access
     - Start configuration Phase 2 if needed : Application Configuration
     - OTA Update Check by checking scheduled time with RTC clock time
     - Fetch Data from APIs and Update Display
