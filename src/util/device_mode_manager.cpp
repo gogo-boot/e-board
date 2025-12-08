@@ -454,17 +454,25 @@ ConfigPhase DeviceModeManager::getCurrentPhase() {
         return PHASE_WIFI_SETUP;
     }
 
-    // Phase 2: WiFi configured but app settings missing
-    if (strlen(config.selectedStopId) == 0 ||
-        config.latitude == 0.0 ||
-        config.longitude == 0.0) {
-        ESP_LOGI(TAG, "Configuration Phase: 2 (Application Setup)");
-        return PHASE_APP_SETUP;
+    if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY && config.latitude != 0.0 && config.longitude != 0.0) {
+        ESP_LOGI(TAG, "Configuration Phase: 3 (Complete - Weather Only Mode)");
+        return PHASE_COMPLETE;
     }
 
-    // Phase 3: Everything configured
-    ESP_LOGI(TAG, "Configuration Phase: 3 (Complete)");
-    return PHASE_COMPLETE;
+    if (config.displayMode == DISPLAY_MODE_TRANSPORT_ONLY && strlen(config.selectedStopId) != 0) {
+        ESP_LOGI(TAG, "Configuration Phase: 3 (Complete - Transport Only Mode)");
+        return PHASE_COMPLETE;
+    }
+
+    if (config.displayMode == DISPLAY_MODE_HALF_AND_HALF && strlen(config.selectedStopId) != 0
+        && config.latitude != 0.0
+        && config.longitude != 0.0) {
+        ESP_LOGI(TAG, "Configuration Phase: 3 (Complete - Half-and-Half Mode)");
+        return PHASE_COMPLETE;
+    }
+
+    ESP_LOGI(TAG, "Configuration Phase: 2 (App Setup)");
+    return PHASE_APP_SETUP;
 }
 
 void DeviceModeManager::showPhaseInstructions(ConfigPhase phase) {
