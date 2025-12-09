@@ -343,7 +343,7 @@ bool DeviceModeManager::fetchTransportData(DepartureData& depart) {
 
 ConfigPhase DeviceModeManager::getCurrentPhase() {
     // Phase 1: WiFi not configured or credentials empty
-    if (!config.wifiConfigured || strlen(config.ssid) == 0) {
+    if (strlen(config.ssid) == 0) {
         ESP_LOGI(TAG, "Configuration Phase: 1 (WiFi Setup)");
         return PHASE_WIFI_SETUP;
     }

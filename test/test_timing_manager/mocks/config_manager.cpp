@@ -6,7 +6,6 @@
 
 // Mock RTC memory for native testing
 RTCConfigData ConfigManager::rtcConfig = {
-    false, // wifiConfigured
     DISPLAY_MODE_HALF_AND_HALF, // displayMode
     0.0f, // latitude
     0.0f, // longitude

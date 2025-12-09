@@ -59,8 +59,6 @@ namespace SystemInit {
         // Restore RTCConfigData from NVS
         ConfigManager& configMgr = ConfigManager::getInstance();
         configMgr.loadFromNVS(false);
-        ESP_LOGI(TAG, "Configuration loaded from NVS - wifiConfigured: %d",
-                 ConfigManager::getConfig().wifiConfigured);
         ESP_LOGI(TAG, "System initialization complete");
     }
 } // namespace SystemInit

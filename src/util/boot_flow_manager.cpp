@@ -46,9 +46,6 @@ namespace BootFlowManager {
         } else {
             // WiFi/Internet connection failed - revert to Phase 1
             ESP_LOGE(TAG, "WiFi validation failed - reverting to Phase 1");
-            config.wifiConfigured = false;
-            ConfigManager& configMgr = ConfigManager::getInstance();
-            configMgr.saveToNVS();
             DeviceModeManager::showWifiErrorPage();
             handlePhaseWifiSetup();
         }

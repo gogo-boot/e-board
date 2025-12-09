@@ -5,7 +5,6 @@ static const char* TAG = "CONFIG_MGR";
 
 // RTC memory allocation - define the static member with defaults
 RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
-    false, // wifiConfigured
     DISPLAY_MODE_HALF_AND_HALF, // displayMode - default to half and half
     0.0, // latitude
     0.0, // longitude
@@ -131,8 +130,6 @@ bool ConfigManager::loadFromNVS(bool force = false) {
             FILTER_FERRY | FILTER_CALLBUS;
     }
 
-    // Load system state
-    rtcConfig.wifiConfigured = preferences.getBool("wifiConfigured", false);
 
     preferences.end();
 
@@ -191,8 +188,6 @@ bool ConfigManager::saveToNVS() {
         preferences.putString(key.c_str(), filters[i]);
     }
 
-    // Save system state
-    preferences.putBool("wifiConfigured", rtcConfig.wifiConfigured);
 
     preferences.end();
 
