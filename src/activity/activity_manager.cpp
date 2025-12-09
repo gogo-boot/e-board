@@ -59,6 +59,9 @@ void ActivityManager::onInit() {
         return;
     }
     SystemInit::loadNvsConfig();
+#if PRODUCTIONP==0
+    ConfigManager::printConfiguration(false);
+#endif
     setNextActivityLifecycle(Lifecycle::ON_START);
 }
 
