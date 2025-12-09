@@ -4,7 +4,6 @@
 #include <esp_log.h>
 #include <icons.h>
 #include "config/config_manager.h"
-#include "display/display_shared.h"
 #include "util/weather_util.h"
 #include "display/common_footer.h"
 

@@ -3,8 +3,10 @@
 #include "display/weather_graph.h"
 #include <esp_log.h>
 #include <icons.h>
+
+#include "GxEPD2_BW.h"
+#include "U8g2_for_Adafruit_GFX.h"
 #include "config/config_manager.h"
-#include "display/display_shared.h"
 #include "util/weather_util.h"
 #include "util/date_util.h"
 #include "display/common_footer.h"
@@ -46,7 +48,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     ESP_LOGI(TAG, "drawFullScreenWeatherLayout called");
 
     int16_t currentY = 0; // Start from top edge
-    int16_t screenWidth = DisplayShared::getScreenWidth();
+    int16_t screenWidth = display.width();
 
     int16_t leftMargin = SIDE_MARGIN;
     int16_t rightMargin = screenWidth - SIDE_MARGIN;
@@ -179,7 +181,7 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     ESP_LOGI(TAG, "Draw Weather Graph");
     // Draw the actual weather graph
     WeatherGraph::drawTemperatureAndRainGraph(weather, screenTenthWidth * 4, currentY, screenTenthWidth * 6,
-                                              DisplayShared::getScreenHeight() - currentY);
+                                              display.height() - currentY);
 }
 
 void WeatherFullDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {

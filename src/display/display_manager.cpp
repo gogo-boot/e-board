@@ -5,7 +5,6 @@
 #include "display/transport_display.h"
 #include "display/weather_general_half.h"
 #include "display/weather_general_full.h"
-#include "display/display_shared.h"
 #include "display/qr_code_helper.h"
 #include "util/util.h"
 
@@ -43,7 +42,6 @@ void DisplayManager::initInternal() {
     ESP_LOGI(TAG, "Landscape split: Weather[0,0,%d,%d] Departures[%d,0,%d,%d]",
              halfWidth, screenHeight, halfWidth, halfWidth, screenHeight);
     // Initialize shared display resources
-    DisplayShared::init(screenWidth, screenHeight);
 }
 
 void DisplayManager::calculateDimensions() {

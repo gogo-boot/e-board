@@ -3,13 +3,14 @@
 #include "util/util.h"
 #include "util/time_manager.h"
 #include "util/battery_manager.h"
-#include "display/display_shared.h"
 #include "display/common_footer.h"
 #include <esp_log.h>
 #include <vector>
 #include <icons.h>
 #include <WiFi.h>
 
+#include "GxEPD2_BW.h"
+#include "U8g2_for_Adafruit_GFX.h"
 #include "config/config_manager.h"
 
 static const char* TAG = "TRANSPORT_DISPLAY";
@@ -112,7 +113,7 @@ void TransportDisplay::drawTransportList(std::vector<const DepartureInfo*> depar
         drawSingleTransport(dep, x, w, y);
         y += ENTRY_HEIGHT;
 
-        if (y > DisplayShared::getScreenHeight()) {
+        if (y > display.height()) {
             ESP_LOGW(TAG, "Reached end of section height while drawing transports");
             break; // Stop if we exceed the section height
         }
@@ -205,7 +206,7 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
     // Draw first 4 transports from direction 1
     constexpr int maxPerDirection = 10;
 
-    const int16_t halfWidth = DisplayShared::getScreenWidth() / 2 - 1;
+    const int16_t halfWidth = display.width() / 2 - 1;
     drawTransportList(direction1Departures, x + MARGIN, currentY, halfWidth - MARGIN, h - currentY, true,
                       maxPerDirection);
     drawTransportList(direction2Departures, halfWidth + MARGIN, currentY, halfWidth - MARGIN, h - currentY,

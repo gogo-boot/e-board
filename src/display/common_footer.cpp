@@ -1,11 +1,13 @@
 #include "display/common_footer.h"
-#include "display/display_shared.h"
 #include "display/text_utils.h"
 #include "util/time_manager.h"
 #include "util/battery_manager.h"
 #include <esp_log.h>
 #include <icons.h>
 #include <WiFi.h>
+
+#include "GxEPD2_BW.h"
+#include "U8g2_for_Adafruit_GFX.h"
 
 static const char* TAG = "COMMON_FOOTER";
 
