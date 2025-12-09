@@ -28,43 +28,6 @@ extern WebServer server;
 ConfigManager& configMgr = ConfigManager::getInstance();
 RTCConfigData& config = ConfigManager::getConfig();
 
-// The parameter hasValidConfig will be set to true if the configuration is
-// valid the parameter is used to fast path the configuration mode without
-// reloading the configuration
-bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
-    // Load configuration from NVS
-    bool configExists = configMgr.loadFromNVS();
-#if PRODUCTIONP==0
-    ConfigManager::printConfiguration(false);
-#endif
-
-    if (!configExists) {
-        ESP_LOGI(TAG, "No configuration found in NVS");
-        return false;
-    }
-
-    // Validate critical configuration fields
-    bool hasStopId = strlen(config.selectedStopId) > 0;
-    bool hasSSID = strlen(config.ssid) > 0;
-    bool hasLocation = (config.latitude != 0.0 && config.longitude != 0.0);
-    hasValidConfig = hasStopId && hasSSID && hasLocation;
-
-    ESP_LOGI(TAG, "- SSID: %s", config.ssid);
-    ESP_LOGI(TAG, "- Stop: %s (%s)", config.selectedStopName,
-             config.selectedStopId);
-    ESP_LOGI(TAG, "- Location: %s (%f, %f)", config.cityName, config.latitude,
-             config.longitude);
-    ESP_LOGI(TAG, "- IP Address: %s", config.ipAddress);
-
-    if (hasValidConfig) {
-        ESP_LOGI(TAG, "Valid configuration found in NVS");
-        return true;
-    } else {
-        ESP_LOGI(TAG, "Incomplete configuration in NVS, missing critical fields");
-        return false;
-    }
-}
-
 void DeviceModeManager::runConfigurationMode() {
     ESP_LOGI(TAG, "=== ENTERING CONFIGURATION MODE ===");
 
@@ -116,15 +79,6 @@ void DeviceModeManager::runConfigurationMode() {
 }
 
 void DeviceModeManager::showWeatherDeparture() {
-    // Use common operational setup
-    if (!setupOperationalMode()) {
-        return; // setupOperationalMode already handles error case
-    }
-
-    if (!setupConnectivityAndTime()) {
-        return; // Let main.cpp handle sleep
-    }
-
     // === FLOWCHART IMPLEMENTATION ===
     // Step 1: Check if Departure is in Active Time
 
@@ -212,16 +166,6 @@ void DeviceModeManager::showWeatherDeparture() {
 }
 
 void DeviceModeManager::updateWeatherFull() {
-    // Use common operational setup
-    if (!setupOperationalMode()) {
-        return; // setupOperationalMode already handles error case
-    }
-
-    // Setup connectivity and time
-    if (!setupConnectivityAndTime()) {
-        return; // Let main.cpp handle sleep
-    }
-
     // For weather-only mode, only check weather updates
     bool needsWeatherUpdate = TimingManager::isTimeForWeatherUpdate();
 
@@ -255,16 +199,6 @@ void DeviceModeManager::updateWeatherFull() {
 }
 
 void DeviceModeManager::updateDepartureFull() {
-    // Use common operational setup
-    if (!setupOperationalMode()) {
-        return; // setupOperationalMode already handles error case
-    }
-
-    // Setup connectivity and time
-    if (!setupConnectivityAndTime()) {
-        return; // Let main.cpp handle sleep
-    }
-
     // For departure-only mode, only check transport updates and active hours
     bool needsTransportUpdate = TimingManager::isTimeForTransportUpdate();
     bool isActiveTime = TimingManager::isTransportActiveTime();
@@ -307,26 +241,6 @@ void DeviceModeManager::updateDepartureFull() {
 }
 
 // ===== COMMON OPERATIONAL MODE FUNCTIONS =====
-
-bool DeviceModeManager::setupOperationalMode() {
-    ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
-
-    extern unsigned long loopCount;
-
-    // Check if this is a deep sleep wake-up for fast path
-    if (loopCount != 0) {
-        ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
-        loopCount++;
-
-        // Print wakeup reason and current time
-        printWakeupReason();
-        ESP_LOGI(TAG, "Loop count: %lu", loopCount);
-
-        TimeManager::printCurrentTime();
-    }
-
-    return true;
-}
 
 bool DeviceModeManager::setupConnectivityAndTime() {
     if (MyWiFiManager::isConnected()) {
