@@ -12,6 +12,7 @@
 #include "util/wifi_manager.h"
 
 static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
+static Lifecycle nextLifecyele = Lifecycle::ON_START;
 static const char* TAG = "ACTIVITY_MGR";
 
 Lifecycle ActivityManager::getCurrentActivityLifecycle() {
@@ -21,6 +22,15 @@ Lifecycle ActivityManager::getCurrentActivityLifecycle() {
 void ActivityManager::setCurrentActivityLifecycle(Lifecycle status) {
     ESP_LOGI(TAG, "Current Lifecycle : %s", lifecycleToString(status));
     currentLifecycle = status;
+}
+
+Lifecycle ActivityManager::getNextActivityLifecycle() {
+    return nextLifecyele;
+}
+
+void ActivityManager::setNextActivityLifecycle(Lifecycle status) {
+    ESP_LOGI(TAG, "Current Lifecycle : %s", lifecycleToString(status));
+    nextLifecyele = status;
 }
 
 const char* ActivityManager::lifecycleToString(Lifecycle lifecycle) {
@@ -43,6 +53,7 @@ void ActivityManager::onInit() {
     SystemInit::initFont();
     BatteryManager::init();;
     SystemInit::loadNvsConfig();
+    setNextActivityLifecycle(Lifecycle::ON_START);
 }
 
 void ActivityManager::onStart() {
@@ -65,6 +76,8 @@ void ActivityManager::onStart() {
 
     // Set temporary display mode if needed
     ButtonManager::handleWakeupMode();
+
+    setNextActivityLifecycle(Lifecycle::ON_RUNNING);
 }
 
 void ActivityManager::onRunning() {
@@ -74,14 +87,11 @@ void ActivityManager::onRunning() {
     ConfigPhase phase = DeviceModeManager::getCurrentPhase();
     if (phase == PHASE_APP_SETUP) {
         BootFlowManager::handlePhaseAppSetup();
-
-        ConfigManager::setConfigMode(true);
+        setNextActivityLifecycle(Lifecycle::ON_LOOP);
         // STOP HERE - don't progress further
         // The web server will run in loop() for configuration
         return;
     }
-    // clean up temporary states if needed
-    ConfigManager::setConfigMode(false);
 
     // OTA Update Check by checking scheduled time with RTC clock time
     OTAManager::checkAndApplyUpdate();
@@ -90,6 +100,8 @@ void ActivityManager::onRunning() {
     if (phase == PHASE_COMPLETE) {
         BootFlowManager::handlePhaseComplete();
     }
+
+    setNextActivityLifecycle(Lifecycle::ON_STOP);
 }
 
 uint64_t sleepTimeSeconds = 0;
@@ -102,6 +114,8 @@ void ActivityManager::onStop() {
 
     // Setup by pressing buttons can be woken up
     ButtonManager::setWakupableButtons();
+
+    setNextActivityLifecycle(Lifecycle::ON_SHUTDOWN);
 }
 
 void ActivityManager::onShutdown() {
