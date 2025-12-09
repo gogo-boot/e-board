@@ -9,6 +9,7 @@
 #include "util/system_init.h"
 #include "util/timing_manager.h"
 #include "config/config_manager.h"
+#include "display/display_manager.h"
 #include "util/wifi_manager.h"
 
 static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
