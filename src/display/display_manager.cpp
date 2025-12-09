@@ -659,66 +659,52 @@ static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, con
 }
 
 void DisplayManager::displayErrorIfWifiConnectionError() {
-    ESP_LOGI(TAG, "Checking WiFi connection status");
+    ESP_LOGW(TAG, "WiFi not connected - displaying error");
 
-    if (WiFi.status() != WL_CONNECTED) {
-        ESP_LOGW(TAG, "WiFi not connected - displaying error");
-
-        // Initialize for full refresh if needed
-        if (!initialized) {
-            initForFullRefresh(DisplayOrientation::LANDSCAPE);
-        }
-
-        display.setFullWindow();
-        display.firstPage();
-        do {
-            display.fillScreen(GxEPD_WHITE);
-
-            // Template: Change icon, size, and message here
-            // Available icons: wifi_off, wifi_x, wifi_1_bar, wifi_2_bar, wifi_3_bar
-            // Available sizes: 16, 24, 32, 48, 64
-            displayCenteredErrorIcon(
-                wifi_off, // Icon name
-                64, // Icon size
-                "Bitte überprüfen Sie Ihren WLAN-Router oder führen Sie einen Factory-Reset durch, um einen neuen Router zu verbinden."
-                // Error message (German: "No WiFi connection")
-            );
-        } while (display.nextPage());
-
-        ESP_LOGI(TAG, "WiFi error displayed");
-    } else {
-        ESP_LOGI(TAG, "WiFi connected - no error to display");
+    // Initialize for full refresh if needed
+    if (!initialized) {
+        initForFullRefresh(DisplayOrientation::LANDSCAPE);
     }
+
+    display.setFullWindow();
+    display.firstPage();
+    do {
+        display.fillScreen(GxEPD_WHITE);
+
+        // Template: Change icon, size, and message here
+        // Available icons: wifi_off, wifi_x, wifi_1_bar, wifi_2_bar, wifi_3_bar
+        // Available sizes: 16, 24, 32, 48, 64
+        displayCenteredErrorIcon(
+            wifi_off, // Icon name
+            64, // Icon size
+            "Bitte überprüfen Sie Ihren WLAN-Router oder führen Sie einen Factory-Reset durch, um einen neuen Router zu verbinden."
+        );
+    } while (display.nextPage());
+
+    ESP_LOGI(TAG, "WiFi error displayed");
 }
 
 void DisplayManager::displayErrorIfBatteryLow() {
-    ESP_LOGI(TAG, "Checking battery status");
+    ESP_LOGW(TAG, "Battery low - displaying error");
 
-    // BatteryManager::getBatteryVoltage() <= BatteryManager::BATTERY_VOLTAGE_MIN;
-    if (BatteryManager::getBatteryVoltage() <= 3.0f) {
-        ESP_LOGW(TAG, "Battery low - displaying error");
-
-        // Initialize for full refresh if needed
-        if (!initialized) {
-            initForFullRefresh(DisplayOrientation::LANDSCAPE);
-        }
-
-        display.setFullWindow();
-        display.firstPage();
-        do {
-            display.fillScreen(GxEPD_WHITE);
-            // Template: Change icon, size, and message here
-            // Available battery icons: Battery_1, Battery_2, Battery_3, Battery_4, Battery_5, battery_alert_0deg
-            // Available sizes: 16, 24, 32, 48, 64
-            displayCenteredErrorIcon(
-                battery_alert_0deg, // Icon name
-                64, // Icon size
-                "Bitte laden Sie den Akku" // Error message (German: "Battery low")
-            );
-        } while (display.nextPage());
-
-        ESP_LOGI(TAG, "Battery low error displayed");
-    } else {
-        ESP_LOGI(TAG, "Battery OK - no error to display");
+    // Initialize for full refresh if needed
+    if (!initialized) {
+        initForFullRefresh(DisplayOrientation::LANDSCAPE);
     }
+
+    display.setFullWindow();
+    display.firstPage();
+    do {
+        display.fillScreen(GxEPD_WHITE);
+        // Template: Change icon, size, and message here
+        // Available battery icons: Battery_1, Battery_2, Battery_3, Battery_4, Battery_5, battery_alert_0deg
+        // Available sizes: 16, 24, 32, 48, 64
+        displayCenteredErrorIcon(
+            battery_alert_0deg, // Icon name
+            64, // Icon size
+            "Bitte laden Sie den Akku" // Error message (German: "Battery low")
+        );
+    } while (display.nextPage());
+
+    ESP_LOGI(TAG, "Battery low error displayed");
 }

@@ -52,6 +52,12 @@ void ActivityManager::onInit() {
     SystemInit::initDisplay();
     SystemInit::initFont();
     BatteryManager::init();;
+    if (BatteryManager::getBatteryVoltage() <= BATTERY_VOLTAGE_MIN) {
+        DisplayManager::displayErrorIfBatteryLow();
+        // Shutdown immediately if battery is low
+        setNextActivityLifecycle(Lifecycle::ON_SHUTDOWN);
+        return;
+    }
     SystemInit::loadNvsConfig();
     setNextActivityLifecycle(Lifecycle::ON_START);
 }
@@ -69,7 +75,10 @@ void ActivityManager::onStart() {
     // Start Wifi connection. If gets failed, show Wifi Error Screen
     MyWiFiManager::reconnectWiFi();
 
-    DisplayManager::displayErrorIfWifiConnectionError();
+    if (WiFi.status() != WL_CONNECTED) {
+        DisplayManager::displayErrorIfWifiConnectionError();
+        setNextActivityLifecycle(Lifecycle::ON_STOP);
+    }
 
     // Set up Time if it needed
     DeviceModeManager::setupConnectivityAndTime();
