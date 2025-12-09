@@ -18,6 +18,11 @@ flowchart TD
 
 ## Detailed Boot Life Cycle
 
+There are five main Life Cycle phases during the boot process.
+It can be skipped or getting into looped, based on the next lifecycle state.
+_loop_ indicates the ESP32 dedicated loop() function, which is used this project for serving the configuration http web
+portal.
+
 **Key Actions**:
 
 1. OnInit: System Initialization Phase which initializes global instances
@@ -27,16 +32,16 @@ flowchart TD
     - Initialize Display
     - Initialize Font
     - Initialize Battery Monitoring
-    - Check Battery Level, if it is too low, show Battery Low Screen
+    - Check Battery Level, if it is too low, show Battery Low Screen, jump to OnShutDown
     - Load configuration from NVS
 1. OnStart: Before Operational Phase which doesn't have Internet access
     - Start configuration Phase 1 if needed : Wifi Manager Configuration
-    - Start Wifi connection. If gets failed, show Wifi Error Screen
+    - Start Wifi connection. If it gets failed, show Wifi Error Screen, jump to OnStop
     - Set up Time if it needed
     - Setup by pressing buttons changes display mode while running - To make
     - Set temporary display mode if needed - To Move
 1. OnRunning: Operational Phase which has Internet access
-    - Start configuration Phase 2 if needed : Application Configuration
+    - Start configuration Phase 2 if needed : Application Configuration, jump to loop
     - OTA Update Check by checking scheduled time with RTC clock time
     - Fetch Data from APIs and Update Display
 1. OnStop: Prepare to Deep Sleep Phase
@@ -46,7 +51,6 @@ flowchart TD
 1. OnShutDown: Deep Sleep Phase
     - Turn off peripherals
     - Enter deep sleep mode
-      **Serial Output**:
 
 ## Configuration State
 

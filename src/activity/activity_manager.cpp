@@ -78,6 +78,7 @@ void ActivityManager::onStart() {
     if (WiFi.status() != WL_CONNECTED) {
         DisplayManager::displayErrorIfWifiConnectionError();
         setNextActivityLifecycle(Lifecycle::ON_STOP);
+        return;
     }
 
     // Set up Time if it needed
@@ -97,7 +98,6 @@ void ActivityManager::onRunning() {
     if (phase == PHASE_APP_SETUP) {
         BootFlowManager::handlePhaseAppSetup();
         setNextActivityLifecycle(Lifecycle::ON_LOOP);
-        // STOP HERE - don't progress further
         // The web server will run in loop() for configuration
         return;
     }
