@@ -166,7 +166,7 @@ bool DeviceModeManager::setupConnectivityAndTime() {
             ESP_LOGI(TAG, "Time since last sync: %lu ms (%s)",
                      timeSinceSync, TimeManager::formatDurationInHours(timeSinceSync).c_str());
 
-            if (TimeManager::setupNTPTimeWithRetry(2)) {
+            if (TimeManager::setupNTPTimeWithRetry(3)) {
                 ESP_LOGI(TAG, "Periodic NTP sync successful");
             } else {
                 ESP_LOGW(TAG, "Periodic NTP sync failed - continuing with RTC time");
