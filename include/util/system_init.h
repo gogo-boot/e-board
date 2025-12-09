@@ -2,7 +2,6 @@
 
 namespace SystemInit {
     void initSerialConnector();
-    void printWakeupCause();
     void factoryResetIfDesired();
     void initDisplay();
     void initFont();

@@ -48,7 +48,6 @@ void ActivityManager::onInit() {
     setCurrentActivityLifecycle(Lifecycle::ON_INIT);
     SystemInit::initSerialConnector();
     printWakeupReason();
-    SystemInit::printWakeupCause();
     SystemInit::factoryResetIfDesired();
     SystemInit::initDisplay();
     SystemInit::initFont();
