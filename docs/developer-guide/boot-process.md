@@ -128,7 +128,7 @@ Data that persists across deep sleep (in RTC RAM):
 
 ```cpp
 // src/main.cpp
-RTC_DATA_ATTR unsigned long loopCount = 0;
+RTC_DATA_ATTR unsigned long wakeupCount = 0;
 RTC_DATA_ATTR DisplayMode temporaryMode = DISPLAY_MODE_NONE;
 RTC_DATA_ATTR unsigned long temporaryModeStart = 0;
 ```
