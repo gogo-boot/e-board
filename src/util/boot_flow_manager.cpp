@@ -5,6 +5,8 @@
 #include <WebServer.h>
 #include <U8g2_for_Adafruit_GFX.h>
 
+#include "util/timing_manager.h"
+
 static const char* TAG = "BOOT_FLOW";
 
 namespace BootFlowManager {
@@ -55,10 +57,18 @@ namespace BootFlowManager {
         RTCConfigData& config = ConfigManager::getConfig();
 
         // Button mode takes precedence over configured mode
-        uint8_t displayMode = buttonMode >= 0 ? buttonMode : config.displayMode;
+        if (buttonMode >= 0) {
+            return buttonMode;
+        }
 
-        ESP_LOGI(TAG, "Display mode: %d (button: %d, config: %d)",
-                 displayMode, buttonMode, config.displayMode);
+        int8_t displayMode = config.displayMode;
+        if (config.displayMode == DISPLAY_MODE_HALF_AND_HALF) {
+            if (TimingManager::isTransportActiveTime()) {
+                displayMode = DISPLAY_MODE_HALF_AND_HALF;
+            } else {
+                displayMode = DISPLAY_MODE_WEATHER_ONLY;
+            }
+        }
 
         return displayMode;
     }
