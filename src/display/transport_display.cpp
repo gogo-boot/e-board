@@ -32,16 +32,14 @@ namespace TransportDisplayConstants {
     constexpr int16_t FULL_SCREEN_STATION_SPACING = 25;
 }
 
+// External display instance from main.cpp
+extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
+extern U8G2_FOR_ADAFRUIT_GFX u8g2;
+
 using namespace TransportDisplayConstants;
 
 void TransportDisplay::drawHalfScreenTransportSection(const DepartureData& departures, int16_t x, int16_t y, int16_t w,
                                                       int16_t h) {
-    auto* display = DisplayShared::getDisplay();
-    auto* u8g2 = DisplayShared::getU8G2();
-    if (!display || !u8g2) {
-        ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
-        return;
-    }
     ESP_LOGI(TAG, "Drawing transport section at (%d, %d) with size %dx%d", x, y, w, h);
     int16_t currentY = y; // Start from actual top
     int16_t leftMargin = x + MARGIN;
@@ -81,9 +79,8 @@ void TransportDisplay::drawHalfScreenTransports(const DepartureData& departures,
     int16_t halfHeightY = currentY + h / 2;
     ESP_LOGI(TAG, "Drawing transport direction separator line at Y=%d", halfHeightY);
 
-    auto* display = DisplayShared::getDisplay();
-    display->drawLine(leftMargin, halfHeightY + SEPARATOR_PADDING, rightMargin, halfHeightY + SEPARATOR_PADDING,
-                      GxEPD_BLACK);
+    display.drawLine(leftMargin, halfHeightY + SEPARATOR_PADDING, rightMargin, halfHeightY + SEPARATOR_PADDING,
+                     GxEPD_BLACK);
 
     constexpr int maxPerDirection = 5;
 
@@ -106,8 +103,7 @@ void TransportDisplay::drawTransportList(std::vector<const DepartureInfo*> depar
         y += COLUMN_HEADER_SPACING;
 
         // Underline
-        auto* display = DisplayShared::getDisplay();
-        display->drawLine(x, y, x + w, y, GxEPD_BLACK);
+        display.drawLine(x, y, x + w, y, GxEPD_BLACK);
     }
 
     // Direction 1 transports
@@ -171,15 +167,13 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
     const int16_t iconSpacing = 4; // Spacing between icons
     int16_t iconX = rightMargin; // Start from right edge and work backwards
 
-    auto* display = DisplayShared::getDisplay();
-
     // Battery icon (rightmost)
     if (BatteryManager::isAvailable()) {
         int batteryLevel = BatteryManager::getBatteryIconLevel();
         if (batteryLevel > 0) {
             iconX -= iconWidth;
             icon_name batteryIcon = CommonFooter::getBatteryIcon();
-            display->drawInvertedBitmap(iconX, currentY, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
+            display.drawInvertedBitmap(iconX, currentY, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
             iconX -= iconSpacing;
         }
     }
@@ -187,12 +181,12 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
     // WiFi icon
     iconX -= iconWidth;
     icon_name wifiIcon = CommonFooter::getWiFiIcon();
-    display->drawInvertedBitmap(iconX, currentY, getBitmap(wifiIcon, 16), 16, 16, GxEPD_BLACK);
+    display.drawInvertedBitmap(iconX, currentY, getBitmap(wifiIcon, 16), 16, 16, GxEPD_BLACK);
     iconX -= iconSpacing;
 
     // Refresh icon
     iconX -= iconWidth;
-    display->drawInvertedBitmap(iconX, currentY, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+    display.drawInvertedBitmap(iconX, currentY, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
 
     // Time (left of all icons)
     iconX -= (iconSpacing + dateTimeWidth);
@@ -220,9 +214,6 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
 
 void TransportDisplay::drawSingleTransport(const DepartureInfo& dep, int16_t x, int16_t width,
                                            int16_t currentY) {
-    auto* u8g2 = DisplayShared::getU8G2();
-    if (!u8g2) return;
-
     // Log the transport position and size
     ESP_LOGI(TAG, "Drawing single transport at Y=%d", currentY);
 

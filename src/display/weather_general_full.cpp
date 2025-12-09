@@ -35,12 +35,15 @@ namespace WeatherFullDisplayConstants {
     constexpr int16_t TEMP_TEXT_Y = 70;
 }
 
+// External display instance from main.cpp
+extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
+extern U8G2_FOR_ADAFRUIT_GFX u8g2;
+
 using namespace WeatherFullDisplayConstants;
 
 void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather) {
     // [WEATHER_DISPLAY] drawFullScreenWeatherLayout called with margins (10,790) and area (0,480)
     ESP_LOGI(TAG, "drawFullScreenWeatherLayout called");
-    auto* display = DisplayShared::getDisplay();
 
     int16_t currentY = 0; // Start from top edge
     int16_t screenWidth = DisplayShared::getScreenWidth();
@@ -68,8 +71,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     // Current Weather Icon
     // Get weather icon from weather code using the new utility function
     icon_name currentWeatherIcon = WeatherUtil::getWeatherIcon(weather.weatherCode);
-    display->drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, LARGE_ICON), LARGE_ICON, LARGE_ICON,
-                                GxEPD_BLACK);
+    display.drawInvertedBitmap(leftMargin, colY, getBitmap(currentWeatherIcon, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                               GxEPD_BLACK);
     // Current Weather Temperature
     TextUtils::setFont14px_margin17px();
     TextUtils::printTextAtWithMargin(leftMargin, colY + TEMP_TEXT_Y, String(weather.temperature, 1) + "°C");
@@ -91,8 +94,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     int16_t thirdColumn = 195;
 
     // Sunrise Sunset
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_sunrise, LARGE_ICON), LARGE_ICON, LARGE_ICON,
-                                GxEPD_BLACK);
+    display.drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_sunrise, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                               GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_TITLE, "Sonnenauf / untergang");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_VALUE, weather.dailyForecast[0].sunrise);
     TextUtils::printTextAtWithMargin(thirdColumn, currentY + TEXT_Y_VALUE, weather.dailyForecast[0].sunset);
@@ -100,8 +103,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
 
     // Use Util::sunshineSecondsToHHMM for sunshine duration
     // Sun-shine UN-Index
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, LARGE_ICON), LARGE_ICON, LARGE_ICON,
-                                GxEPD_BLACK);
+    display.drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_0_day_sunny, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                               GxEPD_BLACK);
     String sunshineText = WeatherUtil::sunshineSecondsToHHMM(weather.dailyForecast[0].sunshineDuration);
     // Use Util::uvIndexToGrade for UV Index
     TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_TITLE, "Sonnenstd.");
@@ -112,8 +115,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     currentY += WEATHER_ROW_HEIGHT; // Move down after first row of weather info
 
     // precipitation mm, precipitation hours
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_61_rain, LARGE_ICON), LARGE_ICON, LARGE_ICON,
-                                GxEPD_BLACK);
+    display.drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_61_rain, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                               GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_TITLE, "Niederschlag");
     TextUtils::printTextAtWithMargin(secondColumn, currentY + TEXT_Y_VALUE,
                                      String(weather.dailyForecast[0].precipitationSum, 1) + " mm");
@@ -123,8 +126,8 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     currentY += WEATHER_ROW_HEIGHT; // Move down after first row of weather info
 
     // Wind speed m/s, Wind Gust m/s, Wind Direction
-    display->drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, LARGE_ICON), LARGE_ICON, LARGE_ICON,
-                                GxEPD_BLACK);
+    display.drawInvertedBitmap(firstColumn, currentY, getBitmap(wi_strong_wind, LARGE_ICON), LARGE_ICON, LARGE_ICON,
+                               GxEPD_BLACK);
     String windDirectionText = WeatherUtil::degreeToCompass(weather.dailyForecast[0].windDirection);
     String windText = String(weather.dailyForecast[0].windSpeedMax, 1) + " m/s (Böe " + String(
         weather.dailyForecast[0].windGustsMax, 1) + " m/s )";
@@ -157,9 +160,9 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
 
         // Draw WMO weather icon for each day using Util::getWeatherIcon
         icon_name icon = WeatherUtil::getWeatherIcon(weather.dailyForecast[i].weatherCode);
-        display->drawInvertedBitmap(screenTenthWidth * (i + 3), currentY + 15, getBitmap(icon, LARGE_ICON), LARGE_ICON,
-                                    LARGE_ICON,
-                                    GxEPD_BLACK);
+        display.drawInvertedBitmap(screenTenthWidth * (i + 3), currentY + 15, getBitmap(icon, LARGE_ICON), LARGE_ICON,
+                                   LARGE_ICON,
+                                   GxEPD_BLACK);
 
         // Show low | high temp without floating point
         int tempMinInt = (int)weather.dailyForecast[i].tempMin;

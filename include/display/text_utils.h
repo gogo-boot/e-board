@@ -2,9 +2,6 @@
 #define TEXT_UTILS_H
 
 #include <Arduino.h>
-#include <U8g2_for_Adafruit_GFX.h>
-#include <GxEPD2_BW.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
 
 /**
  * @brief Text and Font Utility Functions
@@ -17,12 +14,6 @@
  */
 class TextUtils {
 public:
-    /**
-     * @brief Initialize TextUtils with display references
-     */
-    static void init(GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>& displayRef,
-                     U8G2_FOR_ADAFRUIT_GFX& u8g2Ref);
-
     // Font functions with pixel sizes and recommended margins
     static void setFont8px_margin10px(); // Very small font - 8px height, 10px margin
     static void setFont10px_margin12px(); // Small font - 10px height, 12px margin
@@ -45,10 +36,6 @@ public:
     static void printTextAtTopMargin(int16_t x, int16_t topY, const String& text);
     static void printStrikethroughTextAtTopMargin(int16_t x, int16_t topY, const String& text);
     static int16_t getFontAscent(); // Get current font ascent for calculations
-
-private:
-    static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>* display;
-    static U8G2_FOR_ADAFRUIT_GFX* u8g2;
 };
 
 #endif // TEXT_UTILS_H

@@ -10,18 +10,6 @@ namespace DisplayConstants {
     constexpr int16_t MARGIN_HORIZONTAL = 10;
 }
 
-// Display orientations
-enum class DisplayOrientation {
-    LANDSCAPE = 0 // Default: 0° rotation (800x480)
-};
-
-// Display modes
-enum class DisplayMode {
-    HALF_AND_HALF, // Split screen: weather + departures
-    WEATHER_ONLY, // Full screen weather
-    DEPARTURES_ONLY // Full screen departures
-};
-
 // Update regions - what parts of the display need updating
 enum class UpdateRegion {
     NONE = 0, // No data to display
@@ -51,14 +39,6 @@ public:
     static void displayErrorIfWifiConnectionError();
     static void displayErrorIfBatteryLow();
 
-    // === Initialization Methods ===
-    static void init(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
-    static void initForFullRefresh(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
-    static void initForPartialUpdate(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
-
-    // Set current display mode and orientation (default: landscape)
-    static void setMode(DisplayMode mode, DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
-
     // Utility functions
     static void hibernate();
     static bool isInitialized() { return initialized; }
@@ -74,22 +54,19 @@ private:
     // Internal state
     static bool initialized;
     static bool partialMode;
-    static DisplayMode currentMode;
-    static DisplayOrientation currentOrientation;
     static int16_t screenWidth;
     static int16_t screenHeight;
     static int16_t halfWidth;
     static int16_t halfHeight;
 
     // Internal helper methods
-    static void initInternal(DisplayOrientation orientation, InitMode mode);
+    static void initInternal();
 
     // Display update methods for each case
     static void updateWeatherHalf(const WeatherInfo& weather);
     static void updateDepartureHalf(const DepartureData& departures);
     static void displayVerticalLine(const int16_t contentY);
     static void calculateDimensions();
-
 
     static String shortenTextToFit(const String& text, int16_t maxWidth);
 };

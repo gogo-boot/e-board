@@ -26,6 +26,8 @@ namespace WeatherDisplayConstants {
     constexpr int16_t WEATHER_ICON_SIZE = 48;
 }
 
+extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
+
 using namespace WeatherDisplayConstants;
 
 void WeatherHalfDisplay::drawHalfScreenWeatherLayout(const WeatherInfo& weather,
@@ -95,9 +97,8 @@ void WeatherHalfDisplay::drawWeatherInfoFirstColumn(int16_t leftMargin, int16_t 
     // Draw first Column - Current Temperature and Condition
     // Draw weather icon using Util::getWeatherIcon
     icon_name currentWeatherIcon = WeatherUtil::getWeatherIcon(weather.weatherCode);
-    auto* display = DisplayShared::getDisplay();
-    display->drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, WEATHER_ICON_SIZE),
-                                WEATHER_ICON_SIZE, WEATHER_ICON_SIZE, GxEPD_BLACK);
+    display.drawInvertedBitmap(leftMargin, dayWeatherInfoY, getBitmap(currentWeatherIcon, WEATHER_ICON_SIZE),
+                               WEATHER_ICON_SIZE, WEATHER_ICON_SIZE, GxEPD_BLACK);
     // Current temperature: 30px
     String tempText = String(weather.temperature, 1) + "°C  ";
     TextUtils::printTextAtWithMargin(leftMargin, dayWeatherInfoY + 47, tempText);
@@ -130,11 +131,10 @@ void WeatherHalfDisplay::drawWeatherInfoThirdColumn(int16_t currentX, int16_t da
     currentX += padding; // Add padding to the left
     TextUtils::setFont10px_margin12px(); // Small font for weather info
 
-    auto* display = DisplayShared::getDisplay();
-    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 15, getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
+    display.drawInvertedBitmap(currentX, dayWeatherInfoY + 15, getBitmap(wi_sunrise, 32), 32, 32, GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(currentX + 40, dayWeatherInfoY + 27, weather.dailyForecast[0].sunrise);
 
-    display->drawInvertedBitmap(currentX, dayWeatherInfoY + 35, getBitmap(wi_sunset, 32), 32, 32, GxEPD_BLACK);
+    display.drawInvertedBitmap(currentX, dayWeatherInfoY + 35, getBitmap(wi_sunset, 32), 32, 32, GxEPD_BLACK);
     TextUtils::printTextAtWithMargin(currentX + 40, dayWeatherInfoY + 47, weather.dailyForecast[0].sunset);
 }
 

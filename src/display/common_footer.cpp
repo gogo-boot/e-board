@@ -9,13 +9,11 @@
 
 static const char* TAG = "COMMON_FOOTER";
 
+// External display instance from main.cpp
+extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
+extern U8G2_FOR_ADAFRUIT_GFX u8g2;
+
 void CommonFooter::drawFooter(int16_t x, int16_t y, int16_t h, uint8_t elements) {
-    auto* display = DisplayShared::getDisplay();
-    auto* u8g2 = DisplayShared::getU8G2();
-    if (!display || !u8g2) {
-        ESP_LOGE(TAG, "Display not initialized! Call DisplayShared::init() first.");
-        return;
-    }
     TextUtils::setFont10px_margin12px(); // Small font for footer
     int16_t footerY = y + h - 14; // Bottom of section
     int16_t currentX = x + 10; // Start position with margin
@@ -57,11 +55,8 @@ String CommonFooter::getTimeString() {
 }
 
 void CommonFooter::drawWiFiStatus(int16_t& currentX, int16_t y) {
-    auto* display = DisplayShared::getDisplay();
-    if (!display) return;
-
     icon_name wifiIcon = getWiFiIcon();
-    display->drawInvertedBitmap(currentX, y, getBitmap(wifiIcon, 16), 16, 16, GxEPD_BLACK);
+    display.drawInvertedBitmap(currentX, y, getBitmap(wifiIcon, 16), 16, 16, GxEPD_BLACK);
     currentX += 20; // Move right
 }
 
@@ -86,8 +81,6 @@ icon_name CommonFooter::getWiFiIcon() {
 }
 
 void CommonFooter::drawBatteryStatus(int16_t& currentX, int16_t y) {
-    auto* display = DisplayShared::getDisplay();
-
     // Check if battery monitoring is available
     if (!BatteryManager::isAvailable()) {
         ESP_LOGD(TAG, "Battery monitoring not available on this board");
@@ -102,7 +95,7 @@ void CommonFooter::drawBatteryStatus(int16_t& currentX, int16_t y) {
     }
 
     icon_name batteryIcon = getBatteryIcon();
-    display->drawInvertedBitmap(currentX, y, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
+    display.drawInvertedBitmap(currentX, y, getBitmap(batteryIcon, 16), 16, 16, GxEPD_BLACK);
     currentX += 20; // Move right
 
     // Log battery info for debugging
@@ -149,9 +142,6 @@ icon_name CommonFooter::getBatteryIcon() {
 }
 
 void CommonFooter::drawRefreshIcon(int16_t& currentX, int16_t y) {
-    auto* display = DisplayShared::getDisplay();
-    if (!display) return;
-
-    display->drawInvertedBitmap(currentX, y, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
+    display.drawInvertedBitmap(currentX, y, getBitmap(refresh, 16), 16, 16, GxEPD_BLACK);
     currentX += 20; // Move right
 }

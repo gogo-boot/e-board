@@ -21,8 +21,6 @@ private:
     static void drawWeatherInfoThirdColumn(int16_t currentX, int16_t dayWeatherInfoY, const WeatherInfo& weather);
 
     // Display references
-    static GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT>* display;
-    static U8G2_FOR_ADAFRUIT_GFX* u8g2;
     static int16_t screenWidth;
     static int16_t screenHeight;
 };

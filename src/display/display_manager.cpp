@@ -3,8 +3,6 @@
 #include <Arduino.h>
 
 #include "config/config_manager.h"
-#include "config/pins.h"
-#include "display/text_utils.h"
 #include "display/transport_display.h"
 #include "display/weather_general_half.h"
 #include "display/weather_general_full.h"
@@ -33,10 +31,6 @@ static const char* TAG = "DISPLAY_MGR";
 // ===== STATIC MEMBER VARIABLES =====
 
 bool DisplayManager::initialized = false;
-bool DisplayManager::partialMode = false;
-DisplayMode DisplayManager::currentMode = DisplayMode::HALF_AND_HALF;
-DisplayOrientation DisplayManager::currentOrientation =
-    DisplayOrientation::LANDSCAPE;
 int16_t DisplayManager::screenWidth = 0; // Will be read from display
 int16_t DisplayManager::screenHeight = 0; // Will be read from display
 int16_t DisplayManager::halfWidth = 0; // Will be calculated
@@ -44,89 +38,20 @@ int16_t DisplayManager::halfHeight = 0; // Will be calculated
 
 // ===== INITIALIZATION METHODS =====
 
-void DisplayManager::initInternal(DisplayOrientation orientation, InitMode mode) {
-    const char* modeStr = (mode == InitMode::FULL_REFRESH)
-                              ? "FULL_REFRESH"
-                              : (mode == InitMode::PARTIAL_UPDATE)
-                              ? "PARTIAL_UPDATE"
-                              : "LEGACY";
-    ESP_LOGI(TAG, "Initializing display - Mode: %s", modeStr);
-
-    // Determine init parameters based on mode
-    bool clearScreen = (mode == InitMode::FULL_REFRESH || mode == InitMode::LEGACY);
-
-    // Init display with appropriate parameters
-    // clearScreen=true: initial=false (clears screen)
-    // clearScreen=false: initial=true (preserves content)
-    display.init(DisplayConstants::SERIAL_BAUD_RATE, !clearScreen,
-                 DisplayConstants::RESET_DURATION_MS, false);
-
-    partialMode = (mode == InitMode::PARTIAL_UPDATE);
-
-    // Initialize U8g2 for UTF-8 font support (German umlauts)
-    u8g2.begin(display);
-    u8g2.setFontMode(1); // Use u8g2 transparent mode
-    u8g2.setFontDirection(0); // Left to right
-    u8g2.setForegroundColor(GxEPD_BLACK);
-    u8g2.setBackgroundColor(GxEPD_WHITE);
-
-    // Set rotation and get dimensions
-    display.setRotation(static_cast<int>(orientation));
+void DisplayManager::initInternal() {
     screenWidth = display.width();
     screenHeight = display.height();
 
     // Initialize shared display resources
-    DisplayShared::init(display, u8g2, screenWidth, screenHeight);
-    TextUtils::init(display, u8g2);
+    DisplayShared::init(screenWidth, screenHeight);
 
     ESP_LOGI(TAG, "Display detected - Physical dimensions: %dx%d",
              screenWidth, screenHeight);
-
-    // Calculate layout dimensions
-    if (mode == InitMode::LEGACY) {
-        setMode(DisplayMode::HALF_AND_HALF, orientation);
-    } else {
-        calculateDimensions();
-        currentOrientation = orientation;
-    }
 
     initialized = true;
 
     ESP_LOGI(TAG, "Display initialized - Orientation: Landscape, Dimensions: %dx%d",
              screenWidth, screenHeight);
-}
-
-void DisplayManager::init(DisplayOrientation orientation) {
-    initInternal(orientation, InitMode::LEGACY);
-}
-
-void DisplayManager::initForFullRefresh(DisplayOrientation orientation) {
-    initInternal(orientation, InitMode::FULL_REFRESH);
-}
-
-void DisplayManager::initForPartialUpdate(DisplayOrientation orientation) {
-    initInternal(orientation, InitMode::PARTIAL_UPDATE);
-}
-
-// ===== DISPLAY MODE & DIMENSIONS =====
-
-void DisplayManager::setMode(DisplayMode mode, DisplayOrientation orientation) {
-    currentMode = mode;
-    currentOrientation = orientation;
-
-    // Set display rotation
-    display.setRotation(static_cast<int>(orientation));
-
-    // Get dimensions after rotation
-    screenWidth = display.width();
-    screenHeight = display.height();
-
-    calculateDimensions();
-
-    ESP_LOGI(
-        TAG,
-        "Display mode set - Mode: %d, Orientation: Landscape, Dimensions: %dx%d",
-        static_cast<int>(mode), screenWidth, screenHeight);
 }
 
 void DisplayManager::calculateDimensions() {
@@ -234,7 +159,6 @@ void DisplayManager::hibernate() {
 
     // Reset initialization flag since display is powered down
     initialized = false;
-    partialMode = false;
 
     // You can add additional power-saving measures here
     ESP_LOGI(TAG, "Display hibernated");
@@ -244,19 +168,12 @@ void DisplayManager::hibernate() {
 void DisplayManager::refreshWeatherFullScreen(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "=== REFRESH WEATHER FULL SCREEN ===");
 
-    // Initialize for full refresh
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
     // Display full screen weather
     displayWeatherFull(weather);
 }
 
 void DisplayManager::refreshDepartureFullScreen(const DepartureData& departures) {
     ESP_LOGI(TAG, "=== REFRESH DEPARTURE FULL SCREEN ===");
-
-    // Initialize for full refresh
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::DEPARTURES_ONLY, DisplayOrientation::LANDSCAPE);
 
     // Display full screen departures
     displayDeparturesFull(departures);
@@ -274,9 +191,6 @@ void DisplayManager::displayPhase1WifiSetup() {
     // Prepare QR code data
     String wifiQR = "WIFI:S:" + apSSID + ";;"; // WiFi connection string (no password)
     String urlQR = "http://10.0.1.1"; // Captive portal URL
-
-    // Initialize for full refresh (clears screen)
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
 
     // Start display update
     display.setFullWindow();
@@ -385,9 +299,6 @@ void DisplayManager::displayPhase2AppSetup() {
     // Prepare QR code data - device configuration URL
     String configURL = "http://" + deviceIP;
     ESP_LOGI(TAG, "Config URL: %s", configURL.c_str());
-
-    // Initialize for full refresh (clears screen)
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
 
     // Start display update
     display.setFullWindow();
@@ -543,11 +454,6 @@ static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, con
 void DisplayManager::displayErrorIfWifiConnectionError() {
     ESP_LOGW(TAG, "WiFi not connected - displaying error");
 
-    // Initialize for full refresh if needed
-    if (!initialized) {
-        initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    }
-
     display.setFullWindow();
     display.firstPage();
     do {
@@ -568,11 +474,6 @@ void DisplayManager::displayErrorIfWifiConnectionError() {
 
 void DisplayManager::displayErrorIfBatteryLow() {
     ESP_LOGW(TAG, "Battery low - displaying error");
-
-    // Initialize for full refresh if needed
-    if (!initialized) {
-        initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    }
 
     display.setFullWindow();
     display.firstPage();
