@@ -3,17 +3,17 @@
 MyStation uses a sophisticated multi-phase boot process that adapts based on the device's configuration state. This
 ensures a smooth user experience from first boot through normal operation.
 
-## Boot Sequence
+## Boot Life Cycle
 
 ```mermaid
 flowchart TD
-    Start([Power On]) -->|System Initialization Phase <br/>which prepares for other phases| OnInit
+    Start([Wake Up]) -->|System Initialization Phase <br/>which prepares for other phases| OnInit
     OnInit -->|Before Operational Phase <br/> which doesn't need Internet| OnStart
-    OnStart -->|Operational Phase <br/> which needs Internet| OnRunning{OnRunning<br/>Application Configuration Phase?}
-    OnRunning -->|Yes| loop(Operate<br/>Web Portal for configuration)
-    loop --> Restart
+    OnStart -->|Operational Phase <br/> which needs Internet| OnRunning
     OnRunning -->|Prepare to Deep Sleep Phase| OnStop
     OnStop -->|Deep Sleep Phase| OnShutDown
+    OnRunning -..-> loop
+    loop["loop() serving configuration web portal"]
 ```
 
 ## Detailed Boot Life Cycle
@@ -52,6 +52,21 @@ http web portal.
 1. OnShutDown: Deep Sleep Phase
     - Turn off peripherals
     - Enter deep sleep mode
+
+## Operation Modes
+
+### Display Mode Selection
+
+In Operation Mode, it determines which Display Mode must be applied now.
+If a Button is pushed by user to choose display mode, it precedence over Configuration State.
+If the Button is not pushed by user, it follows Configuration State.
+The Half-and-Half Display Mode is only applied when it is in active transport time range.
+
+### Data fetching and Display Update
+
+Weather Data is not actively changed very often. So it is cached in RTC Memory. if the cached data is expired,
+it will be fetched again from the API server. Cache Expire time is 60 minutes default.
+However, Transport Data is actively changed. So it is always fetched from the API server on each update cycle.
 
 ## Configuration State
 
