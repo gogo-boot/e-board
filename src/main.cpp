@@ -59,13 +59,15 @@ GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display(
 U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 // RTC memory for persistent state across deep sleep
-RTC_DATA_ATTR unsigned long loopCount = 0;
+RTC_DATA_ATTR unsigned long wakeupCount = 0;
 
 // =============================================================================
 // Main Entry Points
 // =============================================================================
 
 void setup() {
+    wakeupCount++;
+
     // OnInit: System Initialization Phase which prepares for other phases
     ActivityManager::onInit();
 
