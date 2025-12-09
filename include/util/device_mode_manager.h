@@ -21,6 +21,5 @@ public:
     static bool setupConnectivityAndTime();
 
     // Helper functions for data fetching
-    static bool fetchWeatherData(WeatherInfo& weather);
     static bool fetchTransportData(DepartureData& depart);
 };

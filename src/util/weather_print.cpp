@@ -17,7 +17,7 @@ void printWeatherInfo(const WeatherInfo& weather) {
             const auto& hour = weather.hourlyForecast[i];
             ESP_LOGI(TAG, "Hour %d: %s | %.1f°C | Code: %d | Rain: %d%% (%.2f mm) | Humidity: %d%%",
                      i + 1,
-                     hour.time.c_str(),
+                     hour.time,
                      hour.temperature,
                      hour.weatherCode,
                      hour.rainChance,
@@ -36,8 +36,8 @@ void printWeatherInfo(const WeatherInfo& weather) {
             ESP_LOGI(
                 TAG,
                 "Day %d: %s | Code: %d | Sun: %s-%s | Temp: %.1f°-%.1f°C | UV: %.1f | Apparent: %.1f°-%.1f°C | Sunshine: %.0fs | Rain: %.1fmm, %dh | Wind: %d° %.1fkm/h (gust %.1fkm/h)",
-                i + 1, day.time.c_str(), day.weatherCode,
-                day.sunrise.c_str(), day.sunset.c_str(),
+                i + 1, day.time, day.weatherCode,
+                day.sunrise, day.sunset,
                 day.tempMin, day.tempMax, day.uvIndex,
                 day.apparentTempMin, day.apparentTempMax,
                 day.sunshineDuration,
