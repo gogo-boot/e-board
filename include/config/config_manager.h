@@ -6,7 +6,6 @@
 // Complete RTC memory structure (survives deep sleep, lost on power loss)
 struct RTCConfigData {
     // Validation
-    bool isValid; // 1 byte
     bool wifiConfigured; // 1 byte - true when WiFi credentials are validated AND internet is accessible
 
     // Display configuration
@@ -141,9 +140,6 @@ public:
     static bool getFilterFlag(uint16_t flag);
     static std::vector<String> getActiveFilters();
     static void setActiveFilters(const std::vector<String>& filters);
-
-    // Check if this is first boot
-    static bool isFirstBoot() { return !rtcConfig.isValid; }
 
     // Extract stop name from stopId format: "@O=StopName@"
     static String getStopNameFromId();

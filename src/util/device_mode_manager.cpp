@@ -311,22 +311,11 @@ void DeviceModeManager::updateDepartureFull() {
 bool DeviceModeManager::setupOperationalMode() {
     ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
 
-    // Validate RTC config (should already be loaded by system_init)
-    // DO NOT reload from NVS here - it would overwrite RTC memory including:
-    // - WiFi cache state
-    // - Temporary button mode flags
-    // - Loop counters
-    if (!ConfigManager::hasValidConfig()) {
-        ESP_LOGE(TAG, "No valid configuration available!");
-        ESP_LOGI(TAG, "Switching to configuration mode...");
-        runConfigurationMode();
-        return false;
-    }
+    extern unsigned long loopCount;
 
     // Check if this is a deep sleep wake-up for fast path
-    if (!ConfigManager::isFirstBoot()) {
+    if (loopCount != 0) {
         ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
-        extern unsigned long loopCount;
         loopCount++;
 
         // Print wakeup reason and current time
