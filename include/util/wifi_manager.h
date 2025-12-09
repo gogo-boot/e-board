@@ -3,7 +3,6 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 
-
 class MyWiFiManager {
 public:
   static void reconnectWiFi();
@@ -17,6 +16,5 @@ public:
   static bool hasInternetAccess();
 
 private:
-  static const int FAST_CONNECT_TIMEOUT_MS = 8000; // 8 seconds for fast connect
-  static const int FULL_CONNECT_TIMEOUT_MS = 20000; // 20 seconds for full scan
+  static const int FULL_CONNECT_TIMEOUT_MS = 10000; // 10 seconds
 };
