@@ -19,9 +19,10 @@ flowchart TD
 ## Detailed Boot Life Cycle
 
 There are five main Life Cycle phases during the boot process.
-It can be skipped or getting into looped, based on the next lifecycle state.
-_loop_ indicates the ESP32 dedicated loop() function, which is used this project for serving the configuration http web
-portal.
+It usually goes through all phases in order.
+But, it can be skipped or getting into looped, based on the next lifecycle state.
+_loop_ indicates the ESP32 Arduiono loop() function, which is implement this project for serving the configuration
+http web portal.
 
 **Key Actions**:
 
