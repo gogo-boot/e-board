@@ -1,4 +1,5 @@
 #pragma once
+#include "icons.h"
 #include "api/dwd_weather_api.h"
 #include "api/rmv_api.h"
 
@@ -41,19 +42,9 @@ public:
 
     // Utility functions
     static void hibernate();
-    static bool isInitialized() { return initialized; }
 
 private:
-    // Initialization modes
-    enum class InitMode {
-        LEGACY, // Legacy init for backward compatibility
-        FULL_REFRESH, // Clear screen and full refresh
-        PARTIAL_UPDATE // Preserve screen content for partial updates
-    };
-
     // Internal state
-    static bool initialized;
-    static bool partialMode;
     static int16_t screenWidth;
     static int16_t screenHeight;
     static int16_t halfWidth;
@@ -62,11 +53,10 @@ private:
     // Internal helper methods
     static void initInternal();
 
+    static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, const char* message);
     // Display update methods for each case
     static void updateWeatherHalf(const WeatherInfo& weather);
     static void updateDepartureHalf(const DepartureData& departures);
     static void displayVerticalLine(const int16_t contentY);
     static void calculateDimensions();
-
-    static String shortenTextToFit(const String& text, int16_t maxWidth);
 };

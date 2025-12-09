@@ -1,6 +1,5 @@
-#include "display/display_manager.h"
-
 #include <Arduino.h>
+#include "display/display_manager.h"
 
 #include "config/config_manager.h"
 #include "display/transport_display.h"
@@ -20,7 +19,6 @@
 
 // Include bitmap icons
 #include "icons.h"
-#include "util/battery_manager.h"
 
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
@@ -30,7 +28,6 @@ static const char* TAG = "DISPLAY_MGR";
 
 // ===== STATIC MEMBER VARIABLES =====
 
-bool DisplayManager::initialized = false;
 int16_t DisplayManager::screenWidth = 0; // Will be read from display
 int16_t DisplayManager::screenHeight = 0; // Will be read from display
 int16_t DisplayManager::halfWidth = 0; // Will be calculated
@@ -41,17 +38,12 @@ int16_t DisplayManager::halfHeight = 0; // Will be calculated
 void DisplayManager::initInternal() {
     screenWidth = display.width();
     screenHeight = display.height();
-
+    halfWidth = screenWidth / 2; // Split width: 400 pixels each
+    halfHeight = screenHeight; // Full height: 480 pixels
+    ESP_LOGI(TAG, "Landscape split: Weather[0,0,%d,%d] Departures[%d,0,%d,%d]",
+             halfWidth, screenHeight, halfWidth, halfWidth, screenHeight);
     // Initialize shared display resources
     DisplayShared::init(screenWidth, screenHeight);
-
-    ESP_LOGI(TAG, "Display detected - Physical dimensions: %dx%d",
-             screenWidth, screenHeight);
-
-    initialized = true;
-
-    ESP_LOGI(TAG, "Display initialized - Orientation: Landscape, Dimensions: %dx%d",
-             screenWidth, screenHeight);
 }
 
 void DisplayManager::calculateDimensions() {
@@ -156,9 +148,6 @@ void DisplayManager::hibernate() {
 
     // Turn off display
     display.hibernate();
-
-    // Reset initialization flag since display is powered down
-    initialized = false;
 
     // You can add additional power-saving measures here
     ESP_LOGI(TAG, "Display hibernated");
@@ -381,16 +370,11 @@ void DisplayManager::displayPhase2AppSetup() {
  * @param iconSize The size of the icon in pixels (16, 24, 32, 48, or 64)
  * @param message Optional error message to display below the icon
  */
-static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, const char* message = nullptr) {
-    // Get screen dimensions
-    int16_t centerX = DisplayManager::isInitialized() ? (display.width() / 2) : (800 / 2);
-    // Default to 800 if not initialized
-    int16_t centerY = DisplayManager::isInitialized() ? (display.height() / 2) : (480 / 2);
-    // Default to 480 if not initialized
-
+void DisplayManager::displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize,
+                                              const char* message = nullptr) {
     // Calculate icon position (centered)
-    int16_t iconX = centerX - (iconSize / 2);
-    int16_t iconY = centerY - (iconSize / 2);
+    int16_t iconX = halfWidth - (iconSize / 2);
+    int16_t iconY = halfHeight - (iconSize / 2);
 
     ESP_LOGI(TAG, "Displaying error icon at center (%d, %d) with size %d", iconX, iconY, iconSize);
 
@@ -411,7 +395,7 @@ static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, con
         u8g2.setBackgroundColor(GxEPD_WHITE);
 
         // Calculate text wrapping
-        int16_t maxWidth = DisplayManager::isInitialized() ? display.width() - 40 : 760; // 20px margin on each side
+        int16_t maxWidth = screenWidth - 40; // 20px margin on each side
         int16_t lineHeight = 20; // Line spacing
         int16_t startY = iconY + iconSize + 30; // Start 30px below icon
 
@@ -437,7 +421,7 @@ static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, con
 
             // Draw the line centered
             int16_t textWidth = u8g2.getUTF8Width(line.c_str());
-            int16_t textX = centerX - (textWidth / 2);
+            int16_t textX = halfWidth - (textWidth / 2);
             u8g2.setCursor(textX, currentY);
             u8g2.print(line);
 
