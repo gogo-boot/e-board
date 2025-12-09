@@ -57,9 +57,6 @@ void MyWiFiManager::setupWiFiAccessPointAndRestart(WiFiManager& wm) {
     // Check internet connectivity
     if (hasInternetAccess()) {
         ESP_LOGW(TAG, "has internet access");
-        RTCConfigData& config = ConfigManager::getConfig();
-        config.wifiConfigured = true;
-
         // Update configuration with network info
         ConfigManager::setNetwork(WiFi.SSID(), WiFi.localIP().toString());
 

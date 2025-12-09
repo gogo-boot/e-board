@@ -74,7 +74,6 @@ bool ConfigManager::saveConfig(const MyStationConfig &config) {
 ```cpp
 void ConfigManager::saveCriticalToRTC(const MyStationConfig &config) {
     // Only save most critical data needed for operation
-    ConfigManager::rtcConfig.isValid = true;
     ConfigManager::rtcConfig.latitude = config.latitude;
     ConfigManager::rtcConfig.longitude = config.longitude;
     strncpy(ConfigManager::rtcConfig.selectedStopId, config.selectedStopId.c_str(), 63);
@@ -144,12 +143,6 @@ void runOperationalMode() {
         return;
     }
 
-    // Check if we can use fast path (RTC memory)
-    if (!configMgr.isFirstBoot() && configMgr.loadCriticalFromRTC(g_stationConfig)) {
-        ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
-        // Use RTC data for quick operation
-    }
-
     // Continue with normal operation...
 }
 ```
@@ -157,9 +150,6 @@ void runOperationalMode() {
 ### 3. RTC Memory Fast Path
 ```cpp
 bool ConfigManager::loadCriticalFromRTC(MyStationConfig &config) {
-    if (!ConfigManager::rtcConfig.isValid) {
-        return false; // RTC data not valid, use NVS data
-    }
 
     // Override critical fields with RTC data (faster)
     config.latitude = ConfigManager::rtcConfig.latitude;

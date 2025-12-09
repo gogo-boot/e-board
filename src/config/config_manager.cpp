@@ -5,8 +5,6 @@ static const char* TAG = "CONFIG_MGR";
 
 // RTC memory allocation - define the static member with defaults
 RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
-    false, // isValid
-    false, // wifiConfigured
     DISPLAY_MODE_HALF_AND_HALF, // displayMode - default to half and half
     0.0, // latitude
     0.0, // longitude
@@ -43,36 +41,13 @@ ConfigManager& ConfigManager::getInstance() {
     return instance;
 }
 
-bool ConfigManager::hasValidConfig() {
-    if (!rtcConfig.isValid) {
-        ESP_LOGI(TAG, "RTC config marked as invalid");
-        return false;
-    }
-
-    // Validate critical configuration fields
-    bool hasValidData = (strlen(rtcConfig.selectedStopId) > 0 &&
-        strlen(rtcConfig.ssid) > 0 &&
-        rtcConfig.latitude != 0.0 &&
-        rtcConfig.longitude != 0.0);
-
-    ESP_LOGI(TAG, "RTC Config validation:");
-    ESP_LOGI(TAG, "- SSID: %s", rtcConfig.ssid);
-    ESP_LOGI(TAG, "- Stop: %s (%s)", rtcConfig.selectedStopName, rtcConfig.selectedStopId);
-    ESP_LOGI(TAG, "- Location: %s (%.6f, %.6f)", rtcConfig.cityName, rtcConfig.latitude, rtcConfig.longitude);
-    ESP_LOGI(TAG, "- IP Address: %s", rtcConfig.ipAddress);
-    ESP_LOGI(TAG, "- Valid: %s", hasValidData ? "YES" : "NO");
-
-    return hasValidData;
-}
-
-void ConfigManager::invalidateConfig() {
-    rtcConfig.isValid = false;
-    ESP_LOGI(TAG, "RTC config invalidated");
-}
-
 // It loads the configuration from NVS into RTC memory.
-bool ConfigManager::loadFromNVS() {
-    if (hasValidConfig()) {
+bool ConfigManager::loadFromNVS(bool force = false) {
+    extern unsigned long wakeupCount;
+
+    // Check if this is a deep sleep wake-up for fast path
+    if (wakeupCount != 1 && !force) {
+        ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
         return true;
     }
 
@@ -155,21 +130,10 @@ bool ConfigManager::loadFromNVS() {
             FILTER_FERRY | FILTER_CALLBUS;
     }
 
-    // Load system state
-    rtcConfig.wifiConfigured = preferences.getBool("wifiConfigured", false);
 
     preferences.end();
 
-    // Mark as valid if we have basic data
-    bool hasBasicData = (rtcConfig.latitude != 0.0 || rtcConfig.longitude != 0.0 || strlen(rtcConfig.cityName) > 0);
-    if (hasBasicData) {
-        rtcConfig.isValid = true;
-        ESP_LOGI(TAG, "Configuration loaded from NVS to RTC memory");
-    } else {
-        ESP_LOGI(TAG, "No valid configuration found in NVS");
-    }
-
-    return hasBasicData;
+    return true;
 }
 
 // Save configuration to NVS. NVS will be used as backup storage. It survives deep sleep and power loss.
@@ -224,8 +188,6 @@ bool ConfigManager::saveToNVS() {
         preferences.putString(key.c_str(), filters[i]);
     }
 
-    // Save system state
-    preferences.putBool("wifiConfigured", rtcConfig.wifiConfigured);
 
     preferences.end();
 
@@ -238,7 +200,6 @@ void ConfigManager::setLocation(float lat, float lon, const String& city) {
     rtcConfig.latitude = lat;
     rtcConfig.longitude = lon;
     copyString(rtcConfig.cityName, city, sizeof(rtcConfig.cityName));
-    rtcConfig.isValid = true;
     ESP_LOGI(TAG, "Location updated: %s (%.6f, %.6f)", city.c_str(), lat, lon);
 }
 
@@ -347,7 +308,6 @@ void ConfigManager::copyString(char* dest, const String& src, size_t maxLen) {
 }
 
 void ConfigManager::setDefaults() {
-    rtcConfig.isValid = false;
     rtcConfig.latitude = 0.0;
     rtcConfig.longitude = 0.0;
     strcpy(rtcConfig.cityName, "");
@@ -406,7 +366,6 @@ void ConfigManager::printConfiguration(bool fromNVS = false) {
         ESP_LOGI(TAG, "=== END NVS CONFIGURATION ===");
     } else {
         ESP_LOGI(TAG, "=== CONFIGURATION FROM RTC MEMORY ===");
-        ESP_LOGI(TAG, "isValid: %s", rtcConfig.isValid ? "true" : "false");
         ESP_LOGI(TAG, "lastUpdate: %lu", rtcConfig.lastUpdate);
 
         ESP_LOGI(TAG, "--- Location ---");

@@ -6,8 +6,6 @@
 
 // Mock RTC memory for native testing
 RTCConfigData ConfigManager::rtcConfig = {
-    true, // isValid
-    false, // wifiConfigured
     DISPLAY_MODE_HALF_AND_HALF, // displayMode
     0.0f, // latitude
     0.0f, // longitude
@@ -43,14 +41,6 @@ RTCConfigData ConfigManager::rtcConfig = {
 ConfigManager& ConfigManager::getInstance() {
     static ConfigManager instance;
     return instance;
-}
-
-bool ConfigManager::hasValidConfig() {
-    return rtcConfig.isValid;
-}
-
-void ConfigManager::invalidateConfig() {
-    rtcConfig.isValid = false;
 }
 
 bool ConfigManager::loadFromNVS() {
@@ -155,7 +145,6 @@ void ConfigManager::setActiveFilters(const std::vector<String>& filters) {
 }
 
 void ConfigManager::setDefaults() {
-    rtcConfig.isValid = true;
     rtcConfig.displayMode = DISPLAY_MODE_HALF_AND_HALF;
     rtcConfig.weatherInterval = 3;
     rtcConfig.transportInterval = 3;

@@ -345,7 +345,7 @@ wifiPrefs.putString("password", password);
 **Solution**: Store critical data in RTC RAM
 
 ```cpp
-RTC_DATA_ATTR int loopCount = 0;
+RTC_DATA_ATTR int wakeupCount = 0;
 RTC_DATA_ATTR DisplayMode temporaryMode = DISPLAY_MODE_NONE;
 ```
 

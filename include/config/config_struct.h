@@ -25,8 +25,6 @@ struct ConfigOption {
     String selectedStopId = ""; // User's selected stop ID from config
     String selectedStopName = ""; // User's selected stop name from config
 
-    // Configuration phase tracking
-    bool wifiConfigured = false; // true when WiFi credentials are validated AND internet is accessible
 
     // New configuration values from the updated web interface
     int weatherInterval = 3; // Weather update interval in hours (default: 3)

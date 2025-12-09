@@ -8,7 +8,6 @@ struct DepartureData;
 
 class DeviceModeManager {
 public:
-    static bool hasValidConfiguration(bool& hasValidConfig);
     static void runConfigurationMode();
     static void showWeatherDeparture();
     static void updateWeatherFull();
@@ -20,7 +19,6 @@ public:
     static void showWifiErrorPage();
 
     // Common operational mode functions
-    static bool setupOperationalMode();
     static bool setupConnectivityAndTime();
     static void enterOperationalSleep();
 

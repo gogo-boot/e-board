@@ -31,35 +31,6 @@ namespace SystemInit {
 #endif
     }
 
-    void printWakeupCause() {
-        esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-        ESP_LOGI(TAG, "=== Wakeup Cause: %d ===", wakeup_reason);
-
-        switch (wakeup_reason) {
-        case ESP_SLEEP_WAKEUP_UNDEFINED:
-            ESP_LOGI(TAG, "  → Power on or reset (not from deep sleep)");
-            break;
-        case ESP_SLEEP_WAKEUP_EXT0:
-            ESP_LOGI(TAG, "  → EXT0 (single GPIO RTC_IO)");
-            break;
-        case ESP_SLEEP_WAKEUP_EXT1:
-            ESP_LOGI(TAG, "  → EXT1 (multiple GPIO RTC_IO)");
-            break;
-        case ESP_SLEEP_WAKEUP_TIMER:
-            ESP_LOGI(TAG, "  → Timer wakeup");
-            break;
-        case ESP_SLEEP_WAKEUP_TOUCHPAD:
-            ESP_LOGI(TAG, "  → Touchpad");
-            break;
-        case ESP_SLEEP_WAKEUP_ULP:
-            ESP_LOGI(TAG, "  → ULP program");
-            break;
-        default:
-            ESP_LOGI(TAG, "  → Unknown: %d", wakeup_reason);
-            break;
-        }
-    }
-
     void factoryResetIfDesired() {
         if (FactoryReset::checkFactoryResetButton()) {
             nvs_flash_init();
@@ -87,9 +58,7 @@ namespace SystemInit {
     void loadNvsConfig() {
         // Restore RTCConfigData from NVS
         ConfigManager& configMgr = ConfigManager::getInstance();
-        configMgr.loadFromNVS();
-        ESP_LOGI(TAG, "Configuration loaded from NVS - wifiConfigured: %d",
-                 ConfigManager::getConfig().wifiConfigured);
+        configMgr.loadFromNVS(false);
         ESP_LOGI(TAG, "System initialization complete");
     }
 } // namespace SystemInit

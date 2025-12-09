@@ -47,7 +47,7 @@ const char* ActivityManager::lifecycleToString(Lifecycle lifecycle) {
 void ActivityManager::onInit() {
     setCurrentActivityLifecycle(Lifecycle::ON_INIT);
     SystemInit::initSerialConnector();
-    SystemInit::printWakeupCause();
+    printWakeupReason();
     SystemInit::factoryResetIfDesired();
     SystemInit::initDisplay();
     SystemInit::initFont();
@@ -59,6 +59,9 @@ void ActivityManager::onInit() {
         return;
     }
     SystemInit::loadNvsConfig();
+#if PRODUCTIONP==0
+    ConfigManager::printConfiguration(false);
+#endif
     setNextActivityLifecycle(Lifecycle::ON_START);
 }
 
@@ -78,6 +81,7 @@ void ActivityManager::onStart() {
     if (WiFi.status() != WL_CONNECTED) {
         DisplayManager::displayErrorIfWifiConnectionError();
         setNextActivityLifecycle(Lifecycle::ON_STOP);
+        return;
     }
 
     // Set up Time if it needed
@@ -97,7 +101,6 @@ void ActivityManager::onRunning() {
     if (phase == PHASE_APP_SETUP) {
         BootFlowManager::handlePhaseAppSetup();
         setNextActivityLifecycle(Lifecycle::ON_LOOP);
-        // STOP HERE - don't progress further
         // The web server will run in loop() for configuration
         return;
     }
