@@ -43,7 +43,15 @@ ConfigManager& ConfigManager::getInstance() {
 }
 
 // It loads the configuration from NVS into RTC memory.
-bool ConfigManager::loadFromNVS() {
+bool ConfigManager::loadFromNVS(bool force = false) {
+    extern unsigned long wakeupCount;
+
+    // Check if this is a deep sleep wake-up for fast path
+    if (wakeupCount != 1 && !force) {
+        ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
+        return true;
+    }
+
     if (!preferences.begin("mystation", true)) {
         // readonly mode
         ESP_LOGE(TAG, "Failed to open NVS for reading");

@@ -497,7 +497,7 @@ void DisplayManager::displayPhase2AppSetup() {
     // Get dynamic SSID with hardware ID
     String apSSID = Util::getUniqueSSID("MyStation");
 
-    ConfigManager::getInstance().loadFromNVS();
+    ConfigManager::getInstance().loadFromNVS(false);
     RTCConfigData& config = ConfigManager::getConfig();
     String deviceIP = config.ipAddress;
     // Prepare QR code data - device configuration URL

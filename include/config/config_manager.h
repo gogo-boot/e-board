@@ -102,7 +102,7 @@ public:
     static void invalidateConfig();
 
     // NVS persistence (backup storage)
-    bool loadFromNVS();
+    bool loadFromNVS(bool force);
     bool saveToNVS();
 
     // Helper functions for string conversion
