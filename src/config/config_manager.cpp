@@ -156,7 +156,6 @@ bool ConfigManager::loadFromNVS() {
     }
 
     // Load system state
-    rtcConfig.configMode = preferences.getBool("configMode", true);
     rtcConfig.wifiConfigured = preferences.getBool("wifiConfigured", false);
 
     preferences.end();
@@ -226,7 +225,6 @@ bool ConfigManager::saveToNVS() {
     }
 
     // Save system state
-    preferences.putBool("configMode", rtcConfig.configMode);
     preferences.putBool("wifiConfigured", rtcConfig.wifiConfigured);
 
     preferences.end();
@@ -370,7 +368,6 @@ void ConfigManager::setDefaults() {
     strcpy(rtcConfig.weekendSleepStart, "23:00");
     strcpy(rtcConfig.weekendSleepEnd, "07:00");
     rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_FERRY;
-    rtcConfig.configMode = true;
     rtcConfig.lastUpdate = 0;
 }
 
@@ -410,7 +407,6 @@ void ConfigManager::printConfiguration(bool fromNVS = false) {
     } else {
         ESP_LOGI(TAG, "=== CONFIGURATION FROM RTC MEMORY ===");
         ESP_LOGI(TAG, "isValid: %s", rtcConfig.isValid ? "true" : "false");
-        ESP_LOGI(TAG, "configMode: %s", rtcConfig.configMode ? "true" : "false");
         ESP_LOGI(TAG, "lastUpdate: %lu", rtcConfig.lastUpdate);
 
         ESP_LOGI(TAG, "--- Location ---");

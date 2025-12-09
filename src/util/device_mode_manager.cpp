@@ -68,9 +68,6 @@ bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
 void DeviceModeManager::runConfigurationMode() {
     ESP_LOGI(TAG, "=== ENTERING CONFIGURATION MODE ===");
 
-    // Set configuration mode flag
-    ConfigManager::setConfigMode(true);
-
     // Phase 2+: WiFi already configured, setup app configuration
     ESP_LOGI(TAG, "=== PHASE 2+ CONFIGURATION MODE ===");
     ESP_LOGI(TAG, "WiFi already configured, setting up app configuration...");
@@ -313,9 +310,6 @@ void DeviceModeManager::updateDepartureFull() {
 
 bool DeviceModeManager::setupOperationalMode() {
     ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
-
-    // Set operational mode flag
-    ConfigManager::setConfigMode(false);
 
     // Validate RTC config (should already be loaded by system_init)
     // DO NOT reload from NVS here - it would overwrite RTC memory including:
