@@ -27,22 +27,12 @@ static const char* TAG = "DISPLAY_MGR";
 
 // ===== STATIC MEMBER VARIABLES =====
 
-int16_t DisplayManager::screenWidth = 0; // Will be read from display
-int16_t DisplayManager::screenHeight = 0; // Will be read from display
-int16_t DisplayManager::halfWidth = 0; // Will be calculated
-int16_t DisplayManager::halfHeight = 0; // Will be calculated
+int16_t DisplayManager::screenWidth = display.width(); // Will be read from display
+int16_t DisplayManager::screenHeight = display.height(); // Will be read from display
+int16_t DisplayManager::halfWidth = display.width() / 2; // Will be calculated
+int16_t DisplayManager::halfHeight = display.height() / 2; // Will be calculated
 
 // ===== INITIALIZATION METHODS =====
-
-void DisplayManager::initInternal() {
-    screenWidth = display.width();
-    screenHeight = display.height();
-    halfWidth = screenWidth / 2; // Split width: 400 pixels each
-    halfHeight = screenHeight; // Full height: 480 pixels
-    ESP_LOGI(TAG, "Landscape split: Weather[0,0,%d,%d] Departures[%d,0,%d,%d]",
-             halfWidth, screenHeight, halfWidth, halfWidth, screenHeight);
-    // Initialize shared display resources
-}
 
 void DisplayManager::calculateDimensions() {
     // Landscape mode: 800x480 - split WIDTH in half

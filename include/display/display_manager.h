@@ -50,9 +50,6 @@ private:
     static int16_t halfWidth;
     static int16_t halfHeight;
 
-    // Internal helper methods
-    static void initInternal();
-
     static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, const char* message);
     // Display update methods for each case
     static void updateWeatherHalf(const WeatherInfo& weather);
