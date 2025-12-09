@@ -142,10 +142,6 @@ public:
     static std::vector<String> getActiveFilters();
     static void setActiveFilters(const std::vector<String>& filters);
 
-    // Configuration mode management
-    static bool isConfigMode() { return rtcConfig.configMode; }
-    static void setConfigMode(bool mode) { rtcConfig.configMode = mode; }
-
     // Check if this is first boot
     static bool isFirstBoot() { return !rtcConfig.isValid; }
 

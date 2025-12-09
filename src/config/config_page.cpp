@@ -196,9 +196,6 @@ void handleSaveConfig(WebServer& server) {
         strncpy(config.otaCheckTime, doc["otaCheckTime"].as<const char*>(),
                 sizeof(config.otaCheckTime) - 1);
 
-    // Save config mode to NVS (persists across power loss)
-    configMgr.setConfigMode(false);
-
     // Save to NVS (and RTC memory automatically)
     if (!configMgr.saveToNVS()) {
         server.send(500, "text/plain", "Failed to save config to NVS");

@@ -51,6 +51,10 @@ public:
     static void displayWeatherFull(const WeatherInfo& weather);
     static void displayDeparturesFull(const DepartureData& departures);
 
+    // ==
+    static void displayErrorIfWifiConnectionError();
+    static void displayErrorIfBatteryLow();
+
     // === Initialization Methods ===
     static void init(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);
     static void initForFullRefresh(DisplayOrientation orientation = DisplayOrientation::LANDSCAPE);

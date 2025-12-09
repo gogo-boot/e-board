@@ -170,7 +170,6 @@ void ConfigManager::setDefaults() {
     std::strcpy(rtcConfig.weekendSleepStart, "23:00");
     std::strcpy(rtcConfig.weekendSleepEnd, "07:00");
     rtcConfig.filterFlags = FILTER_S | FILTER_BUS;
-    rtcConfig.configMode = false;
 }
 
 void ConfigManager::printConfiguration(bool fromNVS) {

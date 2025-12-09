@@ -9,8 +9,10 @@
 #include "util/system_init.h"
 #include "util/timing_manager.h"
 #include "config/config_manager.h"
+#include "util/wifi_manager.h"
 
 static Lifecycle currentLifecycle = Lifecycle::ON_INIT;
+static Lifecycle nextLifecyele = Lifecycle::ON_START;
 static const char* TAG = "ACTIVITY_MGR";
 
 Lifecycle ActivityManager::getCurrentActivityLifecycle() {
@@ -20,6 +22,15 @@ Lifecycle ActivityManager::getCurrentActivityLifecycle() {
 void ActivityManager::setCurrentActivityLifecycle(Lifecycle status) {
     ESP_LOGI(TAG, "Current Lifecycle : %s", lifecycleToString(status));
     currentLifecycle = status;
+}
+
+Lifecycle ActivityManager::getNextActivityLifecycle() {
+    return nextLifecyele;
+}
+
+void ActivityManager::setNextActivityLifecycle(Lifecycle status) {
+    ESP_LOGI(TAG, "Current Lifecycle : %s", lifecycleToString(status));
+    nextLifecyele = status;
 }
 
 const char* ActivityManager::lifecycleToString(Lifecycle lifecycle) {
@@ -41,7 +52,14 @@ void ActivityManager::onInit() {
     SystemInit::initDisplay();
     SystemInit::initFont();
     BatteryManager::init();;
+    if (BatteryManager::getBatteryVoltage() <= BATTERY_VOLTAGE_MIN) {
+        DisplayManager::displayErrorIfBatteryLow();
+        // Shutdown immediately if battery is low
+        setNextActivityLifecycle(Lifecycle::ON_SHUTDOWN);
+        return;
+    }
     SystemInit::loadNvsConfig();
+    setNextActivityLifecycle(Lifecycle::ON_START);
 }
 
 void ActivityManager::onStart() {
@@ -54,11 +72,21 @@ void ActivityManager::onStart() {
     }
     // Setup by pressing buttons changes display mode while running - To make
 
+    // Start Wifi connection. If gets failed, show Wifi Error Screen
+    MyWiFiManager::reconnectWiFi();
+
+    if (WiFi.status() != WL_CONNECTED) {
+        DisplayManager::displayErrorIfWifiConnectionError();
+        setNextActivityLifecycle(Lifecycle::ON_STOP);
+    }
+
     // Set up Time if it needed
     DeviceModeManager::setupConnectivityAndTime();
 
     // Set temporary display mode if needed
     ButtonManager::handleWakeupMode();
+
+    setNextActivityLifecycle(Lifecycle::ON_RUNNING);
 }
 
 void ActivityManager::onRunning() {
@@ -68,12 +96,12 @@ void ActivityManager::onRunning() {
     ConfigPhase phase = DeviceModeManager::getCurrentPhase();
     if (phase == PHASE_APP_SETUP) {
         BootFlowManager::handlePhaseAppSetup();
-
-        ConfigManager::setConfigMode(true);
+        setNextActivityLifecycle(Lifecycle::ON_LOOP);
         // STOP HERE - don't progress further
         // The web server will run in loop() for configuration
         return;
     }
+
     // OTA Update Check by checking scheduled time with RTC clock time
     OTAManager::checkAndApplyUpdate();
 
@@ -81,6 +109,8 @@ void ActivityManager::onRunning() {
     if (phase == PHASE_COMPLETE) {
         BootFlowManager::handlePhaseComplete();
     }
+
+    setNextActivityLifecycle(Lifecycle::ON_STOP);
 }
 
 uint64_t sleepTimeSeconds = 0;
@@ -91,11 +121,10 @@ void ActivityManager::onStop() {
     // Calculate next wake-up time - To Move
     sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
 
-    // clean up temporary states if needed - To make
-    ConfigManager::setConfigMode(false);
-
     // Setup by pressing buttons can be woken up
     ButtonManager::setWakupableButtons();
+
+    setNextActivityLifecycle(Lifecycle::ON_SHUTDOWN);
 }
 
 void ActivityManager::onShutdown() {

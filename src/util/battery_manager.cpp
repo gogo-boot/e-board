@@ -7,20 +7,6 @@
 
 static const char* TAG = "BATTERY_MGR";
 
-// Battery voltage thresholds (for LiPo batteries)
-static const float BATTERY_VOLTAGE_MAX = 4.2f; // Fully charged
-static const float BATTERY_VOLTAGE_MIN = 3.0f; // Empty (safe cutoff)
-static const float BATTERY_VOLTAGE_NOMINAL = 3.7f; // Nominal voltage
-
-#ifdef BOARD_ESP32_S3
-// TRMNL 7.5" (OG) DIY Kit specific configuration
-// Reference: https://wiki.seeedstudio.com/ogdiy_kit_works_with_arduino/
-static const float VOLTAGE_DIVIDER_RATIO = 2.0f; // 2:1 voltage divider
-static const int ADC_MAX_VALUE = 4095; // 12-bit ADC
-static const float ADC_REFERENCE_VOLTAGE = 3.6f; // Actual reference voltage for ESP32-S3
-static const float CALIBRATION_FACTOR = 0.968f; // Calibration factor from OG DIY Kit
-static bool batteryInitialized = false;
-#endif
 
 void BatteryManager::init() {
 #ifdef BOARD_ESP32_S3

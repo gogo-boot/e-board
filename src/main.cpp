@@ -68,18 +68,27 @@ RTC_DATA_ATTR unsigned long loopCount = 0;
 void setup() {
     // OnInit: System Initialization Phase which prepares for other phases
     ActivityManager::onInit();
-    ActivityManager::onStart();
-    ActivityManager::onRunning();
-    // Only proceed to shutdown if NOT in configuration mode
-    if (!ConfigManager::isConfigMode()) {
+
+    if (ActivityManager::getNextActivityLifecycle() == Lifecycle::ON_START) {
+        ActivityManager::onStart();
+    }
+    if (ActivityManager::getNextActivityLifecycle() == Lifecycle::ON_RUNNING) {
+        ActivityManager::onRunning();
+    }
+    if (ActivityManager::getNextActivityLifecycle() == Lifecycle::ON_STOP) {
         ActivityManager::onStop();
+    }
+    if (ActivityManager::getNextActivityLifecycle() == Lifecycle::ON_SHUTDOWN) {
         ActivityManager::onShutdown();
+    }
+    if (ActivityManager::getNextActivityLifecycle() == Lifecycle::ON_LOOP) {
+        ESP_LOGI(TAG, "Starting loop");
     }
 }
 
 void loop() {
     // Only handle web server in config mode
-    if (ConfigManager::isConfigMode()) {
+    if (ActivityManager::getNextActivityLifecycle() == Lifecycle::ON_LOOP) {
         server.handleClient();
         delay(10); // Small delay to prevent watchdog issues
     } else {

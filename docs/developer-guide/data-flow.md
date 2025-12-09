@@ -48,7 +48,7 @@ bool ConfigManager::saveConfig(const MyStationConfig &config) {
     if (!preferences.begin("mystation", false)) {
         return false;
     }
-    
+
     // Save all configuration fields to NVS
     preferences.putFloat("lat", config.latitude);
     preferences.putFloat("lon", config.longitude);
@@ -60,12 +60,12 @@ bool ConfigManager::saveConfig(const MyStationConfig &config) {
     preferences.putInt("weatherInt", config.weatherInterval);
     preferences.putInt("transportInt", config.transportInterval);
     // ... and all other fields
-    
+
     preferences.end();
-    
+
     // Step 2: Save critical data to RTC memory (fast path)
     saveCriticalToRTC(config);
-    
+
     return true;
 }
 ```
@@ -113,21 +113,21 @@ runOperationalMode()  runConfigurationMode()
 ```cpp
 bool hasConfigInNVS() {
     ConfigManager& configMgr = ConfigManager::getInstance();
-    
+
     // Load complete configuration from NVS
     bool configExists = configMgr.loadConfig(g_stationConfig);
-    
+
     if (!configExists) {
         ESP_LOGI(TAG, "No configuration found in NVS");
         return false;
     }
-    
+
     // Validate critical configuration fields
-    bool hasValidConfig = (g_stationConfig.selectedStopId.length() > 0 && 
+    bool hasValidConfig = (g_stationConfig.selectedStopId.length() > 0 &&
                           g_stationConfig.ssid.length() > 0 &&
-                          g_stationConfig.latitude != 0.0 && 
+                          g_stationConfig.latitude != 0.0 &&
                           g_stationConfig.longitude != 0.0);
-    
+
     return hasValidConfig;
 }
 ```
@@ -136,20 +136,20 @@ bool hasConfigInNVS() {
 ```cpp
 void runOperationalMode() {
     ConfigManager& configMgr = ConfigManager::getInstance();
-    
+
     // Load complete configuration from NVS first
     if (!configMgr.loadConfig(g_stationConfig)) {
         // Fallback to configuration mode if NVS load fails
         runConfigurationMode();
         return;
     }
-    
+
     // Check if we can use fast path (RTC memory)
     if (!configMgr.isFirstBoot() && configMgr.loadCriticalFromRTC(g_stationConfig)) {
         ESP_LOGI(TAG, "Fast wake: Using RTC config after deep sleep");
         // Use RTC data for quick operation
     }
-    
+
     // Continue with normal operation...
 }
 ```
@@ -160,13 +160,13 @@ bool ConfigManager::loadCriticalFromRTC(MyStationConfig &config) {
     if (!ConfigManager::rtcConfig.isValid) {
         return false; // RTC data not valid, use NVS data
     }
-    
+
     // Override critical fields with RTC data (faster)
     config.latitude = ConfigManager::rtcConfig.latitude;
     config.longitude = ConfigManager::rtcConfig.longitude;
     config.selectedStopId = String(ConfigManager::rtcConfig.selectedStopId);
     config.selectedStopName = String(ConfigManager::rtcConfig.selectedStopName);
-    
+
     return true;
 }
 ```
@@ -181,21 +181,19 @@ bool ConfigManager::loadCriticalFromRTC(MyStationConfig &config) {
 ### Configuration Mode Behavior
 ```cpp
 void DeviceModeManager::runConfigurationMode() {
-    // Set mode flags
-    ConfigManager::setConfigMode(true);
-    
+
     // Setup WiFi AP mode for configuration
     WiFiManager wm;
     MyWiFiManager::setupAPMode(wm);
-    
+
     // Get location and nearby stops
     getLocationFromGoogle(g_lat, g_lon);
     getCityFromLatLon(g_lat, g_lon);
     getNearbyStops();
-    
+
     // Start web server
     setupWebServer(server);
-    
+
     // Stay in loop() to handle web requests
 }
 ```
@@ -203,19 +201,17 @@ void DeviceModeManager::runConfigurationMode() {
 ### Operational Mode Behavior
 ```cpp
 void DeviceModeManager::runOperationalMode() {
-    // Set mode flags
-    ConfigManager::setConfigMode(false);
-    
+
     // Load configuration (NVS + RTC fast path)
     configMgr.loadFromNVS();
-    
+
     // Connect to WiFi in station mode
     MyWiFiManager::setupStationMode();
-    
+
     // Fetch data and update display
     getDepartureBoard(config.selectedStopId);
     getWeatherFromDWD(g_lat, g_lon, weather);
-    
+
     // Calculate sleep time and enter deep sleep
     uint64_t sleepTime = calculateSleepTime(config.transportInterval);
     enterDeepSleep(sleepTime);
@@ -272,16 +268,16 @@ struct MyStationConfig {
     float latitude = 0.0;
     float longitude = 0.0;
     String cityName;
-    
+
     // Network
     String ssid;
     String ipAddress;
-    
+
     // Transport
     String selectedStopId;
     String selectedStopName;
     std::vector<String> oepnvFilters;
-    
+
     // Timing
     int weatherInterval = 3;
     int transportInterval = 3;
@@ -290,7 +286,7 @@ struct MyStationConfig {
     int walkingTime = 5;
     String sleepStart = "22:30";
     String sleepEnd = "05:30";
-    
+
     // Weekend mode
     bool weekendMode = false;
     String weekendTransportStart = "08:00";
@@ -330,17 +326,17 @@ struct RTCConfigData {
 
 #### 1. Empty SSID or Stop ID
 ```
-[MAIN] - SSID: 
+[MAIN] - SSID:
 [MAIN] - Stop: Keine Haltestellen gefunden
 ```
-**Cause**: Configuration not properly saved or loaded  
+**Cause**: Configuration not properly saved or loaded
 **Fix**: Check NVS write permissions and WiFi connection during config
 
 #### 2. RTC Data Invalid
 ```
 [CONFIG_MGR] Critical config loaded from RTC: Stop=
 ```
-**Cause**: RTC memory cleared or first boot  
+**Cause**: RTC memory cleared or first boot
 **Fix**: Normal behavior, will fall back to NVS
 
 #### 3. Configuration Mode Loop
@@ -348,7 +344,7 @@ struct RTCConfigData {
 [MAIN] Failed to load configuration in operational mode!
 [MAIN] Switching to configuration mode...
 ```
-**Cause**: Invalid or missing critical configuration fields  
+**Cause**: Invalid or missing critical configuration fields
 **Fix**: Check NVS data integrity and validation logic
 
 ### Debug Logging

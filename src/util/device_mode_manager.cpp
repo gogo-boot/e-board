@@ -68,9 +68,6 @@ bool DeviceModeManager::hasValidConfiguration(bool& hasValidConfig) {
 void DeviceModeManager::runConfigurationMode() {
     ESP_LOGI(TAG, "=== ENTERING CONFIGURATION MODE ===");
 
-    // Set configuration mode flag
-    ConfigManager::setConfigMode(true);
-
     // Phase 2+: WiFi already configured, setup app configuration
     ESP_LOGI(TAG, "=== PHASE 2+ CONFIGURATION MODE ===");
     ESP_LOGI(TAG, "WiFi already configured, setting up app configuration...");
@@ -314,9 +311,6 @@ void DeviceModeManager::updateDepartureFull() {
 bool DeviceModeManager::setupOperationalMode() {
     ESP_LOGI(TAG, "=== ENTERING OPERATIONAL MODE ===");
 
-    // Set operational mode flag
-    ConfigManager::setConfigMode(false);
-
     // Validate RTC config (should already be loaded by system_init)
     // DO NOT reload from NVS here - it would overwrite RTC memory including:
     // - WiFi cache state
@@ -346,9 +340,6 @@ bool DeviceModeManager::setupOperationalMode() {
 }
 
 bool DeviceModeManager::setupConnectivityAndTime() {
-    // Connect to WiFi in station mode
-    MyWiFiManager::reconnectWiFi();
-
     if (MyWiFiManager::isConnected()) {
         // Enhanced time synchronization logic for deep sleep optimization
         bool timeIsSet = TimeManager::isTimeSet();
@@ -454,17 +445,25 @@ ConfigPhase DeviceModeManager::getCurrentPhase() {
         return PHASE_WIFI_SETUP;
     }
 
-    // Phase 2: WiFi configured but app settings missing
-    if (strlen(config.selectedStopId) == 0 ||
-        config.latitude == 0.0 ||
-        config.longitude == 0.0) {
-        ESP_LOGI(TAG, "Configuration Phase: 2 (Application Setup)");
-        return PHASE_APP_SETUP;
+    if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY && config.latitude != 0.0 && config.longitude != 0.0) {
+        ESP_LOGI(TAG, "Configuration Phase: 3 (Complete - Weather Only Mode)");
+        return PHASE_COMPLETE;
     }
 
-    // Phase 3: Everything configured
-    ESP_LOGI(TAG, "Configuration Phase: 3 (Complete)");
-    return PHASE_COMPLETE;
+    if (config.displayMode == DISPLAY_MODE_TRANSPORT_ONLY && strlen(config.selectedStopId) != 0) {
+        ESP_LOGI(TAG, "Configuration Phase: 3 (Complete - Transport Only Mode)");
+        return PHASE_COMPLETE;
+    }
+
+    if (config.displayMode == DISPLAY_MODE_HALF_AND_HALF && strlen(config.selectedStopId) != 0
+        && config.latitude != 0.0
+        && config.longitude != 0.0) {
+        ESP_LOGI(TAG, "Configuration Phase: 3 (Complete - Half-and-Half Mode)");
+        return PHASE_COMPLETE;
+    }
+
+    ESP_LOGI(TAG, "Configuration Phase: 2 (App Setup)");
+    return PHASE_APP_SETUP;
 }
 
 void DeviceModeManager::showPhaseInstructions(ConfigPhase phase) {
