@@ -1,14 +1,10 @@
+#include <Arduino.h>
 #include "display/display_manager.h"
 
-#include <Arduino.h>
-
 #include "config/config_manager.h"
-#include "config/pins.h"
-#include "display/text_utils.h"
 #include "display/transport_display.h"
 #include "display/weather_general_half.h"
 #include "display/weather_general_full.h"
-#include "display/display_shared.h"
 #include "display/qr_code_helper.h"
 #include "util/util.h"
 
@@ -22,7 +18,6 @@
 
 // Include bitmap icons
 #include "icons.h"
-#include "util/battery_manager.h"
 
 // External display instance from main.cpp
 extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
@@ -32,102 +27,12 @@ static const char* TAG = "DISPLAY_MGR";
 
 // ===== STATIC MEMBER VARIABLES =====
 
-bool DisplayManager::initialized = false;
-bool DisplayManager::partialMode = false;
-DisplayMode DisplayManager::currentMode = DisplayMode::HALF_AND_HALF;
-DisplayOrientation DisplayManager::currentOrientation =
-    DisplayOrientation::LANDSCAPE;
-int16_t DisplayManager::screenWidth = 0; // Will be read from display
-int16_t DisplayManager::screenHeight = 0; // Will be read from display
-int16_t DisplayManager::halfWidth = 0; // Will be calculated
-int16_t DisplayManager::halfHeight = 0; // Will be calculated
+int16_t DisplayManager::screenWidth = display.width(); // Will be read from display
+int16_t DisplayManager::screenHeight = display.height(); // Will be read from display
+int16_t DisplayManager::halfWidth = display.width() / 2; // Will be calculated
+int16_t DisplayManager::halfHeight = display.height() / 2; // Will be calculated
 
 // ===== INITIALIZATION METHODS =====
-
-void DisplayManager::initInternal(DisplayOrientation orientation, InitMode mode) {
-    const char* modeStr = (mode == InitMode::FULL_REFRESH)
-                              ? "FULL_REFRESH"
-                              : (mode == InitMode::PARTIAL_UPDATE)
-                              ? "PARTIAL_UPDATE"
-                              : "LEGACY";
-    ESP_LOGI(TAG, "Initializing display - Mode: %s", modeStr);
-
-    // Determine init parameters based on mode
-    bool clearScreen = (mode == InitMode::FULL_REFRESH || mode == InitMode::LEGACY);
-
-    // Init display with appropriate parameters
-    // clearScreen=true: initial=false (clears screen)
-    // clearScreen=false: initial=true (preserves content)
-    display.init(DisplayConstants::SERIAL_BAUD_RATE, !clearScreen,
-                 DisplayConstants::RESET_DURATION_MS, false);
-
-    partialMode = (mode == InitMode::PARTIAL_UPDATE);
-
-    // Initialize U8g2 for UTF-8 font support (German umlauts)
-    u8g2.begin(display);
-    u8g2.setFontMode(1); // Use u8g2 transparent mode
-    u8g2.setFontDirection(0); // Left to right
-    u8g2.setForegroundColor(GxEPD_BLACK);
-    u8g2.setBackgroundColor(GxEPD_WHITE);
-
-    // Set rotation and get dimensions
-    display.setRotation(static_cast<int>(orientation));
-    screenWidth = display.width();
-    screenHeight = display.height();
-
-    // Initialize shared display resources
-    DisplayShared::init(display, u8g2, screenWidth, screenHeight);
-    TextUtils::init(display, u8g2);
-
-    ESP_LOGI(TAG, "Display detected - Physical dimensions: %dx%d",
-             screenWidth, screenHeight);
-
-    // Calculate layout dimensions
-    if (mode == InitMode::LEGACY) {
-        setMode(DisplayMode::HALF_AND_HALF, orientation);
-    } else {
-        calculateDimensions();
-        currentOrientation = orientation;
-    }
-
-    initialized = true;
-
-    ESP_LOGI(TAG, "Display initialized - Orientation: Landscape, Dimensions: %dx%d",
-             screenWidth, screenHeight);
-}
-
-void DisplayManager::init(DisplayOrientation orientation) {
-    initInternal(orientation, InitMode::LEGACY);
-}
-
-void DisplayManager::initForFullRefresh(DisplayOrientation orientation) {
-    initInternal(orientation, InitMode::FULL_REFRESH);
-}
-
-void DisplayManager::initForPartialUpdate(DisplayOrientation orientation) {
-    initInternal(orientation, InitMode::PARTIAL_UPDATE);
-}
-
-// ===== DISPLAY MODE & DIMENSIONS =====
-
-void DisplayManager::setMode(DisplayMode mode, DisplayOrientation orientation) {
-    currentMode = mode;
-    currentOrientation = orientation;
-
-    // Set display rotation
-    display.setRotation(static_cast<int>(orientation));
-
-    // Get dimensions after rotation
-    screenWidth = display.width();
-    screenHeight = display.height();
-
-    calculateDimensions();
-
-    ESP_LOGI(
-        TAG,
-        "Display mode set - Mode: %d, Orientation: Landscape, Dimensions: %dx%d",
-        static_cast<int>(mode), screenWidth, screenHeight);
-}
 
 void DisplayManager::calculateDimensions() {
     // Landscape mode: 800x480 - split WIDTH in half
@@ -138,60 +43,9 @@ void DisplayManager::calculateDimensions() {
              halfWidth, screenHeight, halfWidth, halfWidth, screenHeight);
 }
 
-// ===== HELPER METHODS =====
-
-UpdateRegion DisplayManager::determineUpdateRegion(
-    const WeatherInfo* weather, const DepartureData* departures) {
-    bool hasWeather = weather && weather->hourlyForecastCount > 0;
-    bool hasDepartures = departures && departures->departureCount > 0;
-
-    if (hasWeather && hasDepartures) {
-        return UpdateRegion::BOTH;
-    }
-    if (hasWeather) {
-        return UpdateRegion::WEATHER_ONLY;
-    }
-    if (hasDepartures) {
-        return UpdateRegion::DEPARTURE_ONLY;
-    }
-    return UpdateRegion::NONE;
-}
-
-void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
-                                        const DepartureData* departures) {
-    ESP_LOGI(TAG, "Displaying half and half mode");
-
-    if (!weather && !departures) {
-        ESP_LOGW(TAG, "No data provided for half and half display");
-        return;
-    }
-
-    // Determine what needs to be updated
-    UpdateRegion region = determineUpdateRegion(weather, departures);
-
-    switch (region) {
-    case UpdateRegion::BOTH:
-        displayBothHalves(*weather, *departures);
-        break;
-
-    case UpdateRegion::WEATHER_ONLY:
-        displayWeatherHalfOnly(*weather);
-        break;
-
-    case UpdateRegion::DEPARTURE_ONLY:
-        displayDepartureHalfOnly(*departures);
-        break;
-
-    case UpdateRegion::NONE:
-    default:
-        ESP_LOGW(TAG, "No valid data to display");
-        break;
-    }
-}
-
 // ===== DISPLAY UPDATE METHODS FOR EACH CASE =====
 
-void DisplayManager::displayBothHalves(const WeatherInfo& weather,
+void DisplayManager::refreshBothScreen(const WeatherInfo& weather,
                                        const DepartureData& departures) {
     ESP_LOGI(TAG, "Full update - both halves");
 
@@ -203,31 +57,11 @@ void DisplayManager::displayBothHalves(const WeatherInfo& weather,
         display.fillScreen(GxEPD_WHITE);
 
         // Draw both halves
-        updateWeatherHalf(true, weather);
-        updateDepartureHalf(true, departures);
+        updateWeatherHalf(weather);
+        updateDepartureHalf(departures);
 
         // Draw vertical divider
         displayVerticalLine(contentY);
-    } while (display.nextPage());
-}
-
-void DisplayManager::displayWeatherHalfOnly(const WeatherInfo& weather) {
-    ESP_LOGI(TAG, "Partial update - weather half only");
-
-    display.setPartialWindow(0, 0, halfWidth, screenHeight);
-    do {
-        display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
-        updateWeatherHalf(false, weather);
-    } while (display.nextPage());
-}
-
-void DisplayManager::displayDepartureHalfOnly(const DepartureData& departures) {
-    ESP_LOGI(TAG, "Partial update - departure half only");
-
-    display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
-    do {
-        display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
-        updateDepartureHalf(false, departures);
     } while (display.nextPage());
 }
 
@@ -237,11 +71,9 @@ void DisplayManager::displayVerticalLine(const int16_t contentY) {
 
 // ===== HALF-CONTENT UPDATE METHODS =====
 
-void DisplayManager::updateWeatherHalf(bool isFullUpate,
-                                       const WeatherInfo& weather) {
+void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Updating weather half");
 
-    const int16_t contentY = 0; // Start from top (no header)
     const int16_t contentHeight = screenHeight; // Full height
 
     // Landscape: weather is LEFT half (full height)
@@ -258,8 +90,7 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate,
                                           DisplayConstants::FOOTER_HEIGHT);
 }
 
-void DisplayManager::updateDepartureHalf(bool isFullUpate,
-                                         const DepartureData& departures) {
+void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
     ESP_LOGI(TAG, "Updating departure half");
 
     const int16_t contentY = 0; // Start from top (no header)
@@ -306,75 +137,20 @@ void DisplayManager::hibernate() {
     // Turn off display
     display.hibernate();
 
-    // Reset initialization flag since display is powered down
-    initialized = false;
-    partialMode = false;
-
     // You can add additional power-saving measures here
     ESP_LOGI(TAG, "Display hibernated");
 }
 
-// ===== HIGH-LEVEL REFRESH METHODS =====
-
-void DisplayManager::refreshFullScreen(const WeatherInfo* weather, const DepartureData* departures) {
-    ESP_LOGI(TAG, "=== REFRESH FULL SCREEN (Both Halves) ===");
-
-    // Initialize for full refresh (clears screen)
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Display both halves
-    displayHalfAndHalf(weather, departures);
-}
-
-void DisplayManager::refreshWeatherHalf(const WeatherInfo* weather) {
-    ESP_LOGI(TAG, "=== REFRESH WEATHER HALF (Partial Update) ===");
-
-    if (!weather) {
-        ESP_LOGW(TAG, "No weather data provided");
-        return;
-    }
-
-    // Initialize for partial update (preserves screen)
-    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Display only weather half
-    displayHalfAndHalf(weather, nullptr);
-}
-
-void DisplayManager::refreshDepartureHalf(const DepartureData* departures) {
-    ESP_LOGI(TAG, "=== REFRESH DEPARTURE HALF (Partial Update) ===");
-
-    if (!departures) {
-        ESP_LOGW(TAG, "No departure data provided");
-        return;
-    }
-
-    // Initialize for partial update (preserves screen)
-    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Display only departure half
-    displayHalfAndHalf(nullptr, departures);
-}
 
 void DisplayManager::refreshWeatherFullScreen(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "=== REFRESH WEATHER FULL SCREEN ===");
 
-    // Initialize for full refresh
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::WEATHER_ONLY, DisplayOrientation::LANDSCAPE);
     // Display full screen weather
     displayWeatherFull(weather);
 }
 
 void DisplayManager::refreshDepartureFullScreen(const DepartureData& departures) {
     ESP_LOGI(TAG, "=== REFRESH DEPARTURE FULL SCREEN ===");
-
-    // Initialize for full refresh
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::DEPARTURES_ONLY, DisplayOrientation::LANDSCAPE);
 
     // Display full screen departures
     displayDeparturesFull(departures);
@@ -392,9 +168,6 @@ void DisplayManager::displayPhase1WifiSetup() {
     // Prepare QR code data
     String wifiQR = "WIFI:S:" + apSSID + ";;"; // WiFi connection string (no password)
     String urlQR = "http://10.0.1.1"; // Captive portal URL
-
-    // Initialize for full refresh (clears screen)
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
 
     // Start display update
     display.setFullWindow();
@@ -504,9 +277,6 @@ void DisplayManager::displayPhase2AppSetup() {
     String configURL = "http://" + deviceIP;
     ESP_LOGI(TAG, "Config URL: %s", configURL.c_str());
 
-    // Initialize for full refresh (clears screen)
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
-
     // Start display update
     display.setFullWindow();
     display.firstPage();
@@ -588,16 +358,11 @@ void DisplayManager::displayPhase2AppSetup() {
  * @param iconSize The size of the icon in pixels (16, 24, 32, 48, or 64)
  * @param message Optional error message to display below the icon
  */
-static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, const char* message = nullptr) {
-    // Get screen dimensions
-    int16_t centerX = DisplayManager::isInitialized() ? (display.width() / 2) : (800 / 2);
-    // Default to 800 if not initialized
-    int16_t centerY = DisplayManager::isInitialized() ? (display.height() / 2) : (480 / 2);
-    // Default to 480 if not initialized
-
+void DisplayManager::displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize,
+                                              const char* message = nullptr) {
     // Calculate icon position (centered)
-    int16_t iconX = centerX - (iconSize / 2);
-    int16_t iconY = centerY - (iconSize / 2);
+    int16_t iconX = halfWidth - (iconSize / 2);
+    int16_t iconY = halfHeight - (iconSize / 2);
 
     ESP_LOGI(TAG, "Displaying error icon at center (%d, %d) with size %d", iconX, iconY, iconSize);
 
@@ -618,7 +383,7 @@ static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, con
         u8g2.setBackgroundColor(GxEPD_WHITE);
 
         // Calculate text wrapping
-        int16_t maxWidth = DisplayManager::isInitialized() ? display.width() - 40 : 760; // 20px margin on each side
+        int16_t maxWidth = screenWidth - 40; // 20px margin on each side
         int16_t lineHeight = 20; // Line spacing
         int16_t startY = iconY + iconSize + 30; // Start 30px below icon
 
@@ -644,7 +409,7 @@ static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, con
 
             // Draw the line centered
             int16_t textWidth = u8g2.getUTF8Width(line.c_str());
-            int16_t textX = centerX - (textWidth / 2);
+            int16_t textX = halfWidth - (textWidth / 2);
             u8g2.setCursor(textX, currentY);
             u8g2.print(line);
 
@@ -660,11 +425,6 @@ static void displayCenteredErrorIcon(icon_name_t iconName, uint8_t iconSize, con
 
 void DisplayManager::displayErrorIfWifiConnectionError() {
     ESP_LOGW(TAG, "WiFi not connected - displaying error");
-
-    // Initialize for full refresh if needed
-    if (!initialized) {
-        initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    }
 
     display.setFullWindow();
     display.firstPage();
@@ -686,11 +446,6 @@ void DisplayManager::displayErrorIfWifiConnectionError() {
 
 void DisplayManager::displayErrorIfBatteryLow() {
     ESP_LOGW(TAG, "Battery low - displaying error");
-
-    // Initialize for full refresh if needed
-    if (!initialized) {
-        initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    }
 
     display.setFullWindow();
     display.firstPage();

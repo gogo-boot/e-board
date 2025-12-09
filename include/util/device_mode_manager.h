@@ -1,5 +1,4 @@
 #pragma once
-#include "display/display_manager.h" // Include for DisplayMode and DisplayOrientation
 #include "config/config_struct.h" // Include for ConfigPhase enum
 
 // Forward declarations for data structures

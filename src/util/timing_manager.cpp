@@ -402,12 +402,6 @@ void TimingManager::markWeatherUpdated() {
     ESP_LOGI(TAG, "Weather update timestamp recorded: %u", (uint32_t)now);
 }
 
-void TimingManager::markTransportUpdated() {
-    time_t now = GET_CURRENT_TIME();
-    setLastTransportUpdate((uint32_t)now);
-    ESP_LOGI(TAG, "Transport update timestamp recorded: %u", (uint32_t)now);
-}
-
 bool TimingManager::isTimeForWeatherUpdate() {
     RTCConfigData& config = ConfigManager::getConfig();
     uint32_t lastUpdate = getLastWeatherUpdate();
@@ -420,32 +414,12 @@ bool TimingManager::isTimeForWeatherUpdate() {
     time_t now = GET_CURRENT_TIME();
     uint32_t currentTime = (uint32_t)now;
 
-    uint32_t intervalSeconds = config.weatherInterval * 3600; // Convert hours to seconds
-    bool needUpdate = (currentTime - lastUpdate) >= intervalSeconds;
+    uint8_t tolerance = 20; // seconds
+    uint32_t intervalSeconds = config.weatherInterval * 3600 - tolerance; // Convert hours to seconds
+    bool needUpdate = (currentTime - lastUpdate) > intervalSeconds;
 
     ESP_LOGI(TAG, "Weather: last=%u, now=%u, interval=%u hours, need_update=%s",
              lastUpdate, currentTime, config.weatherInterval, needUpdate ? "YES" : "NO");
-
-    return needUpdate;
-}
-
-bool TimingManager::isTimeForTransportUpdate() {
-    RTCConfigData& config = ConfigManager::getConfig();
-    uint32_t lastUpdate = getLastTransportUpdate();
-
-    if (lastUpdate == 0) {
-        ESP_LOGI(TAG, "No previous transport update - update required");
-        return true; // No previous update
-    }
-
-    time_t now = GET_CURRENT_TIME();
-    uint32_t currentTime = (uint32_t)now;
-
-    uint32_t intervalSeconds = config.transportInterval * 60; // Convert minutes to seconds
-    bool needUpdate = (currentTime - lastUpdate) >= intervalSeconds;
-
-    ESP_LOGI(TAG, "Transport: last=%u, now=%u, interval=%u minutes, need_update=%s",
-             lastUpdate, currentTime, config.transportInterval, needUpdate ? "YES" : "NO");
 
     return needUpdate;
 }
