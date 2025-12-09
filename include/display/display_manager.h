@@ -34,9 +34,7 @@ class DisplayManager {
 public:
     // === High-Level Refresh Methods (Centralized Control) ===
     // These methods handle initialization + display in one call
-    static void refreshFullScreen(const WeatherInfo* weather, const DepartureData* departures);
-    static void refreshWeatherHalf(const WeatherInfo* weather);
-    static void refreshDepartureHalf(const DepartureData* departures);
+    static void refreshBothScreen(const WeatherInfo& weather, const DepartureData& departures);
     static void refreshWeatherFullScreen(const WeatherInfo& weather);
     static void refreshDepartureFullScreen(const DepartureData& departures);
 
@@ -46,8 +44,6 @@ public:
     static void displayPhase2AppSetup(); // Phase 2: Application configuration
 
     // === Legacy Display Methods (for backward compatibility) ===
-    static void displayHalfAndHalf(const WeatherInfo* weather = nullptr,
-                                   const DepartureData* departures = nullptr);
     static void displayWeatherFull(const WeatherInfo& weather);
     static void displayDeparturesFull(const DepartureData& departures);
 
@@ -87,17 +83,13 @@ private:
 
     // Internal helper methods
     static void initInternal(DisplayOrientation orientation, InitMode mode);
-    static UpdateRegion determineUpdateRegion(const WeatherInfo* weather,
-                                              const DepartureData* departures);
 
     // Display update methods for each case
-    static void displayBothHalves(const WeatherInfo& weather, const DepartureData& departures);
-    static void displayWeatherHalfOnly(const WeatherInfo& weather);
-    static void displayDepartureHalfOnly(const DepartureData& departures);
-    static void updateWeatherHalf(bool isFullUpdate, const WeatherInfo& weather);
-    static void updateDepartureHalf(bool isFullUpdate, const DepartureData& departures);
+    static void updateWeatherHalf(const WeatherInfo& weather);
+    static void updateDepartureHalf(const DepartureData& departures);
     static void displayVerticalLine(const int16_t contentY);
     static void calculateDimensions();
+
 
     static String shortenTextToFit(const String& text, int16_t maxWidth);
 };

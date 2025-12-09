@@ -138,60 +138,9 @@ void DisplayManager::calculateDimensions() {
              halfWidth, screenHeight, halfWidth, halfWidth, screenHeight);
 }
 
-// ===== HELPER METHODS =====
-
-UpdateRegion DisplayManager::determineUpdateRegion(
-    const WeatherInfo* weather, const DepartureData* departures) {
-    bool hasWeather = weather && weather->hourlyForecastCount > 0;
-    bool hasDepartures = departures && departures->departureCount > 0;
-
-    if (hasWeather && hasDepartures) {
-        return UpdateRegion::BOTH;
-    }
-    if (hasWeather) {
-        return UpdateRegion::WEATHER_ONLY;
-    }
-    if (hasDepartures) {
-        return UpdateRegion::DEPARTURE_ONLY;
-    }
-    return UpdateRegion::NONE;
-}
-
-void DisplayManager::displayHalfAndHalf(const WeatherInfo* weather,
-                                        const DepartureData* departures) {
-    ESP_LOGI(TAG, "Displaying half and half mode");
-
-    if (!weather && !departures) {
-        ESP_LOGW(TAG, "No data provided for half and half display");
-        return;
-    }
-
-    // Determine what needs to be updated
-    UpdateRegion region = determineUpdateRegion(weather, departures);
-
-    switch (region) {
-    case UpdateRegion::BOTH:
-        displayBothHalves(*weather, *departures);
-        break;
-
-    case UpdateRegion::WEATHER_ONLY:
-        displayWeatherHalfOnly(*weather);
-        break;
-
-    case UpdateRegion::DEPARTURE_ONLY:
-        displayDepartureHalfOnly(*departures);
-        break;
-
-    case UpdateRegion::NONE:
-    default:
-        ESP_LOGW(TAG, "No valid data to display");
-        break;
-    }
-}
-
 // ===== DISPLAY UPDATE METHODS FOR EACH CASE =====
 
-void DisplayManager::displayBothHalves(const WeatherInfo& weather,
+void DisplayManager::refreshBothScreen(const WeatherInfo& weather,
                                        const DepartureData& departures) {
     ESP_LOGI(TAG, "Full update - both halves");
 
@@ -203,31 +152,11 @@ void DisplayManager::displayBothHalves(const WeatherInfo& weather,
         display.fillScreen(GxEPD_WHITE);
 
         // Draw both halves
-        updateWeatherHalf(true, weather);
-        updateDepartureHalf(true, departures);
+        updateWeatherHalf(weather);
+        updateDepartureHalf(departures);
 
         // Draw vertical divider
         displayVerticalLine(contentY);
-    } while (display.nextPage());
-}
-
-void DisplayManager::displayWeatherHalfOnly(const WeatherInfo& weather) {
-    ESP_LOGI(TAG, "Partial update - weather half only");
-
-    display.setPartialWindow(0, 0, halfWidth, screenHeight);
-    do {
-        display.fillRect(0, 0, halfWidth, screenHeight, GxEPD_WHITE);
-        updateWeatherHalf(false, weather);
-    } while (display.nextPage());
-}
-
-void DisplayManager::displayDepartureHalfOnly(const DepartureData& departures) {
-    ESP_LOGI(TAG, "Partial update - departure half only");
-
-    display.setPartialWindow(halfWidth, 0, halfWidth, screenHeight);
-    do {
-        display.fillRect(halfWidth, 0, halfWidth, screenHeight, GxEPD_WHITE);
-        updateDepartureHalf(false, departures);
     } while (display.nextPage());
 }
 
@@ -237,11 +166,9 @@ void DisplayManager::displayVerticalLine(const int16_t contentY) {
 
 // ===== HALF-CONTENT UPDATE METHODS =====
 
-void DisplayManager::updateWeatherHalf(bool isFullUpate,
-                                       const WeatherInfo& weather) {
+void DisplayManager::updateWeatherHalf(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "Updating weather half");
 
-    const int16_t contentY = 0; // Start from top (no header)
     const int16_t contentHeight = screenHeight; // Full height
 
     // Landscape: weather is LEFT half (full height)
@@ -258,8 +185,7 @@ void DisplayManager::updateWeatherHalf(bool isFullUpate,
                                           DisplayConstants::FOOTER_HEIGHT);
 }
 
-void DisplayManager::updateDepartureHalf(bool isFullUpate,
-                                         const DepartureData& departures) {
+void DisplayManager::updateDepartureHalf(const DepartureData& departures) {
     ESP_LOGI(TAG, "Updating departure half");
 
     const int16_t contentY = 0; // Start from top (no header)
@@ -314,50 +240,6 @@ void DisplayManager::hibernate() {
     ESP_LOGI(TAG, "Display hibernated");
 }
 
-// ===== HIGH-LEVEL REFRESH METHODS =====
-
-void DisplayManager::refreshFullScreen(const WeatherInfo* weather, const DepartureData* departures) {
-    ESP_LOGI(TAG, "=== REFRESH FULL SCREEN (Both Halves) ===");
-
-    // Initialize for full refresh (clears screen)
-    initForFullRefresh(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Display both halves
-    displayHalfAndHalf(weather, departures);
-}
-
-void DisplayManager::refreshWeatherHalf(const WeatherInfo* weather) {
-    ESP_LOGI(TAG, "=== REFRESH WEATHER HALF (Partial Update) ===");
-
-    if (!weather) {
-        ESP_LOGW(TAG, "No weather data provided");
-        return;
-    }
-
-    // Initialize for partial update (preserves screen)
-    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Display only weather half
-    displayHalfAndHalf(weather, nullptr);
-}
-
-void DisplayManager::refreshDepartureHalf(const DepartureData* departures) {
-    ESP_LOGI(TAG, "=== REFRESH DEPARTURE HALF (Partial Update) ===");
-
-    if (!departures) {
-        ESP_LOGW(TAG, "No departure data provided");
-        return;
-    }
-
-    // Initialize for partial update (preserves screen)
-    initForPartialUpdate(DisplayOrientation::LANDSCAPE);
-    setMode(DisplayMode::HALF_AND_HALF, DisplayOrientation::LANDSCAPE);
-
-    // Display only departure half
-    displayHalfAndHalf(nullptr, departures);
-}
 
 void DisplayManager::refreshWeatherFullScreen(const WeatherInfo& weather) {
     ESP_LOGI(TAG, "=== REFRESH WEATHER FULL SCREEN ===");
