@@ -19,7 +19,6 @@ public:
 
     // Common operational mode functions
     static bool setupConnectivityAndTime();
-    static void enterOperationalSleep();
 
     // Helper functions for data fetching
     static bool fetchWeatherData(WeatherInfo& weather);

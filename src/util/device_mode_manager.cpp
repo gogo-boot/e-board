@@ -188,19 +188,6 @@ bool DeviceModeManager::setupConnectivityAndTime() {
     }
 }
 
-
-void DeviceModeManager::enterOperationalSleep() {
-    // Hibernate display to save power
-    DisplayManager::hibernate();
-
-    // Calculate sleep time using TimingManager
-    // (TimingManager now handles temporary mode logic)
-    uint64_t sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
-
-    // On other boards, use regular timer-only deep sleep
-    enterDeepSleep(sleepTimeSeconds);
-}
-
 // ===== HELPER FUNCTIONS FOR DATA FETCHING =====
 
 bool DeviceModeManager::fetchWeatherData(WeatherInfo& weather) {

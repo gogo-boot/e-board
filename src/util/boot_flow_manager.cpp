@@ -122,9 +122,6 @@ namespace BootFlowManager {
                  displayMode, buttonMode, config.displayMode);
 
         runOperationalMode(displayMode);
-
-        // After operational mode completes, enter deep sleep
-        DeviceModeManager::enterOperationalSleep();
     }
 } // namespace BootFlowManager
 
