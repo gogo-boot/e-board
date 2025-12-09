@@ -39,11 +39,11 @@ struct WeatherInfo {
 
     // Hourly forecast
     WeatherHoulyForecast hourlyForecast[13]; // 1hour past and 12-hour forecast
-    int hourlyForecastCount = 0;
+    int hourlyForecastCount;
 
     // Daily forecast
     WeatherDailyForecast dailyForecast[7]; // 14-day forecast
-    int dailyForecastCount = 0;
+    int dailyForecastCount;
 };
 
 bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather);
