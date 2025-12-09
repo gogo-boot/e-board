@@ -27,6 +27,7 @@ extern WebServer server;
 
 ConfigManager& configMgr = ConfigManager::getInstance();
 RTCConfigData& config = ConfigManager::getConfig();
+RTC_DATA_ATTR WeatherInfo weather;
 
 void DeviceModeManager::runConfigurationMode() {
     ESP_LOGI(TAG, "=== ENTERING CONFIGURATION MODE ===");
@@ -84,14 +85,12 @@ void DeviceModeManager::showWeatherDeparture() {
     ESP_LOGI(TAG, "Update requirements - Weather: %s", needsWeatherUpdate ? "YES" : "NO");
 
     DepartureData depart;
-    WeatherInfo weather;
-
 
     // Path: Update both weather and departure - FULL REFRESH
     ESP_LOGI(TAG, "Updating both weather and departure data");
 
-    // if (needsWeatherUpdate && fetchWeatherData(weather)) {
-    if (fetchWeatherData(weather)) {
+    if (needsWeatherUpdate && getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
+        printWeatherInfo(weather);
         TimingManager::markWeatherUpdated();
     }
     fetchTransportData(depart);
@@ -103,24 +102,21 @@ void DeviceModeManager::updateWeatherFull() {
     // For weather-only mode, only check weather updates
     bool needsWeatherUpdate = TimingManager::isTimeForWeatherUpdate();
 
-    // Mode-specific data fetching and display
-    WeatherInfo weather;
-
     // Fetch weather data only if needed
     if (needsWeatherUpdate) {
         // Use RTC config which persists across deep sleep
         ESP_LOGI(TAG, "Fetching weather for location: %s (%.6f, %.6f)",
                  config.cityName, config.latitude, config.longitude);
         if (getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
-            printWeatherInfo(weather);
             TimingManager::markWeatherUpdated();
-            DisplayManager::refreshWeatherFullScreen(weather);
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
     } else {
-        ESP_LOGI(TAG, "Skipping weather update - not due yet");
+        ESP_LOGI(TAG, "use cached Weather data, no data fetch needed");
     }
+    printWeatherInfo(weather);
+    DisplayManager::refreshWeatherFullScreen(weather);
 }
 
 void DeviceModeManager::updateDepartureFull() {
@@ -166,7 +162,7 @@ bool DeviceModeManager::setupConnectivityAndTime() {
             ESP_LOGI(TAG, "Time since last sync: %lu ms (%s)",
                      timeSinceSync, TimeManager::formatDurationInHours(timeSinceSync).c_str());
 
-            if (TimeManager::setupNTPTimeWithRetry(2)) {
+            if (TimeManager::setupNTPTimeWithRetry(3)) {
                 ESP_LOGI(TAG, "Periodic NTP sync successful");
             } else {
                 ESP_LOGW(TAG, "Periodic NTP sync failed - continuing with RTC time");
@@ -188,33 +184,7 @@ bool DeviceModeManager::setupConnectivityAndTime() {
     }
 }
 
-
-void DeviceModeManager::enterOperationalSleep() {
-    // Hibernate display to save power
-    DisplayManager::hibernate();
-
-    // Calculate sleep time using TimingManager
-    // (TimingManager now handles temporary mode logic)
-    uint64_t sleepTimeSeconds = TimingManager::getNextSleepDurationSeconds();
-
-    // On other boards, use regular timer-only deep sleep
-    enterDeepSleep(sleepTimeSeconds);
-}
-
 // ===== HELPER FUNCTIONS FOR DATA FETCHING =====
-
-bool DeviceModeManager::fetchWeatherData(WeatherInfo& weather) {
-    // Use RTC config which persists across deep sleep
-    ESP_LOGI(TAG, "Fetching weather for location: %s (%.6f, %.6f)",
-             config.cityName, config.latitude, config.longitude);
-    if (getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
-        printWeatherInfo(weather);
-        return true;
-    } else {
-        ESP_LOGE(TAG, "Failed to get weather information");
-        return false;
-    }
-}
 
 bool DeviceModeManager::fetchTransportData(DepartureData& depart) {
     String stopIdToUse = strlen(config.selectedStopId) > 0 ? String(config.selectedStopId) : "";

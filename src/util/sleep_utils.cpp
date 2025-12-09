@@ -40,12 +40,6 @@ void enterDeepSleep(uint64_t sleepTimeSeconds) {
         return;
     }
 
-    // Setup time synchronization if needed
-    if (!TimeManager::isTimeSet()) {
-        ESP_LOGI(TAG, "Time not set, synchronizing with NTP...");
-        TimeManager::setupNTPTime();
-    }
-
     time_t now;
     time(&now);
     tm timeInfo;

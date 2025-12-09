@@ -97,7 +97,7 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
             // Parse current weather
             if (doc.containsKey("current")) {
                 JsonObject current = doc["current"];
-                weather.time = current["time"].as<String>();
+                safeStringCopy(weather.time, current["time"].as<String>(), TIME_STRING_LENGTH);
                 weather.temperature = current["temperature_2m"].as<float>();
                 weather.precipitation = current["precipitation"].as<float>();
                 weather.weatherCode = current["weather_code"].as<int>();
@@ -116,7 +116,7 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
 
                 int count = 0;
                 for (size_t i = 0; i < times.size() && count < 13; ++i) {
-                    weather.hourlyForecast[count].time = times[i].as<String>();
+                    safeStringCopy(weather.hourlyForecast[count].time, times[i].as<String>(), TIME_STRING_LENGTH);
                     weather.hourlyForecast[count].temperature = temps[i].as<float>();
                     weather.hourlyForecast[count].weatherCode = wcode[i].as<int>();
                     weather.hourlyForecast[count].rainChance = rainProb[i].as<int>();
@@ -151,20 +151,19 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
                 JsonArray wind_gusts_10m_max = daily["wind_gusts_10m_max"];
                 JsonArray windDirection = daily["wind_direction_10m_dominant"];
 
-                // Extract time from ISO format (e.g., "2025-07-13T04:59") to "04:59"
-                auto extractTimeFromISO = [](const String& isoDateTime) -> String {
-                    int tIndex = isoDateTime.indexOf('T');
-                    if (tIndex > 0) {
-                        return isoDateTime.substring(tIndex + 1, tIndex + 6);
-                    }
-                    return isoDateTime;
-                };
+
                 int count = 0;
                 // Max 14-day forecast
                 for (size_t i = 0; i < times.size() && count < 14; ++i) {
-                    weather.dailyForecast[count].time = times[i].as<String>();
-                    weather.dailyForecast[count].sunset = extractTimeFromISO(String(sunset[i].as<String>()));
-                    weather.dailyForecast[count].sunrise = extractTimeFromISO(String(sunrise[i].as<String>()));
+                    safeStringCopy(weather.dailyForecast[count].time, times[i].as<String>(), TIME_STRING_LENGTH);
+
+                    // Extract sunrise/sunset times
+                    extractTimeFromISO(weather.dailyForecast[count].sunrise,
+                                       sunrise[i].as<String>(), TIME_SHORT_LENGTH);
+                    extractTimeFromISO(weather.dailyForecast[count].sunset,
+                                       sunset[i].as<String>(),
+                                       TIME_SHORT_LENGTH);
+
                     weather.dailyForecast[count].uvIndex = uv_index[i].as<float>();
 
                     weather.dailyForecast[count].sunshineDuration = sunshine[i].as<float>();
@@ -192,4 +191,26 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather) {
     }
     http.end();
     return false;
+}
+
+// Safe string copy with size checking
+void safeStringCopy(char* dest, const String& src, size_t destSize) {
+    size_t len = src.length();
+    if (len >= destSize) {
+        len = destSize - 1; // Leave room for null terminator
+    }
+    strncpy(dest, src.c_str(), len);
+    dest[len] = '\0'; // Ensure null termination
+}
+
+// Extract time from ISO format ("2025-08-25T22:00" -> "22:00")
+void extractTimeFromISO(char* dest, const String& isoDateTime, size_t destSize) {
+    int tIndex = isoDateTime.indexOf('T');
+    if (tIndex > 0 && (size_t)(isoDateTime.length() - tIndex - 1) < destSize) {
+        String timeOnly = isoDateTime.substring(tIndex + 1, tIndex + 6);
+        safeStringCopy(dest, timeOnly, destSize);
+    } else {
+        strncpy(dest, "00:00", destSize - 1);
+        dest[destSize - 1] = '\0';
+    }
 }

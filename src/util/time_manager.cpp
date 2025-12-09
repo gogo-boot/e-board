@@ -4,46 +4,6 @@
 
 static const char* TAG = "TIME_MGR";
 
-void TimeManager::setupNTPTime() {
-    ESP_LOGI(TAG, "Setting up NTP time with German timezone");
-
-    // For ESP32, use configTzTime instead of configTime + setenv
-    // German timezone: UTC+1 (CET) in winter, UTC+2 (CEST) in summer
-    // Format: timezone_offset_seconds, daylight_offset_seconds, ntp_server
-    configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.nist.gov");
-
-    ESP_LOGI(TAG, "Waiting for NTP time sync (German timezone)");
-    time_t now = time(nullptr);
-    int retry = 0;
-    const int retry_count = 30;
-    while (now < 8 * 3600 * 2 && retry < retry_count) {
-        // year < 1971
-        delay(500);
-        ESP_LOGD(TAG, ".");
-        now = time(nullptr);
-        retry++;
-    }
-
-    if (retry >= retry_count) {
-        ESP_LOGW(TAG, "Failed to sync NTP time after %d attempts", retry_count);
-        return;
-    }
-
-    // Verify timezone is applied correctly
-    tm timeinfo;
-    localtime_r(&now, &timeinfo);
-    ESP_LOGI(TAG, "NTP time set (German time): %04d-%02d-%02d %02d:%02d:%02d",
-             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-             timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
-    // Also log UTC time for comparison
-    tm utc_timeinfo;
-    gmtime_r(&now, &utc_timeinfo);
-    ESP_LOGI(TAG, "UTC time: %04d-%02d-%02d %02d:%02d:%02d",
-             utc_timeinfo.tm_year + 1900, utc_timeinfo.tm_mon + 1, utc_timeinfo.tm_mday,
-             utc_timeinfo.tm_hour, utc_timeinfo.tm_min, utc_timeinfo.tm_sec);
-}
-
 String TimeManager::getGermanDateTimeString() {
     tm timeinfo;
     if (!getCurrentLocalTime(timeinfo)) {
