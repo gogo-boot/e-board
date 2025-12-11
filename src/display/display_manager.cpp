@@ -37,8 +37,8 @@ void DisplayManager::calculateDimensions() {
 
 // ===== DISPLAY UPDATE METHODS FOR EACH CASE =====
 
-void DisplayManager::refreshBothScreen(const WeatherInfo& weather,
-                                       const DepartureData& departures) {
+void DisplayManager::displayHalfNHalf(const WeatherInfo& weather,
+                                      const DepartureData& departures) {
     ESP_LOGI(TAG, "Full update - both halves");
 
     const int16_t contentY = 0; // Start from top (no header)
@@ -133,20 +133,6 @@ void DisplayManager::hibernate() {
     ESP_LOGI(TAG, "Display hibernated");
 }
 
-
-void DisplayManager::refreshWeatherFullScreen(const WeatherInfo& weather) {
-    ESP_LOGI(TAG, "=== REFRESH WEATHER FULL SCREEN ===");
-
-    // Display full screen weather
-    displayWeatherFull(weather);
-}
-
-void DisplayManager::refreshDepartureFullScreen(const DepartureData& departures) {
-    ESP_LOGI(TAG, "=== REFRESH DEPARTURE FULL SCREEN ===");
-
-    // Display full screen departures
-    displayDeparturesFull(departures);
-}
 
 // ===== CONFIGURATION MODE DISPLAY =====
 

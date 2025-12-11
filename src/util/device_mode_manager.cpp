@@ -95,7 +95,7 @@ void DeviceModeManager::showWeatherDeparture() {
     }
     fetchTransportData(depart);
 
-    DisplayManager::refreshBothScreen(weather, depart);
+    DisplayManager::displayHalfNHalf(weather, depart);
 }
 
 void DeviceModeManager::updateWeatherFull() {
@@ -116,7 +116,7 @@ void DeviceModeManager::updateWeatherFull() {
         ESP_LOGI(TAG, "use cached Weather data, no data fetch needed");
     }
     printWeatherInfo(weather);
-    DisplayManager::refreshWeatherFullScreen(weather);
+    DisplayManager::displayWeatherFull(weather);
 }
 
 void DeviceModeManager::updateDepartureFull() {
@@ -132,7 +132,7 @@ void DeviceModeManager::updateDepartureFull() {
 
     if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
         printTransportInfo(depart);
-        DisplayManager::refreshDepartureFullScreen(depart);
+        DisplayManager::displayDeparturesFull(depart);
     } else {
         ESP_LOGE(TAG, "Failed to get departure information from RMV.");
     }
