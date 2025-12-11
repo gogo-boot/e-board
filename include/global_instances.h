@@ -1,5 +1,4 @@
-#ifndef GLOBAL_INSTANCES_H
-#define GLOBAL_INSTANCES_H
+#pragma once
 
 #include <WebServer.h>
 #include <GxEPD2_BW.h>
@@ -21,5 +20,4 @@ extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 // RTC memory for persistent state across deep sleep
 extern RTC_DATA_ATTR unsigned long wakeupCount;
 
-#endif // GLOBAL_INSTANCES_H
 
