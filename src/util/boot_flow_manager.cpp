@@ -2,10 +2,9 @@
 #include "util/device_mode_manager.h"
 #include "util/wifi_manager.h"
 #include "config/config_manager.h"
-#include <WebServer.h>
-#include <U8g2_for_Adafruit_GFX.h>
 
 #include "util/timing_manager.h"
+#include "global_instances.h"
 
 static const char* TAG = "BOOT_FLOW";
 

@@ -1,12 +1,6 @@
 #include "util/transport_print.h"
 #include <Arduino.h>
-
-// Include e-paper display libraries
-#include <GxEPD2_BW.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
-
-// External display instance from main.cpp
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
+#include "global_instances.h"
 
 static const char* TAG = "TRANSPORT";
 

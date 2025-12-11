@@ -5,15 +5,10 @@
 #include <esp_log.h>
 #include <icons.h>
 #include <WiFi.h>
-
-#include "GxEPD2_BW.h"
-#include "U8g2_for_Adafruit_GFX.h"
+#include "global_instances.h"
 
 static const char* TAG = "COMMON_FOOTER";
 
-// External display instance from main.cpp
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 void CommonFooter::drawFooter(int16_t x, int16_t y, int16_t h, uint8_t elements) {
     TextUtils::setFont10px_margin12px(); // Small font for footer

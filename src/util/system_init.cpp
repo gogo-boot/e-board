@@ -5,20 +5,11 @@
 #include <esp_sleep.h>
 #include <nvs_flash.h>
 
-// Include e-paper display libraries
-#include <GxEPD2_BW.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
-
-// Font includes for German character support
-#include <U8g2_for_Adafruit_GFX.h>
-
 #include "display/display_manager.h"
+#include "global_instances.h"
 
 static const char* TAG = "SYSTEM_INIT";
 
-// External display instance from main.cpp
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 namespace SystemInit {
     void initSerialConnector() {

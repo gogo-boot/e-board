@@ -30,17 +30,12 @@
 #define ARDUINOJSON_DECODE_NESTING_LIMIT 1000
 
 #include <Arduino.h>
-#include <WebServer.h>
 
 #include "activity/activity_manager.h"
 // Configuration
 #include "config/config_manager.h"
 #include "config/pins.h"
-
-// Display
-#include <GxEPD2_BW.h>
-#include <U8g2_for_Adafruit_GFX.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
+#include "global_instances.h"
 
 static const char* TAG = "MAIN";
 

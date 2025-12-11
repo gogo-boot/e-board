@@ -1,7 +1,6 @@
 #include "util/device_mode_manager.h"
 
 #include <Arduino.h>
-#include <WebServer.h>
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
 
@@ -14,6 +13,8 @@
 #include "config/config_struct.h"
 #include "display/display_manager.h"
 #include "util/transport_print.h"
+#include "global_instances.h"
+
 #include "util/sleep_utils.h"
 #include "util/time_manager.h"
 #include "util/timing_manager.h"
@@ -23,7 +24,6 @@
 static const char* TAG = "DEVICE_MODE";
 
 // Global variables needed for operation
-extern WebServer server;
 
 ConfigManager& configMgr = ConfigManager::getInstance();
 RTCConfigData& config = ConfigManager::getConfig();

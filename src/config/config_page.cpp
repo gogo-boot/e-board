@@ -1,7 +1,6 @@
 #include "config/config_page.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
-#include <WebServer.h>
 #include <HTTPClient.h>
 #include <StreamUtils.h>
 #include "config/config_manager.h"
@@ -9,6 +8,7 @@
 #include "util/util.h"
 #include "sec/aes_crypto.h"
 #include "util/sleep_utils.h"
+#include "global_instances.h"
 
 static const char* TAG = "CONFIG";
 

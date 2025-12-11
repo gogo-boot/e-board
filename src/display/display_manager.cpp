@@ -8,20 +8,12 @@
 #include "display/qr_code_helper.h"
 #include "util/util.h"
 
-// Include e-paper display libraries
-#include <gdey/GxEPD2_750_GDEY075T7.h>
-
-// Font includes for German character support
-#include <U8g2_for_Adafruit_GFX.h>
-
 #include "WiFiManager.h"
 
 // Include bitmap icons
 #include "icons.h"
 
-// External display instance from main.cpp
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
+#include "global_instances.h"
 
 static const char* TAG = "DISPLAY_MGR";
 

@@ -1,13 +1,8 @@
 #include "display/text_utils.h"
-#include <U8g2_for_Adafruit_GFX.h>
-#include <GxEPD2_BW.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
+#include "global_instances.h"
 
 static const char* TAG = "TEXT_UTILS";
 
-// Static member initialization
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 // Font functions with descriptive names including pixel size and margin
 void TextUtils::setFont8px_margin10px() {
