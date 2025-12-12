@@ -27,6 +27,7 @@ public:
 
     // Update last refresh timestamps
     static void markWeatherUpdated();
+    static void markTransportUpdated();
 
     // Check if it's time for a specific update type
     static bool isTimeForWeatherUpdate();

@@ -94,6 +94,7 @@ void DeviceModeManager::showWeatherDeparture() {
         TimingManager::markWeatherUpdated();
     }
     fetchTransportData(depart);
+    TimingManager::markTransportUpdated();
 
     DisplayManager::displayHalfNHalf(weather, depart);
 }
@@ -132,6 +133,7 @@ void DeviceModeManager::updateDepartureFull() {
 
     if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
         printTransportInfo(depart);
+        TimingManager::markTransportUpdated();
         DisplayManager::displayDeparturesFull(depart);
     } else {
         ESP_LOGE(TAG, "Failed to get departure information from RMV.");

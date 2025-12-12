@@ -41,7 +41,7 @@ uint32_t TimingManager::calculateNextTransportUpdate(uint32_t currentTimeSeconds
     uint32_t lastUpdate = getLastTransportUpdate();
     uint32_t intervalSeconds = config.transportInterval * 60; // minutes to seconds
 
-    uint32_t nextUpdate = (lastUpdate == 0) ? currentTimeSeconds : lastUpdate + intervalSeconds;
+    uint32_t nextUpdate = (lastUpdate == 0) ? currentTimeSeconds + intervalSeconds : lastUpdate + intervalSeconds;
 
     ESP_LOGI(TAG, "Departure interval: %u minutes (%u seconds), Next departure update: %u",
              config.transportInterval, intervalSeconds, nextUpdate);
@@ -400,6 +400,12 @@ void TimingManager::markWeatherUpdated() {
     time_t now = GET_CURRENT_TIME();
     setLastWeatherUpdate((uint32_t)now);
     ESP_LOGI(TAG, "Weather update timestamp recorded: %u", (uint32_t)now);
+}
+
+void TimingManager::markTransportUpdated() {
+    time_t now = GET_CURRENT_TIME();
+    setLastTransportUpdate((uint32_t)now);
+    ESP_LOGI(TAG, "Tranport update timestamp recorded: %u", (uint32_t)now);
 }
 
 bool TimingManager::isTimeForWeatherUpdate() {
