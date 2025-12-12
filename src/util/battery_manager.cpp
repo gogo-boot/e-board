@@ -1,4 +1,6 @@
 #include "util/battery_manager.h"
+
+#include "build_config.h"
 #include "config/pins.h"
 
 #ifdef BOARD_ESP32_S3
@@ -9,112 +11,107 @@ static const char* TAG = "BATTERY_MGR";
 
 
 void BatteryManager::init() {
-#ifdef BOARD_ESP32_S3
-    ESP_LOGI(TAG, "Initializing battery manager for TRMNL OG DIY Kit (ESP32-S3)");
+    if (SHOW_BATTERY_STATUS) {
+        ESP_LOGI(TAG, "Initializing battery manager for TRMNL OG DIY Kit (ESP32-S3)");
 
-    // Configure ADC enable pin (power control for battery ADC circuit)
-    pinMode(Pins::ADC_EN, OUTPUT);
-    digitalWrite(Pins::ADC_EN, LOW); // Start with ADC disabled to save power
+        // Configure ADC enable pin (power control for battery ADC circuit)
+        pinMode(Pins::ADC_EN, OUTPUT);
+        digitalWrite(Pins::ADC_EN, LOW); // Start with ADC disabled to save power
 
-    // Configure ADC pin for battery voltage reading
-    pinMode(Pins::BATTERY_ADC, INPUT);
-    analogReadResolution(12); // 12-bit resolution (0-4095)
-    analogSetPinAttenuation(Pins::BATTERY_ADC, ADC_11db); // Full range: 0-3.6V
-    batteryInitialized = true;
-#else
-    ESP_LOGW(TAG, "Battery monitoring not available on this board");
-#endif
+        // Configure ADC pin for battery voltage reading
+        pinMode(Pins::BATTERY_ADC, INPUT);
+        analogReadResolution(12); // 12-bit resolution (0-4095)
+        analogSetPinAttenuation(Pins::BATTERY_ADC, ADC_11db); // Full range: 0-3.6V
+        batteryInitialized = true;
+    } else {
+        ESP_LOGW(TAG, "Battery monitoring not available on this board");
+    }
 }
 
 bool BatteryManager::isAvailable() {
-#ifdef BOARD_ESP32_S3
-    return batteryInitialized;
-#else
+    if (SHOW_BATTERY_STATUS) {
+        return batteryInitialized;
+    }
     return false;
-#endif
 }
 
 float BatteryManager::getBatteryVoltage() {
-#ifdef BOARD_ESP32_S3
-    if (!batteryInitialized) {
-        ESP_LOGW(TAG, "Battery manager not initialized");
-        return -1.0f;
+    if (SHOW_BATTERY_STATUS) {
+        if (!batteryInitialized) {
+            ESP_LOGW(TAG, "Battery manager not initialized");
+            return -1.0f;
+        }
+
+        // Enable ADC circuit
+        digitalWrite(Pins::ADC_EN, HIGH);
+        delay(10); // Short delay to stabilize
+
+        // Read ADC value multiple times and average to reduce noise
+        uint32_t adcSum = 0;
+        for (int i = 0; i < BATTERY_SAMPLES; i++) {
+            adcSum += analogRead(Pins::BATTERY_ADC);
+            delayMicroseconds(100); // Small delay between readings
+        }
+        float adcValue = adcSum / (float)BATTERY_SAMPLES;
+
+        // Disable ADC circuit to save power
+        digitalWrite(Pins::ADC_EN, LOW);
+
+        // Convert ADC value to voltage
+        // Formula from OG DIY Kit: (ADC / 4095.0) * 3.6V * 2.0 (divider) * calibration
+        float voltage = (adcValue / ADC_MAX_VALUE) * ADC_REFERENCE_VOLTAGE * VOLTAGE_DIVIDER_RATIO * CALIBRATION_FACTOR;
+
+        ESP_LOGD(TAG, "Battery ADC: %.0f, Voltage: %.2fV", adcValue, voltage);
+
+        return voltage;
     }
-
-    // Enable ADC circuit
-    digitalWrite(Pins::ADC_EN, HIGH);
-    delay(10); // Short delay to stabilize
-
-    // Read ADC value multiple times and average to reduce noise
-    uint32_t adcSum = 0;
-    for (int i = 0; i < BATTERY_SAMPLES; i++) {
-        adcSum += analogRead(Pins::BATTERY_ADC);
-        delayMicroseconds(100); // Small delay between readings
-    }
-    float adcValue = adcSum / (float)BATTERY_SAMPLES;
-
-    // Disable ADC circuit to save power
-    digitalWrite(Pins::ADC_EN, LOW);
-
-    // Convert ADC value to voltage
-    // Formula from OG DIY Kit: (ADC / 4095.0) * 3.6V * 2.0 (divider) * calibration
-    float voltage = (adcValue / ADC_MAX_VALUE) * ADC_REFERENCE_VOLTAGE * VOLTAGE_DIVIDER_RATIO * CALIBRATION_FACTOR;
-
-    ESP_LOGD(TAG, "Battery ADC: %.0f, Voltage: %.2fV", adcValue, voltage);
-
-    return voltage;
-#else
     return -1.0f;
-#endif
 }
 
 int BatteryManager::getBatteryPercentage() {
-#ifdef BOARD_ESP32_S3
-    float voltage = getBatteryVoltage();
-    if (voltage < 0) {
-        return -1;
-    }
+    if (SHOW_BATTERY_STATUS) {
+        float voltage = getBatteryVoltage();
+        if (voltage < 0) {
+            return -1;
+        }
 
-    int percentage = (int)(voltageToPercentage(voltage));
-    ESP_LOGI(TAG, "Battery initialized - Voltage: %.2fV, Percentage: %d%%", voltage, percentage);
-    return percentage;
-#else
+        int percentage = (int)(voltageToPercentage(voltage));
+        ESP_LOGI(TAG, "Battery initialized - Voltage: %.2fV, Percentage: %d%%", voltage, percentage);
+        return percentage;
+    }
     return -1;
-#endif
 }
 
 int BatteryManager::getBatteryIconLevel() {
-#ifdef BOARD_ESP32_S3
-    int percentage = getBatteryPercentage();
-    if (percentage < 0) {
-        return 0; // Not available
-    }
+    if (SHOW_BATTERY_STATUS) {
+        int percentage = getBatteryPercentage();
+        if (percentage < 0) {
+            return 0; // Not available
+        }
 
-    // Map percentage to icon level (1-5)
-    if (percentage >= 80) return 5; // Battery_5: 80-100%
-    if (percentage >= 60) return 4; // Battery_4: 60-79%
-    if (percentage >= 40) return 3; // Battery_3: 40-59%
-    if (percentage >= 20) return 2; // Battery_2: 20-39%
-    return 1; // Battery_1: 0-19%
-#else
+        // Map percentage to icon level (1-5)
+        if (percentage >= 80) return 5; // Battery_5: 80-100%
+        if (percentage >= 60) return 4; // Battery_4: 60-79%
+        if (percentage >= 40) return 3; // Battery_3: 40-59%
+        if (percentage >= 20) return 2; // Battery_2: 20-39%
+        return 1; // Battery_1: 0-19%
+    }
     return 0;
-#endif
 }
 
 bool BatteryManager::isCharging() {
-#ifdef BOARD_ESP32_S3
-    // Check if battery voltage is above fully charged threshold
-    // This is a simple heuristic - voltage > 4.2V indicates charging
-    float voltage = getBatteryVoltage();
-    if (voltage < 0) {
-        return false;
-    }
+    if (SHOW_BATTERY_STATUS) {
+        // Check if battery voltage is above fully charged threshold
+        // This is a simple heuristic - voltage > 4.2V indicates charging
+        float voltage = getBatteryVoltage();
+        if (voltage < 0) {
+            return false;
+        }
 
-    // If voltage is significantly above max, likely charging
-    return voltage > (BATTERY_VOLTAGE_MAX + 0.1f);
-#else
+        // If voltage is significantly above max, likely charging
+        return voltage > (BATTERY_VOLTAGE_MAX + 0.1f);
+    }
     return false;
-#endif
 }
 
 float BatteryManager::voltageToPercentage(float voltage) {

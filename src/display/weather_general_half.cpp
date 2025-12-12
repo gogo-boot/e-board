@@ -6,6 +6,7 @@
 #include "config/config_manager.h"
 #include "util/weather_util.h"
 #include "display/common_footer.h"
+#include "global_instances.h"
 
 static const char* TAG = "WEATHER_DISPLAY";
 
@@ -25,7 +26,6 @@ namespace WeatherDisplayConstants {
     constexpr int16_t WEATHER_ICON_SIZE = 48;
 }
 
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
 
 using namespace WeatherDisplayConstants;
 

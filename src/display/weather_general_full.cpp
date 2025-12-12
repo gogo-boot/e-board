@@ -4,12 +4,11 @@
 #include <esp_log.h>
 #include <icons.h>
 
-#include "GxEPD2_BW.h"
-#include "U8g2_for_Adafruit_GFX.h"
 #include "config/config_manager.h"
 #include "util/weather_util.h"
 #include "util/date_util.h"
 #include "display/common_footer.h"
+#include "global_instances.h"
 
 static const char* TAG = "WEATHER_DISPLAY";
 
@@ -37,9 +36,6 @@ namespace WeatherFullDisplayConstants {
     constexpr int16_t TEMP_TEXT_Y = 70;
 }
 
-// External display instance from main.cpp
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
 
 using namespace WeatherFullDisplayConstants;
 

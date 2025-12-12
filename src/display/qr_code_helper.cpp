@@ -3,16 +3,7 @@
 #include <Arduino.h>
 #include <esp_log.h>
 #include <qrcode.h>
-
-// Include e-paper display libraries
-#include <GxEPD2_BW.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
-
-// Font support
-#include <U8g2_for_Adafruit_GFX.h>
-
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
+#include "global_instances.h"
 
 static const char* TAG = "QR_HELPER";
 

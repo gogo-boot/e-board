@@ -2,15 +2,7 @@
 #include "display/text_utils.h"
 #include <esp_log.h>
 #include <math.h>
-
-// Include e-paper display libraries
-#include <GxEPD2_BW.h>
-#include <gdey/GxEPD2_750_GDEY075T7.h>
-#include <U8g2_for_Adafruit_GFX.h>
-
-// External display instances
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
+#include "global_instances.h"
 
 static const char* TAG = "WEATHER_GRAPH";
 

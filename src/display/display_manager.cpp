@@ -8,20 +8,12 @@
 #include "display/qr_code_helper.h"
 #include "util/util.h"
 
-// Include e-paper display libraries
-#include <gdey/GxEPD2_750_GDEY075T7.h>
-
-// Font includes for German character support
-#include <U8g2_for_Adafruit_GFX.h>
-
 #include "WiFiManager.h"
 
 // Include bitmap icons
 #include "icons.h"
 
-// External display instance from main.cpp
-extern GxEPD2_BW<GxEPD2_750_GDEY075T7, GxEPD2_750_GDEY075T7::HEIGHT> display;
-extern U8G2_FOR_ADAFRUIT_GFX u8g2;
+#include "global_instances.h"
 
 static const char* TAG = "DISPLAY_MGR";
 
@@ -45,8 +37,8 @@ void DisplayManager::calculateDimensions() {
 
 // ===== DISPLAY UPDATE METHODS FOR EACH CASE =====
 
-void DisplayManager::refreshBothScreen(const WeatherInfo& weather,
-                                       const DepartureData& departures) {
+void DisplayManager::displayHalfNHalf(const WeatherInfo& weather,
+                                      const DepartureData& departures) {
     ESP_LOGI(TAG, "Full update - both halves");
 
     const int16_t contentY = 0; // Start from top (no header)
@@ -141,20 +133,6 @@ void DisplayManager::hibernate() {
     ESP_LOGI(TAG, "Display hibernated");
 }
 
-
-void DisplayManager::refreshWeatherFullScreen(const WeatherInfo& weather) {
-    ESP_LOGI(TAG, "=== REFRESH WEATHER FULL SCREEN ===");
-
-    // Display full screen weather
-    displayWeatherFull(weather);
-}
-
-void DisplayManager::refreshDepartureFullScreen(const DepartureData& departures) {
-    ESP_LOGI(TAG, "=== REFRESH DEPARTURE FULL SCREEN ===");
-
-    // Display full screen departures
-    displayDeparturesFull(departures);
-}
 
 // ===== CONFIGURATION MODE DISPLAY =====
 
