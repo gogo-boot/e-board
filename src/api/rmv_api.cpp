@@ -155,7 +155,7 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
     JsonArrayConst departures = doc["Departure"];
     if (departures.size() == 0) {
         ESP_LOGW(TAG, "Departure array is empty");
-        return false; // ← Also return false for empty array
+        return true; // ← Also return true for empty array
     }
     ESP_LOGI(TAG, "Found %d departures in response", departures.size());
 
