@@ -164,7 +164,9 @@ void TransportDisplay::drawFullScreenTransportSection(const DepartureData& depar
     TextUtils::printTextAtTopMargin(leftMargin, currentY, fittedStopName);
 
     // Upper right corner: Time + Status icons (refresh, WiFi, battery)
+    String statusText = "Stand ";
     String dateTime = TimeManager::getGermanDateTimeString();
+    dateTime = statusText + dateTime;
     int16_t dateTimeWidth = TextUtils::getTextWidth(dateTime);
 
     const int16_t iconWidth = 16;
