@@ -24,5 +24,6 @@ private:
     static String getTimeString();
     static void drawWiFiStatus(int16_t& currentX, int16_t y);
     static void drawBatteryStatus(int16_t& currentX, int16_t y);
+    static void drawBatteryText(int16_t& currentX, int16_t y);
     static void drawRefreshIcon(int16_t& currentX, int16_t y);
 };
