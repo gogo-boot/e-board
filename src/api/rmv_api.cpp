@@ -221,18 +221,7 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
                  depInfo.category.c_str());
     }
 
-    departData
-        .
-        departureCount =
-        static_cast
-        <
-            int>
-        (departData
-         .
-         departures
-         .
-         size()
-        );
+    departData.departureCount = static_cast<int>(departData.departures.size());
     ESP_LOGI(TAG, "Successfully populated %d departures", departData.departureCount);
 
     return
