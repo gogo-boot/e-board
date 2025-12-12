@@ -224,8 +224,7 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
     departData.departureCount = static_cast<int>(departData.departures.size());
     ESP_LOGI(TAG, "Successfully populated %d departures", departData.departureCount);
 
-    return
-        true;
+    return true;
 }
 
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {
