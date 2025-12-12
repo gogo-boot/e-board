@@ -155,7 +155,7 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
     JsonArrayConst departures = doc["Departure"];
     if (departures.size() == 0) {
         ESP_LOGW(TAG, "Departure array is empty");
-        return false; // ← Also return false for empty array
+        return true; // ← Also return true for empty array
     }
     ESP_LOGI(TAG, "Found %d departures in response", departures.size());
 
@@ -221,10 +221,22 @@ bool populateDepartureData(const DynamicJsonDocument& doc, DepartureData& depart
                  depInfo.category.c_str());
     }
 
-    departData.departureCount = static_cast<int>(departData.departures.size());
+    departData
+        .
+        departureCount =
+        static_cast
+        <
+            int>
+        (departData
+         .
+         departures
+         .
+         size()
+        );
     ESP_LOGI(TAG, "Successfully populated %d departures", departData.departureCount);
 
-    return true;
+    return
+        true;
 }
 
 bool getDepartureFromRMV(const char* stopId, DepartureData& departData) {

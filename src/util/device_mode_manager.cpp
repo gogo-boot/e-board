@@ -134,9 +134,19 @@ void DeviceModeManager::updateDepartureFull() {
     if (getDepartureFromRMV(stopIdToUse.c_str(), depart)) {
         printTransportInfo(depart);
         TimingManager::markTransportUpdated();
+         // Always display, even if empty
+        if (depart.departureCount == 0) {
+            ESP_LOGI(TAG, "No departures scheduled at this time");
+        }
         DisplayManager::displayDeparturesFull(depart);
     } else {
         ESP_LOGE(TAG, "Failed to get departure information from RMV.");
+
+        // Create empty departure data to show "No departures" message
+        depart.stopId = stopIdToUse;
+        depart.stopName = String(config.selectedStopName);
+        depart.departureCount = 0;
+        DisplayManager::displayDeparturesFull(depart);
     }
 }
 
@@ -204,8 +214,8 @@ bool DeviceModeManager::fetchTransportData(DepartureData& depart) {
         if (depart.departureCount > 0) {
             return true;
         } else {
-            ESP_LOGW(TAG, "No departures found for stop");
-            return false;
+            ESP_LOGI(TAG, "No departures found for stop - this is normal (empty schedule)");
+            return true; // ✅ Empty list is valid - not an error
         }
     } else {
         ESP_LOGE(TAG, "Failed to get departure information from RMV");
