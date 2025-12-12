@@ -1,5 +1,6 @@
 #include "activity/activity_manager.h"
 
+#include "build_config.h"
 #include "util/battery_manager.h"
 #include "util/boot_flow_manager.h"
 #include "util/button_manager.h"
@@ -47,7 +48,7 @@ const char* ActivityManager::lifecycleToString(Lifecycle lifecycle) {
 
 void ActivityManager::onInit() {
     setCurrentActivityLifecycle(Lifecycle::ON_INIT);
-    SystemInit::initSerialConnector();
+    DEBUG_ONLY(SystemInit::initSerialConnector(););
     printWakeupReason();
     SystemInit::factoryResetIfDesired();
     SystemInit::initDisplay();
@@ -60,9 +61,9 @@ void ActivityManager::onInit() {
         return;
     }
     SystemInit::loadNvsConfig();
-#if PRODUCTION==0
-    ConfigManager::printConfiguration(false);
-#endif
+
+    DEBUG_ONLY(ConfigManager::printConfiguration(false);)
+
     setNextActivityLifecycle(Lifecycle::ON_START);
 }
 

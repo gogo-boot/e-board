@@ -5,6 +5,7 @@
 #include <esp_sleep.h>
 #include <nvs_flash.h>
 
+#include "build_config.h"
 #include "display/display_manager.h"
 #include "global_instances.h"
 
@@ -13,13 +14,9 @@ static const char* TAG = "SYSTEM_INIT";
 
 namespace SystemInit {
     void initSerialConnector() {
-#if PRODUCTION > 0
-        esp_log_level_set("*", ESP_LOG_ERROR);
-#else
-        Serial.begin(115200);
-        delay(3000);
         esp_log_level_set("*", ESP_LOG_DEBUG);
-#endif
+        Serial.begin(115200);
+        delay(1000);
     }
 
     void factoryResetIfDesired() {

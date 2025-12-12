@@ -6,6 +6,8 @@
 #include <icons.h>
 #include <WiFi.h>
 #include "global_instances.h"
+#include "build_config.h"
+#include "util/timing_manager.h"
 
 static const char* TAG = "COMMON_FOOTER";
 
@@ -29,9 +31,22 @@ void CommonFooter::drawFooter(int16_t x, int16_t y, int16_t h, uint8_t elements)
         drawWiFiStatus(currentX, footerY);
     }
     // Draw battery status if requested
-    if (elements & FOOTER_BATTERY) {
+    if (elements & FOOTER_BATTERY && SHOW_BATTERY_STATUS) {
         drawBatteryStatus(currentX, footerY);
     }
+
+    DEBUG_ONLY(
+        String buildTime = "Build Time: " + String(BUILD_TIME);
+        TextUtils::printTextAtWithMargin(currentX, footerY, buildTime);
+        currentX += TextUtils::getTextWidth(String(buildTime)) + 5; // Move right with spacing
+
+        String version = "Version: " + String(VERSION);
+        TextUtils::printTextAtWithMargin(currentX, footerY, version);
+        currentX += TextUtils::getTextWidth(String(version)) + 5; // Move right with spacing
+
+        String sleepTime = "Sleep Time: " + String(TimingManager::getNextSleepDurationSeconds()) + "s";;
+        TextUtils::printTextAtWithMargin(currentX, footerY, sleepTime);
+    );
 }
 
 String CommonFooter::getTimeString() {
