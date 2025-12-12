@@ -103,6 +103,13 @@ void TransportDisplay::drawTransportList(std::vector<const DepartureInfo*> depar
         display.drawLine(x, y, x + w, y, GxEPD_BLACK);
     }
 
+    // Check if there are no departures
+    if (departure.empty()) {
+        TextUtils::setFont10px_margin12px();
+        TextUtils::printTextAtTopMargin(x, y, "Keine Abfahrten geplant");
+        return;
+    }
+
     // Direction 1 transports
     for (int i = 0; i < min(maxPerDirection, (int)departure.size()); i++) {
         const auto& dep = *departure[i];
