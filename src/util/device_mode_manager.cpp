@@ -179,12 +179,11 @@ void DeviceModeManager::updateDepartureFull() {
 
 bool DeviceModeManager::setupConnectivityAndTime() {
     if (MyWiFiManager::isConnected()) {
-        // Enhanced time synchronization logic for deep sleep optimization
         bool timeIsSet = TimeManager::isTimeSet();
         bool needsSync = TimeManager::needsPeriodicSync();
 
         if (!timeIsSet) {
-            // Time is not set at all - force NTP sync
+            // Time is not set at all — force NTP sync (first boot or power loss)
             ESP_LOGI(TAG, "Time not set, performing initial NTP synchronization...");
             if (TimeManager::setupNTPTimeWithRetry(3)) {
                 ESP_LOGI(TAG, "Initial NTP sync successful");
@@ -193,26 +192,15 @@ bool DeviceModeManager::setupConnectivityAndTime() {
                 return false; // Cannot proceed without time
             }
         } else if (needsSync) {
-            // Time is set but needs periodic refresh due to RTC drift
-            ESP_LOGI(TAG, "Time needs periodic refresh - performing NTP sync...");
-            unsigned long timeSinceSync = TimeManager::getTimeSinceLastSync();
-            ESP_LOGI(TAG, "Time since last sync: %lu ms (%s)",
-                     timeSinceSync, TimeManager::formatDurationInHours(timeSinceSync).c_str());
-
+            // Time valid but 24h+ since last sync — correct RTC drift
+            ESP_LOGI(TAG, "Periodic NTP sync due...");
             if (TimeManager::setupNTPTimeWithRetry(3)) {
                 ESP_LOGI(TAG, "Periodic NTP sync successful");
             } else {
                 ESP_LOGW(TAG, "Periodic NTP sync failed - continuing with RTC time");
-                // Continue with RTC time - not critical for operation
             }
-        } else {
-            // Time is set and recent - use RTC time (most efficient path)
-            ESP_LOGI(TAG, "Using RTC time - no sync needed");
-            unsigned long timeSinceSync = TimeManager::getTimeSinceLastSync();
-            ESP_LOGI(TAG, "Time since last sync: %lu ms (%s)",
-                     timeSinceSync, TimeManager::formatDurationInHours(timeSinceSync).c_str());
         }
-        // Always print current time for verification
+
         TimeManager::printCurrentTime();
         return true;
     } else {

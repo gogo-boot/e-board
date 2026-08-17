@@ -8,16 +8,12 @@ public:
     static bool isTimeSet();
     static bool getCurrentLocalTime(tm& timeinfo);
 
-    // Enhanced time management for deep sleep optimization
+    // NTP time synchronization (once per day to correct RTC drift)
     static bool needsPeriodicSync();
-    static void markLastSyncTime();
-    static unsigned long getTimeSinceLastSync();
     static bool setupNTPTimeWithRetry(int maxRetries = 3);
 
-    // Utility function for logging time durations
-    static String formatDurationInHours(unsigned long milliseconds);
-
 private:
-    static const unsigned long SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000UL; // 24 hours
-    static const unsigned long MAX_RTC_DRIFT_MS = 1 * 60 * 1000UL; // 1 minutes acceptable drift
+    // Sync once per day — ESP32 RTC drifts ~5-15 seconds/day (150 ppm)
+    static constexpr uint32_t SYNC_INTERVAL_SECONDS = 24 * 60 * 60; // 24 hours
+    static constexpr int NTP_TIMEOUT_MS = 5000; // Max wait for NTP response
 };
