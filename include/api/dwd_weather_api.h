@@ -50,3 +50,8 @@ bool getGeneralWeatherFull(float lat, float lon, WeatherInfo& weather);
 String getCityFromLatLon(float lat, float lon);
 void safeStringCopy(char* dest, const String& src, size_t destSize);
 void extractTimeFromISO(char* dest, const String& isoDateTime, size_t destSize);
+
+// Day browsing: fetch 19h hourly data for a specific future day (06:00-00:00)
+static constexpr int DAY_BROWSE_HOURLY_COUNT = 19;
+bool getWeatherForDay(float lat, float lon, int dayOffset,
+                      WeatherHourlyForecast hourlyOut[], int& hourlyCount);

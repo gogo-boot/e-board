@@ -64,7 +64,11 @@ struct RTCConfigData {
     volatile uint8_t temporaryDisplayMode; // 1 byte - temporary override mode (0xFF = none)
     volatile uint32_t temporaryModeActivationTime; // 4 bytes - when temporary mode was activated (epoch)
 
-    // Total: ~535 bytes (well under 8KB RTC limit)
+    // Day browsing in weather-only mode (transient RTC state, not persisted to NVS)
+    int8_t selectedForecastDay;    // 0 = today (default), 1-6 = future days
+    int8_t availableForecastDays;  // number of daily forecasts from last fetch (1-7, depends on model)
+
+    // Total: ~537 bytes (well under 8KB RTC limit)
 };
 
 /*

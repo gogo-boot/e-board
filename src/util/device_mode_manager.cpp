@@ -132,6 +132,8 @@ void DeviceModeManager::updateWeatherFull() {
                  config.cityName, config.latitude, config.longitude);
         if (getGeneralWeatherFull(config.latitude, config.longitude, weather)) {
             TimingManager::markWeatherUpdated();
+            // Update available forecast days for day browsing button wrapping
+            config.availableForecastDays = weather.dailyForecastCount;
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
@@ -139,8 +141,37 @@ void DeviceModeManager::updateWeatherFull() {
         ESP_LOGI(TAG, "use cached Weather data, no data fetch needed");
     }
     printWeatherInfo(weather);
-    shutdownWiFiBeforeRender();
-    DisplayManager::displayWeatherFull(weather);
+
+    // Clamp selectedForecastDay to available range (model may have fewer days)
+    if (config.selectedForecastDay >= weather.dailyForecastCount) {
+        ESP_LOGW(TAG, "selectedForecastDay %d exceeds available %d, clamping to last day",
+                 config.selectedForecastDay, weather.dailyForecastCount);
+        config.selectedForecastDay = weather.dailyForecastCount - 1;
+    }
+
+    // Day browsing: fetch hourly data for selected day BEFORE disconnecting WiFi
+    if (config.selectedForecastDay > 0 && config.selectedForecastDay < weather.dailyForecastCount) {
+        WeatherHourlyForecast dayHourly[DAY_BROWSE_HOURLY_COUNT];
+        int dayHourlyCount = 0;
+
+        bool fetched = getWeatherForDay(config.latitude, config.longitude,
+                                         config.selectedForecastDay,
+                                         dayHourly, dayHourlyCount);
+
+        shutdownWiFiBeforeRender();
+
+        if (fetched && dayHourlyCount > 0) {
+            DisplayManager::displayWeatherDayBrowse(weather, dayHourly, dayHourlyCount,
+                                                     config.selectedForecastDay);
+        } else {
+            // Fallback to normal weather display if fetch failed
+            ESP_LOGW(TAG, "Day browse fetch failed, falling back to normal weather display");
+            DisplayManager::displayWeatherFull(weather);
+        }
+    } else {
+        shutdownWiFiBeforeRender();
+        DisplayManager::displayWeatherFull(weather);
+    }
 }
 
 void DeviceModeManager::updateDepartureFull() {

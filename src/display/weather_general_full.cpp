@@ -1,4 +1,5 @@
 #include "display/weather_general_full.h"
+#include "display/display_manager.h"   // for DisplayConstants::FOOTER_HEIGHT
 #include "display/text_utils.h"
 #include "display/weather_graph.h"
 #include <esp_log.h>
@@ -190,6 +191,96 @@ void WeatherFullDisplay::drawFullScreenWeatherLayout(const WeatherInfo& weather)
     // Draw the actual weather graph
     WeatherGraph::drawTemperatureAndRainGraph(weather, screenTenthWidth * 4, currentY, screenTenthWidth * 6,
                                               display.height() - currentY);
+}
+
+void WeatherFullDisplay::drawDayBrowseLayout(const WeatherInfo& weather,
+                                              const WeatherHourlyForecast dayHourly[],
+                                              int hourlyCount,
+                                              int selectedDay) {
+    ESP_LOGI(TAG, "drawDayBrowseLayout: day %d, %d hourly entries", selectedDay, hourlyCount);
+
+    int16_t screenWidth = display.width();
+    int16_t screenHeight = display.height();
+    int16_t leftMargin = SIDE_MARGIN;
+    int16_t rightMargin = screenWidth - SIDE_MARGIN;
+    int16_t currentY = 0;
+
+    // Validate selectedDay
+    if (selectedDay < 0 || selectedDay >= weather.dailyForecastCount) {
+        ESP_LOGE(TAG, "Invalid selectedDay %d (count=%d)", selectedDay, weather.dailyForecastCount);
+        return;
+    }
+
+    const WeatherDailyForecast& dayForecast = weather.dailyForecast[selectedDay];
+
+    // ── Top section (~30px): Date left-aligned + city name right-aligned ──
+    TextUtils::setFont24px_margin28px();
+
+    // Format date: "Do, 27. Aug 2026" from dailyForecast[selectedDay].time
+    String dayName = DateUtil::getDayOfWeekFromDateString(dayForecast.time, 3); // 3-char day
+    String dateText = DateUtil::formatDateText(dayForecast.time);
+    String headerDate = dayName + ", " + dateText;
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, headerDate);
+
+    // City name right-aligned
+    RTCConfigData& config = ConfigManager::getConfig();
+    int cityMaxWidth = rightMargin - (screenWidth / 2);
+    String fittedCityName = TextUtils::shortenTextToFit(config.cityName, cityMaxWidth);
+    int cityNameWidth = TextUtils::getTextWidth(fittedCityName);
+    int cityNameX = rightMargin - cityNameWidth;
+    TextUtils::printTextAtWithMargin(cityNameX, currentY, fittedCityName);
+    currentY += 35; // Space after header
+
+    // ── 6-day forecast row (~100px): Days 1-6 with highlight on selected ──
+    TextUtils::setFont12px_margin15px();
+    int forecastCount = weather.dailyForecastCount;
+    // Calculate column width distributed evenly across actual available days
+    int16_t availableWidth = rightMargin - leftMargin;
+    int displayDays = forecastCount > 1 ? forecastCount - 1 : 1; // days 1..N-1
+    int16_t colWidth = availableWidth / displayDays;
+
+    for (int i = 1; i < forecastCount && i <= 6; i++) {
+        int16_t colX = leftMargin + (i - 1) * colWidth;
+
+        // Highlight selected day with rectangle border
+        if (i == selectedDay) {
+            int16_t rectX = colX - 3;
+            int16_t rectY = currentY - 3;
+            int16_t rectW = colWidth + 2;
+            int16_t rectH = 95 + 6;
+            display.drawRect(rectX, rectY, rectW, rectH, GxEPD_BLACK);
+            display.drawRect(rectX + 1, rectY + 1, rectW - 2, rectH - 2, GxEPD_BLACK);
+        }
+
+        // Day label (2-char)
+        String dayLabel = WeatherUtil::getDayOfWeekFromDateString(weather.dailyForecast[i].time, 2);
+        TextUtils::printTextAtWithMargin(colX, currentY, dayLabel);
+
+        // Weather icon
+        icon_name icon = WeatherUtil::getWeatherIcon(weather.dailyForecast[i].weatherCode);
+        display.drawInvertedBitmap(colX, currentY + 15, getBitmap(icon, 48), 48, 48, GxEPD_BLACK);
+
+        // Temp range
+        int tempMinInt = (int)weather.dailyForecast[i].tempMin;
+        int tempMaxInt = (int)weather.dailyForecast[i].tempMax;
+        TextUtils::printTextAtWithMargin(colX, currentY + 75,
+                                         String(tempMinInt) + " / " + String(tempMaxInt) + "°");
+    }
+    currentY += FORECAST_ROW_HEIGHT;
+
+    // ── Graph title ──
+    TextUtils::setFont12px_margin15px();
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Stundenverlauf 06:00 - 00:00");
+    currentY += GRAPH_TITLE_HEIGHT;
+    currentY += 10; // Small spacing before graph
+
+    // ── Full-width graph (remaining space minus footer) ──
+    int16_t footerY = screenHeight - DisplayConstants::FOOTER_HEIGHT;
+    int16_t graphH = footerY - currentY - 5; // 5px padding before footer
+    int16_t graphW = rightMargin - leftMargin;
+
+    WeatherGraph::drawTemperatureAndRainGraph(dayHourly, hourlyCount,
+                                              leftMargin, currentY, graphW, graphH);
 }
 
 void WeatherFullDisplay::drawWeatherFooter(int16_t x, int16_t y, int16_t h) {

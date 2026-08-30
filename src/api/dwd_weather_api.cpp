@@ -201,3 +201,98 @@ void extractTimeFromISO(char* dest, const String& isoDateTime, size_t destSize) 
         dest[destSize - 1] = '\0';
     }
 }
+
+// Fetch 19h hourly data for a specific future day (06:00-00:00 next day)
+bool getWeatherForDay(float lat, float lon, int dayOffset,
+                      WeatherHourlyForecast hourlyOut[], int& hourlyCount) {
+    if (dayOffset < 1 || dayOffset > 6) {
+        ESP_LOGE(TAG, "Invalid dayOffset %d (must be 1-6)", dayOffset);
+        hourlyCount = 0;
+        return false;
+    }
+
+    // Calculate target date by adding dayOffset days to today.
+    // Anchor to noon to avoid DST transition edge cases (DST shifts at 02:00/03:00).
+    time_t now;
+    time(&now);
+    struct tm tmNow;
+    localtime_r(&now, &tmNow);
+    tmNow.tm_hour = 12;
+    tmNow.tm_min = 0;
+    tmNow.tm_sec = 0;
+    time_t noonToday = mktime(&tmNow);
+
+    time_t targetDay = noonToday + (dayOffset * 86400);
+    time_t nextDay = targetDay + 86400;
+
+    struct tm tmTarget;
+    struct tm tmNext;
+    localtime_r(&targetDay, &tmTarget);
+    localtime_r(&nextDay, &tmNext);
+
+    // Format: YYYY-MM-DDT06:00 for start, YYYY-MM-DDT00:00 for end (next day)
+    char startHour[20];
+    char endHour[20];
+    snprintf(startHour, sizeof(startHour), "%04d-%02d-%02dT06:00",
+             tmTarget.tm_year + 1900, tmTarget.tm_mon + 1, tmTarget.tm_mday);
+    snprintf(endHour, sizeof(endHour), "%04d-%02d-%02dT00:00",
+             tmNext.tm_year + 1900, tmNext.tm_mon + 1, tmNext.tm_mday);
+
+    String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
+        "&longitude=" + String(lon, 6) +
+        "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" +
+        "&timezone=auto" +
+        "&start_hour=" + String(startHour) +
+        "&end_hour=" + String(endHour);
+
+    // Append weather model if configured
+    RTCConfigData& config = ConfigManager::getConfig();
+    if (strlen(config.weatherModel) > 0) {
+        url += "&models=" + String(config.weatherModel);
+    }
+
+    ESP_LOGI(TAG, "Fetching day %d weather: %s", dayOffset, url.c_str());
+
+    HTTPClient http;
+    http.begin(url);
+    int httpCode = http.GET();
+    hourlyCount = 0;
+
+    if (httpCode > 0) {
+        String payload = http.getString();
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, payload);
+        if (!error && doc["hourly"].is<JsonObject>()) {
+            JsonObject hourly = doc["hourly"];
+            JsonArray times = hourly["time"];
+            JsonArray temps = hourly["temperature_2m"];
+            JsonArray wcode = hourly["weather_code"];
+            JsonArray rainProb = hourly["precipitation_probability"];
+            JsonArray precipitation = hourly["precipitation"];
+            JsonArray humidity = hourly["relative_humidity_2m"];
+
+            int count = 0;
+            for (size_t i = 0; i < times.size() && count < DAY_BROWSE_HOURLY_COUNT; ++i) {
+                safeStringCopy(hourlyOut[count].time, times[i].as<String>(), TIME_STRING_LENGTH);
+                hourlyOut[count].temperature = temps[i].as<float>();
+                hourlyOut[count].weatherCode = wcode[i].as<int>();
+                hourlyOut[count].rainChance = rainProb[i].as<int>();
+                hourlyOut[count].rainfall = precipitation[i].as<float>();
+                hourlyOut[count].humidity = humidity[i].as<int>();
+                count++;
+            }
+            hourlyCount = count;
+
+            http.end();
+            ESP_LOGI(TAG, "Day %d weather: %d hourly entries fetched", dayOffset, hourlyCount);
+            return true;
+        } else {
+            ESP_LOGE(TAG, "JSON parse error for day %d weather", dayOffset);
+        }
+    } else {
+        ESP_LOGE(TAG, "HTTP request failed for day %d weather, code: %d", dayOffset, httpCode);
+    }
+
+    http.end();
+    return false;
+}

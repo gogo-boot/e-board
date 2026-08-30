@@ -40,7 +40,9 @@ RTC_DATA_ATTR RTCConfigData ConfigManager::rtcConfig = {
     0, // lastUpdate
     false, // inTemporaryMode - default to normal mode
     0xFF, // temporaryDisplayMode - 0xFF = none
-    0 // temporaryModeActivationTime - no timestamp
+    0, // temporaryModeActivationTime - no timestamp
+    0, // selectedForecastDay - today
+    7  // availableForecastDays - default to 7 (most models)
 };
 
 ConfigManager& ConfigManager::getInstance() {
@@ -389,6 +391,8 @@ void ConfigManager::setDefaults() {
     strcpy(rtcConfig.weekendSleepEnd, "07:00");
     rtcConfig.filterFlags = FILTER_R | FILTER_S | FILTER_U | FILTER_TRAM | FILTER_BUS | FILTER_FERRY;
     rtcConfig.lastUpdate = 0;
+    rtcConfig.selectedForecastDay = 0;
+    rtcConfig.availableForecastDays = 7;
 }
 
 String ConfigManager::getStopNameFromId() {
