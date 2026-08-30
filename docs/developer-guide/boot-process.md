@@ -48,6 +48,7 @@ but can skip phases or branch based on conditions.
 - Fetch data from APIs (Phase 3: Complete)
   - If `tripMode == true`: fetch trip connections via `/hapi/trip` (origin → destination)
   - If `tripMode == false`: fetch departures via `/hapi/departureBoard` (single stop)
+  - If `selectedForecastDay > 0`: fetch day-specific hourly data via `getWeatherForDay()` (on-demand, before WiFi shutdown). Falls back to normal weather display (day 0) on failure.
 - Disconnect WiFi (saves ~100mA during display rendering)
 - Render display
 
@@ -102,6 +103,8 @@ flowchart TD
 ```
 
 Temporary mode is activated by button press and lasts 2 minutes, then reverts to configured mode.
+When temporary mode expires, `selectedForecastDay` is also reset to 0, ensuring the device
+returns to showing today's weather after a day browsing session ends.
 
 ### Weather Data Caching
 

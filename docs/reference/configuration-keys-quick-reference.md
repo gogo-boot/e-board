@@ -38,6 +38,9 @@ For developers who need to quickly find the right key name for a specific layer:
 | **Trip/Connection Mode** |
 | Trip Mode | `trip-mode-on` | `tripMode` | `tripMode` | `tripMode` |
 | Trip Destination ID | `trip-dest-id` | `tripDestId` | `tripDestId` | `tripDestId` |
+| **Day Browsing (RTC only)** |
+| Selected Forecast Day | — | — | — | `selectedForecastDay` |
+| Available Forecast Days | — | — | — | `availableForecastDays` |
 | **System** |
 | Config Version | — | — | `cfgVersion` | — |
 
