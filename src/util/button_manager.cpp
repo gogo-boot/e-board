@@ -112,6 +112,7 @@ void ButtonManager::handleWakeupMode() {
 
     // Determine if a new button press occurred (from EXT1, synthetic mode, or NVS pending)
     int8_t buttonMode = syntheticButtonMode;
+    bool dayAlreadySet = false; // true if awake-press already set selectedForecastDay
     if (buttonMode >= 0) {
         ESP_LOGI(TAG, "Consuming synthetic button mode: %d", buttonMode);
         syntheticButtonMode = -1;
@@ -125,10 +126,14 @@ void ButtonManager::handleWakeupMode() {
         if (prefs.begin("mystation", false)) {
             if (prefs.getBool("pendingTemp", false)) {
                 buttonMode = (int8_t)prefs.getUChar("pendingTempMode", 0xFF);
-                // Clear the pending flag
+                // Restore selectedForecastDay if persisted (day browsing via awake-press)
+                config.selectedForecastDay = prefs.getChar("pendingDay", 0);
+                dayAlreadySet = true; // awake-press already computed the day
+                // Clear the pending flags
                 prefs.putBool("pendingTemp", false);
                 prefs.remove("pendingTempMode");
-                ESP_LOGI(TAG, "Consumed pending temp mode from NVS: %d", buttonMode);
+                prefs.remove("pendingDay");
+                ESP_LOGI(TAG, "Consumed pending temp mode from NVS: %d, day: %d", buttonMode, config.selectedForecastDay);
                 if (buttonMode == (int8_t)0xFF) buttonMode = -1;
             }
             prefs.end();
@@ -137,10 +142,39 @@ void ButtonManager::handleWakeupMode() {
 
     if (buttonMode >= 0) {
         // New button press — activate/reset temp mode
-        ESP_LOGI(TAG, "Button press! Activating temp mode: %d", buttonMode);
-        config.inTemporaryMode = true;
-        config.temporaryDisplayMode = (uint8_t)buttonMode;
-        config.temporaryModeActivationTime = (uint32_t)currentTime;
+        // Check if we're in weather-only mode for day browsing
+        if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+            if (!dayAlreadySet) {
+                // Day browsing: reinterpret button presses (EXT1 / synthetic path)
+                if (buttonMode == DISPLAY_MODE_HALF_AND_HALF) {
+                    // Button 1: reset to today
+                    config.selectedForecastDay = 0;
+                    ESP_LOGI(TAG, "Day browse: reset to today (day 0)");
+                } else if (buttonMode == DISPLAY_MODE_WEATHER_ONLY) {
+                    // Button 2: forward (+1 day, circular 1→2→...→max-1→1, skip day 0)
+                    int8_t maxDays = config.availableForecastDays > 1 ? config.availableForecastDays : 7;
+                    int8_t next = config.selectedForecastDay + 1;
+                    config.selectedForecastDay = (next >= maxDays) ? 1 : next;
+                    ESP_LOGI(TAG, "Day browse: forward to day %d (max %d)", config.selectedForecastDay, maxDays);
+                } else if (buttonMode == DISPLAY_MODE_TRANSPORT_ONLY) {
+                    // Button 3: backward (-1 day, circular max-1→...→2→1→max-1, skip day 0)
+                    int8_t maxDays = config.availableForecastDays > 1 ? config.availableForecastDays : 7;
+                    int8_t prev = config.selectedForecastDay - 1;
+                    config.selectedForecastDay = (prev < 1) ? (maxDays - 1) : prev;
+                    ESP_LOGI(TAG, "Day browse: backward to day %d (max %d)", config.selectedForecastDay, maxDays);
+                }
+            }
+            // Stay in weather-only mode with temp mode active
+            config.inTemporaryMode = true;
+            config.temporaryDisplayMode = DISPLAY_MODE_WEATHER_ONLY;
+            config.temporaryModeActivationTime = (uint32_t)currentTime;
+        } else {
+            // Normal mode switching
+            ESP_LOGI(TAG, "Button press! Activating temp mode: %d", buttonMode);
+            config.inTemporaryMode = true;
+            config.temporaryDisplayMode = (uint8_t)buttonMode;
+            config.temporaryModeActivationTime = (uint32_t)currentTime;
+        }
 
     } else if (config.inTemporaryMode) {
         // No new button press — check if awake-press needs stamping or if expired
@@ -159,6 +193,7 @@ void ButtonManager::handleWakeupMode() {
             config.inTemporaryMode = false;
             config.temporaryDisplayMode = 0xFF;
             config.temporaryModeActivationTime = 0;
+            config.selectedForecastDay = 0;
             ESP_LOGI(TAG, "Temp mode expired — reverting to configured mode");
         }
     }
@@ -217,14 +252,34 @@ bool ButtonManager::checkAndRestartIfButtonPressed() {
 
     ESP_LOGI(TAG, "Button pressed while awake (mode %d) — activating temp mode, restarting", mode);
 
+    // In weather-only mode, reinterpret button as day browsing before persisting
+    RTCConfigData& config = ConfigManager::getConfig();
+    uint8_t persistMode = (uint8_t)mode;
+    if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+        // Day browsing: update selectedForecastDay and keep weather-only mode
+        int8_t maxDays = config.availableForecastDays > 1 ? config.availableForecastDays : 7;
+        if (mode == DISPLAY_MODE_HALF_AND_HALF) {
+            config.selectedForecastDay = 0;
+        } else if (mode == DISPLAY_MODE_WEATHER_ONLY) {
+            int8_t next = config.selectedForecastDay + 1;
+            config.selectedForecastDay = (next >= maxDays) ? 1 : next;
+        } else if (mode == DISPLAY_MODE_TRANSPORT_ONLY) {
+            int8_t prev = config.selectedForecastDay - 1;
+            config.selectedForecastDay = (prev < 1) ? (maxDays - 1) : prev;
+        }
+        persistMode = DISPLAY_MODE_WEATHER_ONLY;
+        ESP_LOGI(TAG, "Day browse (awake): selected day %d (max %d)", config.selectedForecastDay, maxDays);
+    }
+
     // Persist pending temp mode to NVS so it survives esp_restart()
     // (RTC_DATA_ATTR is lost on software reset, only preserved across deep sleep)
     Preferences prefs;
     if (prefs.begin("mystation", false)) {
         prefs.putBool("pendingTemp", true);
-        prefs.putUChar("pendingTempMode", (uint8_t)mode);
+        prefs.putUChar("pendingTempMode", persistMode);
+        prefs.putChar("pendingDay", config.selectedForecastDay);
         prefs.end();
-        ESP_LOGI(TAG, "Saved pending temp mode %d to NVS", mode);
+        ESP_LOGI(TAG, "Saved pending temp mode %d, day %d to NVS", persistMode, config.selectedForecastDay);
     } else {
         ESP_LOGE(TAG, "Failed to save pending temp mode to NVS");
     }

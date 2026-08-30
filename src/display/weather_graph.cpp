@@ -13,8 +13,26 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
         ESP_LOGW(TAG, "No hourly weather data available for graph");
         return;
     }
+    // Delegate to internal helper with the WeatherInfo's hourly array
+    int count = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
+    drawGraphInternal(weather.hourlyForecast, count, x, y, w, h);
+}
 
-    ESP_LOGI(TAG, "Drawing weather graph at (%d,%d) size %dx%d", x, y, w, h);
+void WeatherGraph::drawTemperatureAndRainGraph(const WeatherHourlyForecast hourlyData[],
+                                               int hourlyCount,
+                                               int16_t x, int16_t y,
+                                               int16_t w, int16_t h) {
+    if (hourlyCount == 0) {
+        ESP_LOGW(TAG, "No hourly data available for day browse graph");
+        return;
+    }
+    drawGraphInternal(hourlyData, hourlyCount, x, y, w, h);
+}
+
+void WeatherGraph::drawGraphInternal(const WeatherHourlyForecast hourlyData[], int dataCount,
+                                     int16_t x, int16_t y,
+                                     int16_t w, int16_t h) {
+    ESP_LOGI(TAG, "Drawing weather graph at (%d,%d) size %dx%d, %d points", x, y, w, h, dataCount);
 
     // Adaptive margins based on graph size
     int16_t marginLeft = (h < 120) ? 25 : MARGIN_LEFT;
@@ -31,10 +49,10 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
 
     // Find actual temperature range from data
     float actualMin = 100.0f, actualMax = -100.0f;
-    int dataPoints = min(HOURS_TO_SHOW, weather.hourlyForecastCount);
+    int dataPoints = dataCount;
 
     for (int i = 0; i < dataPoints; i++) {
-        float temp = weather.hourlyForecast[i].temperature;
+        float temp = hourlyData[i].temperature;
         actualMin = min(actualMin, temp);
         actualMax = max(actualMax, temp);
     }
@@ -46,18 +64,131 @@ void WeatherGraph::drawTemperatureAndRainGraph(const WeatherInfo& weather,
              actualMin, actualMax, dynamicMin, dynamicMax);
 
     // Draw graph components
-    drawGraphFrame(graphX, graphY, graphW, graphH);
+    drawGraphFrame(graphX, graphY, graphW, graphH, dataPoints);
     drawTemperatureAxis(x, graphY, marginLeft, graphH, dynamicMin, dynamicMax);
     drawRainAxis(x + w - marginRight, graphY, marginRight, graphH);
-    drawTimeAxis(graphX, y + h - marginBottom - marginLegend, graphW, marginBottom, weather);
-    // <-- Add weather parameter
+
+    // Draw time axis directly using hourlyData (supports any count)
+    {
+        TextUtils::setFont10px_margin12px();
+        int16_t timeAxisX = graphX;
+        int16_t timeAxisY = y + h - marginBottom - marginLegend;
+        int16_t timeAxisW = graphW;
+
+        if (dataPoints >= 2) {
+            int labelCount = constrain((dataPoints + 2) / 3, 2, dataPoints);
+            for (int l = 0; l < labelCount; l++) {
+                int i = (l * (dataPoints - 1)) / (labelCount - 1);
+                String timeStr = (i < dataCount) ? hourlyData[i].time : "";
+                String actualTime;
+                if (timeStr.length() >= 16) {
+                    actualTime = timeStr.substring(11, 16);
+                } else {
+                    actualTime = String(i) + "h";
+                }
+                int16_t labelX = timeAxisX + (timeAxisW * i) / (dataPoints - 1);
+                int16_t textWidth = TextUtils::getTextWidth(actualTime);
+                u8g2.setCursor(labelX - textWidth / 2, timeAxisY + 20);
+                u8g2.print(actualTime);
+            }
+        }
+    }
+
     drawGraphLegend(x, y + h - marginLegend, w, marginLegend);
 
-    // Draw data layers (order matters for visibility)
-    drawRainBars(weather, graphX, graphY, graphW, graphH); // Background: Rain bars
-    drawHumidityLine(weather, graphX, graphY, graphW, graphH); // Middle: Humidity dotted line
-    drawTemperatureLine(weather, graphX, graphY, graphW, graphH, dynamicMin, dynamicMax);
-    // Foreground: Temperature solid line
+    // Draw rain bars directly using hourlyData (supports any count)
+    {
+        int barPoints = dataPoints - 1; // bars need one fewer than line points
+        int16_t barWidth = graphW / max(barPoints, 1);
+        for (int i = 0; i < barPoints; i++) {
+            int rainChance = hourlyData[i].rainChance;
+            if (rainChance > 0) {
+                int16_t barX = graphX + (i * graphW) / barPoints;
+                int16_t barH = (graphH * rainChance) / 100;
+                int16_t barY = graphY + graphH - barH;
+                for (int16_t yb = barY; yb < barY + barH; yb += 4) {
+                    for (int16_t xb = barX + 1; xb < barX + barWidth - 1; xb += 2) {
+                        display.drawPixel(xb, yb, GxEPD_BLACK);
+                    }
+                }
+                for (int16_t xb = barX + 1; xb < barX + barWidth - 1; xb += 4) {
+                    for (int16_t yb = barY; yb < barY + barH; yb += 2) {
+                        display.drawPixel(xb, yb, GxEPD_BLACK);
+                    }
+                }
+            }
+        }
+    }
+
+    // Draw humidity line directly using hourlyData (supports any count)
+    if (dataPoints >= 2) {
+        float minHumidity = 0.0f;
+        float maxHumidity = 100.0f;
+        int16_t humX[HOURS_TO_SHOW_DAY_BROWSE];
+        int16_t humY[HOURS_TO_SHOW_DAY_BROWSE];
+        for (int i = 0; i < dataPoints && i < HOURS_TO_SHOW_DAY_BROWSE; i++) {
+            humX[i] = mapToPixel(i, 0, dataPoints - 1, graphX, graphX + graphW);
+            humY[i] = mapToPixel(hourlyData[i].humidity, minHumidity, maxHumidity,
+                                 graphY + graphH, graphY);
+        }
+        for (int i = 0; i < dataPoints - 1; i++) {
+            int16_t p0x = (i > 0) ? humX[i - 1] : humX[i];
+            int16_t p0y = (i > 0) ? humY[i - 1] : humY[i];
+            int16_t p1x = humX[i]; int16_t p1y = humY[i];
+            int16_t p2x = humX[i + 1]; int16_t p2y = humY[i + 1];
+            int16_t p3x = (i < dataPoints - 2) ? humX[i + 2] : humX[i + 1];
+            int16_t p3y = (i < dataPoints - 2) ? humY[i + 2] : humY[i + 1];
+            for (int step = 0; step < 3; step++) {
+                float t1 = (float)step / 3;
+                float t2 = (float)(step + 1) / 3;
+                auto catmullRom = [](float t, int16_t p0, int16_t p1, int16_t p2, int16_t p3) -> int16_t {
+                    float t2 = t * t; float t3 = t2 * t;
+                    return (int16_t)(0.5f * ((2.0f * p1) + (-p0 + p2) * t +
+                        (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+                        (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3));
+                };
+                int16_t cx1 = catmullRom(t1, p0x, p1x, p2x, p3x);
+                int16_t cy1 = catmullRom(t1, p0y, p1y, p2y, p3y);
+                int16_t cx2 = catmullRom(t2, p0x, p1x, p2x, p3x);
+                int16_t cy2 = catmullRom(t2, p0y, p1y, p2y, p3y);
+                drawDottedLine(cx1, cy1, cx2, cy2);
+            }
+        }
+    }
+
+    // Draw temperature line directly using hourlyData (supports any count)
+    if (dataPoints >= 2) {
+        int16_t tempX[HOURS_TO_SHOW_DAY_BROWSE];
+        int16_t tempY[HOURS_TO_SHOW_DAY_BROWSE];
+        for (int i = 0; i < dataPoints && i < HOURS_TO_SHOW_DAY_BROWSE; i++) {
+            tempX[i] = mapToPixel(i, 0, dataPoints - 1, graphX, graphX + graphW);
+            tempY[i] = mapToPixel(hourlyData[i].temperature, dynamicMin, dynamicMax,
+                                  graphY + graphH, graphY);
+        }
+        for (int i = 0; i < dataPoints - 1; i++) {
+            int16_t p0x = (i > 0) ? tempX[i - 1] : tempX[i];
+            int16_t p0y = (i > 0) ? tempY[i - 1] : tempY[i];
+            int16_t p1x = tempX[i]; int16_t p1y = tempY[i];
+            int16_t p2x = tempX[i + 1]; int16_t p2y = tempY[i + 1];
+            int16_t p3x = (i < dataPoints - 2) ? tempX[i + 2] : tempX[i + 1];
+            int16_t p3y = (i < dataPoints - 2) ? tempY[i + 2] : tempY[i + 1];
+            for (int step = 0; step < 8; step++) {
+                float t1 = (float)step / 8;
+                float t2 = (float)(step + 1) / 8;
+                auto catmullRom = [](float t, int16_t p0, int16_t p1, int16_t p2, int16_t p3) -> int16_t {
+                    float t2 = t * t; float t3 = t2 * t;
+                    return (int16_t)(0.5f * ((2.0f * p1) + (-p0 + p2) * t +
+                        (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t2 +
+                        (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3));
+                };
+                int16_t cx1 = catmullRom(t1, p0x, p1x, p2x, p3x);
+                int16_t cy1 = catmullRom(t1, p0y, p1y, p2y, p3y);
+                int16_t cx2 = catmullRom(t2, p0x, p1x, p2x, p3x);
+                int16_t cy2 = catmullRom(t2, p0y, p1y, p2y, p3y);
+                display.drawLine(cx1, cy1, cx2, cy2, GxEPD_BLACK);
+            }
+        }
+    }
 
     ESP_LOGI(TAG, "Weather graph completed with %d data points", dataPoints);
 }
@@ -109,8 +240,8 @@ void WeatherGraph::drawGraphLegend(int16_t x, int16_t y, int16_t w, int16_t h) {
     }
 }
 
-void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
-    // Draw only top and bottom borders (remove left and right Y-axis lines)
+void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h, int dataCount) {
+    // Draw only bottom border
     display.drawLine(x, y + h, x + w, y + h, GxEPD_BLACK); // Bottom border
 
     // Draw horizontal grid lines (every 25% of height)
@@ -122,12 +253,13 @@ void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
         }
     }
 
-    // Draw vertical grid lines (every 3 hours)
-    for (int i = 1; i < 4; i++) {
-        int16_t gridX = x + (w * i) / 4;
-        // Dotted line for grid
-        for (int16_t dotY = y + 5; dotY < y + h - 5; dotY += 6) {
-            display.drawPixel(gridX, dotY, GxEPD_BLACK);
+    // Draw vertical grid lines every 3 hours, aligned to data points
+    if (dataCount >= 2) {
+        for (int i = 3; i < dataCount; i += 3) {
+            int16_t gridX = x + (w * i) / (dataCount - 1);
+            for (int16_t dotY = y + 5; dotY < y + h - 5; dotY += 6) {
+                display.drawPixel(gridX, dotY, GxEPD_BLACK);
+            }
         }
     }
 }

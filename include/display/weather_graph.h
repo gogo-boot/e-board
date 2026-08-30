@@ -16,9 +16,24 @@ public:
                                             int16_t x, int16_t y,
                                             int16_t w, int16_t h);
 
+    /**
+     * Draw a combined temperature line and rain bar chart from an external hourly array.
+     * Used for day-browsing mode with 19h data (06:00-00:00).
+     * @param hourlyData Array of hourly forecast entries
+     * @param hourlyCount Number of entries in the array
+     * @param x X position of graph area
+     * @param y Y position of graph area
+     * @param w Width of graph area
+     * @param h Height of graph area
+     */
+    static void drawTemperatureAndRainGraph(const WeatherHourlyForecast hourlyData[],
+                                            int hourlyCount,
+                                            int16_t x, int16_t y,
+                                            int16_t w, int16_t h);
+
 private:
     // Core drawing functions
-    static void drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h);
+    static void drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h, int dataCount);
     static void drawTemperatureAxis(int16_t x, int16_t y, int16_t w, int16_t h,
                                     float minTemp, float maxTemp);
     static void drawRainAxis(int16_t x, int16_t y, int16_t w, int16_t h);
@@ -53,4 +68,9 @@ private:
     static const int16_t LEGEND_MARGIN = 35; // Space for legend labels
     static const int HOURS_TO_SHOW = 13; // 13 hours as specified, line graph needs start and end point
     static const int HOURS_TO_SHOW_BAR = HOURS_TO_SHOW - 1; // Bar graph doesn't need end datapoint than line graph
+    static const int HOURS_TO_SHOW_DAY_BROWSE = 19; // 19 hours for day browsing (06:00-00:00)
+
+    // Internal helper that both public overloads delegate to
+    static void drawGraphInternal(const WeatherHourlyForecast hourlyData[], int dataCount,
+                                  int16_t x, int16_t y, int16_t w, int16_t h);
 };

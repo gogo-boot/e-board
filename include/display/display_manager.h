@@ -26,6 +26,11 @@ public:
     static void displayWeatherFull(const WeatherInfo& weather);
     static void displayDeparturesFull(const DepartureData& departures);
 
+    // Day browsing: display weather for a specific future day with full-width graph
+    static void displayWeatherDayBrowse(const WeatherInfo& weather,
+                                         const WeatherHourlyForecast dayHourly[],
+                                         int hourlyCount, int selectedDay);
+
     // === Configuration Mode Display ===
     // Display setup instructions for configuration phases (in German)
     static void displayPhase1WifiSetup(); // Phase 1: WiFi configuration
