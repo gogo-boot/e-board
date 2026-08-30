@@ -64,7 +64,7 @@ void WeatherGraph::drawGraphInternal(const WeatherHourlyForecast hourlyData[], i
              actualMin, actualMax, dynamicMin, dynamicMax);
 
     // Draw graph components
-    drawGraphFrame(graphX, graphY, graphW, graphH);
+    drawGraphFrame(graphX, graphY, graphW, graphH, dataPoints);
     drawTemperatureAxis(x, graphY, marginLeft, graphH, dynamicMin, dynamicMax);
     drawRainAxis(x + w - marginRight, graphY, marginRight, graphH);
 
@@ -240,8 +240,8 @@ void WeatherGraph::drawGraphLegend(int16_t x, int16_t y, int16_t w, int16_t h) {
     }
 }
 
-void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
-    // Draw only top and bottom borders (remove left and right Y-axis lines)
+void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h, int dataCount) {
+    // Draw only bottom border
     display.drawLine(x, y + h, x + w, y + h, GxEPD_BLACK); // Bottom border
 
     // Draw horizontal grid lines (every 25% of height)
@@ -253,12 +253,13 @@ void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h) {
         }
     }
 
-    // Draw vertical grid lines (every 3 hours)
-    for (int i = 1; i < 4; i++) {
-        int16_t gridX = x + (w * i) / 4;
-        // Dotted line for grid
-        for (int16_t dotY = y + 5; dotY < y + h - 5; dotY += 6) {
-            display.drawPixel(gridX, dotY, GxEPD_BLACK);
+    // Draw vertical grid lines every 3 hours, aligned to data points
+    if (dataCount >= 2) {
+        for (int i = 3; i < dataCount; i += 3) {
+            int16_t gridX = x + (w * i) / (dataCount - 1);
+            for (int16_t dotY = y + 5; dotY < y + h - 5; dotY += 6) {
+                display.drawPixel(gridX, dotY, GxEPD_BLACK);
+            }
         }
     }
 }

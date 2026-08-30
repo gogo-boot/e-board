@@ -263,7 +263,7 @@ void WeatherFullDisplay::drawDayBrowseLayout(const WeatherInfo& weather,
         // Temp range
         int tempMinInt = (int)weather.dailyForecast[i].tempMin;
         int tempMaxInt = (int)weather.dailyForecast[i].tempMax;
-        TextUtils::printTextAtWithMargin(colX, currentY + 75,
+        TextUtils::printTextAtWithMargin(colX, currentY + 70,
                                          String(tempMinInt) + " / " + String(tempMaxInt) + "°");
     }
     currentY += FORECAST_ROW_HEIGHT;
