@@ -253,9 +253,9 @@ void WeatherGraph::drawGraphFrame(int16_t x, int16_t y, int16_t w, int16_t h, in
         }
     }
 
-    // Draw vertical grid lines every 3 hours, aligned to data points
+    // Draw vertical grid lines every 3 hours, aligned to data points (skip last point)
     if (dataCount >= 2) {
-        for (int i = 3; i < dataCount; i += 3) {
+        for (int i = 3; i < dataCount - 1; i += 3) {
             int16_t gridX = x + (w * i) / (dataCount - 1);
             for (int16_t dotY = y + 5; dotY < y + h - 5; dotY += 6) {
                 display.drawPixel(gridX, dotY, GxEPD_BLACK);
