@@ -143,7 +143,9 @@ void ButtonManager::handleWakeupMode() {
     if (buttonMode >= 0) {
         // New button press — activate/reset temp mode
         // Check if we're in weather-only mode for day browsing
-        if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+        // (but don't intercept special modes like Application Info)
+        if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY
+            && buttonMode != DISPLAY_MODE_APPLICATION_INFO) {
             if (!dayAlreadySet) {
                 // Day browsing: reinterpret button presses (EXT1 / synthetic path)
                 if (buttonMode == DISPLAY_MODE_HALF_AND_HALF) {
@@ -253,9 +255,11 @@ bool ButtonManager::checkAndRestartIfButtonPressed() {
     ESP_LOGI(TAG, "Button pressed while awake (mode %d) — activating temp mode, restarting", mode);
 
     // In weather-only mode, reinterpret button as day browsing before persisting
+    // (but don't intercept special modes like Application Info)
     RTCConfigData& config = ConfigManager::getConfig();
     uint8_t persistMode = (uint8_t)mode;
-    if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY) {
+    if (config.displayMode == DISPLAY_MODE_WEATHER_ONLY
+        && mode != DISPLAY_MODE_APPLICATION_INFO) {
         // Day browsing: update selectedForecastDay and keep weather-only mode
         int8_t maxDays = config.availableForecastDays > 1 ? config.availableForecastDays : 7;
         if (mode == DISPLAY_MODE_HALF_AND_HALF) {
