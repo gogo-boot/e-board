@@ -142,6 +142,53 @@ return `null` for `uv_index_max`. The display hides the UV section when data is 
 The JSON response format is identical regardless of model selection — only the data
 coverage and resolution differ.
 
+#### Day Browsing (On-Demand Fetch)
+
+When the user browses a future forecast day (day 1–6) in Weather-Only mode, the device
+fetches hourly data for that specific day using `getWeatherForDay()`. This is a separate,
+lightweight API call — not the full 7-day forecast used during normal operation.
+
+**How it works:**
+
+The Open-Meteo API supports `start_hour` and `end_hour` parameters to request a narrow
+time window. The device requests exactly 19 hours of data (06:00 to 00:00 next day) for
+the selected day:
+
+```
+https://api.open-meteo.com/v1/forecast
+  ?latitude=50.11&longitude=8.68
+  &hourly=temperature_2m,precipitation,weather_code
+  &start_hour=2025-09-03T06:00
+  &end_hour=2025-09-04T00:00
+  &timezone=Europe/Berlin
+  &models=icon_seamless          ← only if a specific model is configured
+```
+
+**Key details:**
+
+- **Response size**: ~1.5 KB (vs ~15 KB for the full forecast) — minimal bandwidth and memory
+- **Data points**: Exactly 19 hourly values (06:00, 07:00, ..., 00:00)
+- **DST safety**: The target date is calculated by adding `day * 86400` seconds to **today at noon**
+  (not midnight). This avoids the edge case where a DST transition at midnight would shift
+  the date forward or backward by one day.
+- **Timing**: Fetched **before** WiFi is disconnected in the main wake cycle, so it shares
+  the existing WiFi connection
+- **Fallback**: If the fetch fails (network error, timeout, API error), `selectedForecastDay`
+  is reset to 0 and the device falls back to the normal today weather view
+
+**Model compatibility:**
+
+Some weather models provide fewer than 7 forecast days. The `availableForecastDays` variable
+(set from `weather.dailyForecastCount`) limits the browsable range. If a user selects
+ItaliaMeteo (3 days), they can only browse days 1–2.
+
+| Weather Model | Forecast Days | Browsable Range |
+|---------------|---------------|-----------------|
+| Auto / DWD ICON / ECMWF | 7 | Day 1–6 |
+| MeteoSwiss | 5 | Day 1–4 |
+| Meteo-France | 4 | Day 1–3 |
+| ItaliaMeteo | 3 | Day 1–2 |
+
 ---
 
 ### 4. OpenStreetMap Nominatim API

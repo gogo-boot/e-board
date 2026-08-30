@@ -143,6 +143,8 @@ This cleanly separates "what woke the device" from "what action to take."
 
 ## Button Actions Summary
 
+### Default Behavior (Half & Half / Transport Only)
+
 | Button | Short Press | Long Press (3s) |
 |--------|-------------|-----------------|
 | Button 1 | Half & Half mode (temp) | Enter Configure Mode (restarts) |
@@ -150,11 +152,121 @@ This cleanly separates "what woke the device" from "what action to take."
 | Button 3 | Transport Full mode (temp) | Trigger OTA Update |
 | Button 1+2 | — | Factory Reset (restarts) |
 
+### Weather-Only Mode (Day Browsing)
+
+| Button | Short Press | Long Press (3s) |
+|--------|-------------|-----------------|
+| Button 1 | Back to today (day 0) | Enter Configure Mode (restarts) |
+| Button 2 | Next day (+1, circular) | Show Application Info (temp) |
+| Button 3 | Previous day (-1, circular) | Trigger OTA Update |
+| Button 1+2 | — | Factory Reset (restarts) |
+
+> Long press actions are unchanged — only short press behavior is reinterpreted in Weather-Only mode.
+
+---
+
+## Weather-Only Day Browsing
+
+When the effective display mode is **Weather-Only** (`displayMode == DISPLAY_MODE_WEATHER_ONLY`),
+the three physical buttons are reinterpreted to browse the 7-day forecast instead of switching
+display modes. Long press actions (configure mode, application info, OTA) remain unchanged.
+
+### Activation Condition
+
+Day browsing activates when **all** of these are true:
+
+- Effective display mode is `DISPLAY_MODE_WEATHER_ONLY`
+- The resolved button mode is **not** `DISPLAY_MODE_APPLICATION_INFO` (long-press guard)
+
+This means day browsing works both when Weather-Only is the configured mode and when it's
+active as a temporary mode (e.g., outside transport active hours in Half & Half mode).
+
+### Button Mapping
+
+```
+Button 1 (Half & Half pin) → Back to today (day 0)
+Button 2 (Weather pin)     → Next day (+1)
+Button 3 (Transport pin)   → Previous day (-1)
+```
+
+### Wrapping Logic
+
+Day navigation is **circular** and **skips day 0** (today):
+
+```
+Forward (Button 2):   1 → 2 → 3 → 4 → 5 → 6 → 1  (wraps to 1, skips 0)
+Backward (Button 3):  1 → 6 → 5 → 4 → 3 → 2 → 1  (wraps to max-1, skips 0)
+```
+
+The upper bound is `availableForecastDays` (set from `weather.dailyForecastCount` after fetch).
+Models with fewer forecast days have a smaller range:
+
+| Weather Model | Available Days | Browsable Range |
+|---------------|----------------|-----------------|
+| Auto / DWD ICON / ECMWF | 7 | Day 1-6 |
+| MeteoSwiss | 5 | Day 1-4 |
+| Meteo-France | 4 | Day 1-3 |
+| ItaliaMeteo | 3 | Day 1-2 |
+
+Button 1 always resets `selectedForecastDay` to 0, returning to the normal today view.
+
+### Implementation: Two Button Paths
+
+#### Deep Sleep Wakeup Path
+
+When a button wakes the device from deep sleep, `handleWakeupMode()` checks the effective
+display mode. If Weather-Only, it reinterprets the button press as a day navigation command
+instead of a display mode switch:
+
+```cpp
+// In handleWakeupMode():
+if (effectiveMode == DISPLAY_MODE_WEATHER_ONLY && buttonMode != DISPLAY_MODE_APPLICATION_INFO) {
+    // Reinterpret as day browsing
+    if (buttonMode == DISPLAY_MODE_HALF_AND_HALF) {
+        selectedForecastDay = 0;  // Button 1: back to today
+    } else if (buttonMode == DISPLAY_MODE_WEATHER_ONLY) {
+        selectedForecastDay = nextDay(+1);  // Button 2: forward
+    } else if (buttonMode == DISPLAY_MODE_DEPARTURE_ONLY) {
+        selectedForecastDay = nextDay(-1);  // Button 3: backward
+    }
+}
+```
+
+#### Awake Press Path (ISR)
+
+When a button is pressed during an active wake cycle, the ISR fires and
+`checkAndRestartIfButtonPressed()` handles it. Since `esp_restart()` clears RTC state,
+the pending day value is saved to NVS under the key `pendingDay` before restarting:
+
+```
+ISR fires → checkAndRestartIfButtonPressed()
+  → Save selectedForecastDay to NVS key "pendingDay"
+  → esp_restart()
+  → On reboot: load "pendingDay" from NVS, delete key, apply to selectedForecastDay
+```
+
+The `pendingDay` NVS key is a transient value — it is read once and immediately deleted
+after loading. This avoids polluting NVS with persistent state for a runtime-only feature.
+
+### Temporary Mode Expiry
+
+When temporary mode expires (2 minutes after button press), `selectedForecastDay` is
+automatically reset to 0. This ensures the device returns to showing today's weather
+after the browsing session ends, rather than staying on a stale future day.
+
+```
+Button press → selectedForecastDay = 3 → display day 3
+  ... 2 minutes pass ...
+Temp mode expires → selectedForecastDay reset to 0 → display today
+```
+
 ## Key Code Files
 
 | File | Purpose |
 |------|---------|
 | `src/util/button_monitor.cpp` | Long press detection (polling loop) |
-| `src/util/button_manager.cpp` | ISR handlers, wakeup mode, temp mode |
+| `src/util/button_manager.cpp` | ISR handlers, wakeup mode, temp mode, day browsing reinterpretation |
 | `src/util/system_init.cpp` | Long press action routing, wait-for-release |
 | `include/config/pins.h` | GPIO pin assignments per board |
+| `src/display/weather_display.cpp` | Day browse layout rendering (`drawDayBrowseLayout()`) |
+| `src/api/dwd_weather_api.cpp` | On-demand day fetch (`getWeatherForDay()`) |
