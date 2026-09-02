@@ -7,6 +7,9 @@ public:
     static String formatDateText(const String& isoTime);
     // Return current date in "DD.MM.YYYY Wochentag" format with German day names
     static String getCurrentDateString();
+    // Format an ISO date string ("YYYY-MM-DD" or "YYYY-MM-DDTHH:MM") in the same
+    // "DD.MM.YYYY Wochentag" format as getCurrentDateString(), for an arbitrary date.
+    static String formatFullDateString(const String& isoDate);
     // Converts date string (YYYY-MM-DD or YYYY-MM-DDTHH:MM) to German day name (full, 2-char, or 3-char)
     static String getDayOfWeekFromDateString(const String& dateStr, int format = 0);
 };

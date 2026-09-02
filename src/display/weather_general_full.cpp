@@ -216,10 +216,8 @@ void WeatherFullDisplay::drawDayBrowseLayout(const WeatherInfo& weather,
     // ── Top section (~30px): Date left-aligned + city name right-aligned ──
     TextUtils::setFont24px_margin28px();
 
-    // Format date: "Do, 27. Aug 2026" from dailyForecast[selectedDay].time
-    String dayName = DateUtil::getDayOfWeekFromDateString(dayForecast.time, 3); // 3-char day
-    String dateText = DateUtil::formatDateText(dayForecast.time);
-    String headerDate = dayName + ", " + dateText;
+    // Format date to match Weather-Full mode: "DD.MM.YYYY Wochentag"
+    String headerDate = DateUtil::formatFullDateString(dayForecast.time);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, headerDate);
 
     // City name right-aligned
