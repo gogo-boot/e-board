@@ -135,12 +135,17 @@ static bool renderDayBrowseFromCache(int day) {
     }
 
     // Slice hours 06:00–23:00 from the cached day into the display struct.
+    // The graph derives x-axis labels from an ISO timestamp via substring(11,16),
+    // so build a full "YYYY-MM-DDTHH:00" string using the day's date prefix.
+    char datePrefix[11] = {0};  // "YYYY-MM-DD"
+    strncpy(datePrefix, weather.dailyForecast[day].time, 10);
+
     WeatherHourlyForecast dayHourly[DAY_BROWSE_HOURLY_COUNT];
     int count = 0;
     for (int h = DAY_BROWSE_START_HOUR; h < DAY_CACHE_HOURS; ++h) {
         const DayBrowsePoint& p = dayCache[day][h];
         WeatherHourlyForecast& out = dayHourly[count];
-        snprintf(out.time, TIME_STRING_LENGTH, "%02d:00", h);
+        snprintf(out.time, TIME_STRING_LENGTH, "%sT%02d:00", datePrefix, h);
         out.temperature = p.temperature;
         out.weatherCode = p.weatherCode;
         out.rainChance  = p.rainChance;

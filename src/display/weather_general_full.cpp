@@ -270,7 +270,7 @@ void WeatherFullDisplay::drawDayBrowseLayout(const WeatherInfo& weather,
 
     // ── Graph title ──
     TextUtils::setFont12px_margin15px();
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Stundenverlauf 06:00 - 00:00");
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Stundenverlauf 06:00 - 23:00");
     currentY += GRAPH_TITLE_HEIGHT;
     currentY += 10; // Small spacing before graph
 
