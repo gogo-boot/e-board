@@ -268,5 +268,5 @@ Temp mode expires → selectedForecastDay reset to 0 → display today
 | `src/util/button_manager.cpp` | ISR handlers, wakeup mode, temp mode, day browsing reinterpretation |
 | `src/util/system_init.cpp` | Long press action routing, wait-for-release |
 | `include/config/pins.h` | GPIO pin assignments per board |
-| `src/display/weather_display.cpp` | Day browse layout rendering (`drawDayBrowseLayout()`) |
-| `src/api/dwd_weather_api.cpp` | On-demand day fetch (`getWeatherForDay()`) |
+| `src/display/weather_general_full.cpp` | Day browse layout rendering (`drawDayBrowseLayout()`) |
+| `src/api/dwd_weather_api.cpp` | Multi-day hourly fetch for the RTC cache (`getWeatherHourlyMultiDay()`) |

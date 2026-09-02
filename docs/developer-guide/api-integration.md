@@ -142,39 +142,44 @@ return `null` for `uv_index_max`. The display hides the UV section when data is 
 The JSON response format is identical regardless of model selection — only the data
 coverage and resolution differ.
 
-#### Day Browsing (On-Demand Fetch)
+#### Day Browsing (RTC-Cached Multi-Day Fetch)
 
-When the user browses a future forecast day (day 1–6) in Weather-Only mode, the device
-fetches hourly data for that specific day using `getWeatherForDay()`. This is a separate,
-lightweight API call — not the full 7-day forecast used during normal operation.
+Day browsing (day 1–6 in Weather-Only mode) does **not** make a per-day API call. Instead,
+the per-day hourly data is prefetched into RTC memory during the regular weather update, so
+a button press renders instantly with no WiFi round-trip.
 
 **How it works:**
 
-The Open-Meteo API supports `start_hour` and `end_hour` parameters to request a narrow
-time window. The device requests exactly 19 hours of data (06:00 to 00:00 next day) for
-the selected day:
+When the weather update interval elapses, the device makes **one wide** Open-Meteo request
+with `forecast_days=N` and slices the response per day into an RTC cache
+(`getWeatherHourlyMultiDay()`):
 
 ```
 https://api.open-meteo.com/v1/forecast
   ?latitude=50.11&longitude=8.68
-  &hourly=temperature_2m,precipitation,weather_code
-  &start_hour=2025-09-03T06:00
-  &end_hour=2025-09-04T00:00
+  &hourly=temperature_2m,precipitation,weather_code,relative_humidity_2m
+  &forecast_days=7
   &timezone=Europe/Berlin
   &models=icon_seamless          ← only if a specific model is configured
 ```
 
 **Key details:**
 
-- **Response size**: ~1.5 KB (vs ~15 KB for the full forecast) — minimal bandwidth and memory
-- **Data points**: Exactly 19 hourly values (06:00, 07:00, ..., 00:00)
-- **DST safety**: The target date is calculated by adding `day * 86400` seconds to **today at noon**
-  (not midnight). This avoids the edge case where a DST transition at midnight would shift
-  the date forward or backward by one day.
-- **Timing**: Fetched **before** WiFi is disconnected in the main wake cycle, so it shares
-  the existing WiFi connection
-- **Fallback**: If the fetch fails (network error, timeout, API error), `selectedForecastDay`
-  is reset to 0 and the device falls back to the normal today weather view
+- **One call for all days**: the wide fetch replaces the previous per-day approach; it runs
+  during the normal weather update while WiFi is already up.
+- **RTC cache**: each hourly point is a compact `DayBrowsePoint` (12 bytes); the full cache
+  is `DayBrowsePoint dayCache[7][24]` (~2 KB RTC). Hour is derived from the array index (no
+  time string stored per point).
+- **Graph range**: the day-browse graph shows 06:00–24:00 (19 points; the 24:00 point is the
+  next cached day's 00:00). The last browsable day shows 18 points (06:00–23:00).
+- **Limited-day models**: Open-Meteo returns all `forecast_days` timestamps even for a 3- or
+  5-day model, filling values past the model's range with `null`. A day counts as valid only
+  when hours 06:00–23:00 are all non-null; the cache stores the contiguous valid-day count.
+- **Instant browsing**: because all days live in RTC, a day-browse button wake renders from
+  cache and skips WiFi entirely when no weather update is due (see
+  [Boot Process](boot-process.md)).
+- **Fallback**: if the cache is empty or the selected day is not cached, the display falls
+  back to the normal today weather view.
 
 **Model compatibility:**
 
