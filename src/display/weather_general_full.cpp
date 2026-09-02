@@ -216,10 +216,8 @@ void WeatherFullDisplay::drawDayBrowseLayout(const WeatherInfo& weather,
     // ── Top section (~30px): Date left-aligned + city name right-aligned ──
     TextUtils::setFont24px_margin28px();
 
-    // Format date: "Do, 27. Aug 2026" from dailyForecast[selectedDay].time
-    String dayName = DateUtil::getDayOfWeekFromDateString(dayForecast.time, 3); // 3-char day
-    String dateText = DateUtil::formatDateText(dayForecast.time);
-    String headerDate = dayName + ", " + dateText;
+    // Format date to match Weather-Full mode: "DD.MM.YYYY Wochentag"
+    String headerDate = DateUtil::formatFullDateString(dayForecast.time);
     TextUtils::printTextAtWithMargin(leftMargin, currentY, headerDate);
 
     // City name right-aligned
@@ -270,7 +268,7 @@ void WeatherFullDisplay::drawDayBrowseLayout(const WeatherInfo& weather,
 
     // ── Graph title ──
     TextUtils::setFont12px_margin15px();
-    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Stundenverlauf 06:00 - 00:00");
+    TextUtils::printTextAtWithMargin(leftMargin, currentY, "Stundenverlauf 06:00 - 24:00");
     currentY += GRAPH_TITLE_HEIGHT;
     currentY += 10; // Small spacing before graph
 

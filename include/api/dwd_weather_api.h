@@ -51,7 +51,36 @@ String getCityFromLatLon(float lat, float lon);
 void safeStringCopy(char* dest, const String& src, size_t destSize);
 void extractTimeFromISO(char* dest, const String& isoDateTime, size_t destSize);
 
-// Day browsing: fetch 19h hourly data for a specific future day (06:00-00:00)
-static constexpr int DAY_BROWSE_HOURLY_COUNT = 19;
-bool getWeatherForDay(float lat, float lon, int dayOffset,
-                      WeatherHourlyForecast hourlyOut[], int& hourlyCount);
+// =============================================================================
+// Day browsing RTC cache
+// =============================================================================
+// Compact hourly point stored in RTC memory for instant day-browse rendering.
+// The time string is dropped: the array index within a day maps directly to the
+// hour (index 0 = 00:00, index 6 = 06:00, ...), so no per-point timestamp needed.
+struct DayBrowsePoint {
+    float   temperature;   // 4 bytes (°C)
+    float   rainfall;      // 4 bytes (mm)
+    int16_t rainChance;    // 2 bytes (%)
+    uint8_t weatherCode;   // 1 byte
+    uint8_t humidity;      // 1 byte (%)
+};                         // 12 bytes
+
+static constexpr int DAY_CACHE_MAX_DAYS = 7;   // days 0..6 (index 0 = today)
+static constexpr int DAY_CACHE_HOURS    = 24;  // 00:00–23:00 per day
+
+// Day-browse display window: 06:00 through 24:00 inclusive (19 points).
+// The 24:00 point is the next day's 00:00, giving 18 intervals that divide
+// cleanly by 3 for aligned 3-hour grid lines. The last browsable day (with no
+// next-day data cached) falls back to 18 points (06:00–23:00).
+static constexpr int DAY_BROWSE_START_HOUR = 6;
+static constexpr int DAY_BROWSE_HOURLY_COUNT = DAY_CACHE_HOURS - DAY_BROWSE_START_HOUR + 1; // 19 (max)
+
+// Fetch full hourly data (00:00–23:00) for up to maxDays days in a SINGLE
+// Open-Meteo call and populate the RTC cache. Limited-day models return null
+// temperatures past their range; such hours are skipped. A day is only counted
+// as valid if hours 06:00–23:00 are all present (non-null).
+//
+// Returns the number of fully-valid days written (>= 1). On HTTP/JSON failure
+// returns 0 and leaves the cache untouched.
+int getWeatherHourlyMultiDay(float lat, float lon, int maxDays,
+                             DayBrowsePoint cache[][DAY_CACHE_HOURS]);

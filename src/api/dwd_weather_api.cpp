@@ -202,97 +202,102 @@ void extractTimeFromISO(char* dest, const String& isoDateTime, size_t destSize) 
     }
 }
 
-// Fetch 19h hourly data for a specific future day (06:00-00:00 next day)
-bool getWeatherForDay(float lat, float lon, int dayOffset,
-                      WeatherHourlyForecast hourlyOut[], int& hourlyCount) {
-    if (dayOffset < 1 || dayOffset > 6) {
-        ESP_LOGE(TAG, "Invalid dayOffset %d (must be 1-6)", dayOffset);
-        hourlyCount = 0;
-        return false;
-    }
-
-    // Calculate target date by adding dayOffset days to today.
-    // Anchor to noon to avoid DST transition edge cases (DST shifts at 02:00/03:00).
-    time_t now;
-    time(&now);
-    struct tm tmNow;
-    localtime_r(&now, &tmNow);
-    tmNow.tm_hour = 12;
-    tmNow.tm_min = 0;
-    tmNow.tm_sec = 0;
-    time_t noonToday = mktime(&tmNow);
-
-    time_t targetDay = noonToday + (dayOffset * 86400);
-    time_t nextDay = targetDay + 86400;
-
-    struct tm tmTarget;
-    struct tm tmNext;
-    localtime_r(&targetDay, &tmTarget);
-    localtime_r(&nextDay, &tmNext);
-
-    // Format: YYYY-MM-DDT06:00 for start, YYYY-MM-DDT00:00 for end (next day)
-    char startHour[20];
-    char endHour[20];
-    snprintf(startHour, sizeof(startHour), "%04d-%02d-%02dT06:00",
-             tmTarget.tm_year + 1900, tmTarget.tm_mon + 1, tmTarget.tm_mday);
-    snprintf(endHour, sizeof(endHour), "%04d-%02d-%02dT00:00",
-             tmNext.tm_year + 1900, tmNext.tm_mon + 1, tmNext.tm_mday);
+// Fetch full hourly data (00:00–23:00) for up to maxDays days in a SINGLE call.
+// Populates cache[day][hour]. Handles limited-day models: Open-Meteo returns all
+// requested days' timestamps but fills temperatures with null past a model's range;
+// those hours are skipped. A day counts as valid only if hours 06:00–23:00 are all
+// present (non-null), which is what the day-browse graph renders.
+int getWeatherHourlyMultiDay(float lat, float lon, int maxDays,
+                             DayBrowsePoint cache[][DAY_CACHE_HOURS]) {
+    if (maxDays < 1) return 0;
+    if (maxDays > DAY_CACHE_MAX_DAYS) maxDays = DAY_CACHE_MAX_DAYS;
 
     String url = "https://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 6) +
         "&longitude=" + String(lon, 6) +
         "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,relative_humidity_2m" +
         "&timezone=auto" +
-        "&start_hour=" + String(startHour) +
-        "&end_hour=" + String(endHour);
+        "&forecast_days=" + String(maxDays);
 
-    // Append weather model if configured
     RTCConfigData& config = ConfigManager::getConfig();
     if (strlen(config.weatherModel) > 0) {
         url += "&models=" + String(config.weatherModel);
     }
 
-    ESP_LOGI(TAG, "Fetching day %d weather: %s", dayOffset, url.c_str());
+    ESP_LOGI(TAG, "Fetching multi-day hourly (%d days): %s", maxDays, url.c_str());
 
     HTTPClient http;
     http.begin(url);
+    http.setTimeout(8000);
     int httpCode = http.GET();
-    hourlyCount = 0;
 
-    if (httpCode > 0) {
-        String payload = http.getString();
-        JsonDocument doc;
-        DeserializationError error = deserializeJson(doc, payload);
-        if (!error && doc["hourly"].is<JsonObject>()) {
-            JsonObject hourly = doc["hourly"];
-            JsonArray times = hourly["time"];
-            JsonArray temps = hourly["temperature_2m"];
-            JsonArray wcode = hourly["weather_code"];
-            JsonArray rainProb = hourly["precipitation_probability"];
-            JsonArray precipitation = hourly["precipitation"];
-            JsonArray humidity = hourly["relative_humidity_2m"];
-
-            int count = 0;
-            for (size_t i = 0; i < times.size() && count < DAY_BROWSE_HOURLY_COUNT; ++i) {
-                safeStringCopy(hourlyOut[count].time, times[i].as<String>(), TIME_STRING_LENGTH);
-                hourlyOut[count].temperature = temps[i].as<float>();
-                hourlyOut[count].weatherCode = wcode[i].as<int>();
-                hourlyOut[count].rainChance = rainProb[i].as<int>();
-                hourlyOut[count].rainfall = precipitation[i].as<float>();
-                hourlyOut[count].humidity = humidity[i].as<int>();
-                count++;
-            }
-            hourlyCount = count;
-
-            http.end();
-            ESP_LOGI(TAG, "Day %d weather: %d hourly entries fetched", dayOffset, hourlyCount);
-            return true;
-        } else {
-            ESP_LOGE(TAG, "JSON parse error for day %d weather", dayOffset);
-        }
-    } else {
-        ESP_LOGE(TAG, "HTTP request failed for day %d weather, code: %d", dayOffset, httpCode);
+    if (httpCode <= 0) {
+        ESP_LOGE(TAG, "Multi-day hourly HTTP failed, code: %d", httpCode);
+        http.end();
+        return 0;
     }
 
+    String payload = http.getString();
     http.end();
-    return false;
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, payload);
+    if (error || !doc["hourly"].is<JsonObject>()) {
+        ESP_LOGE(TAG, "Multi-day hourly JSON parse error");
+        return 0;
+    }
+
+    JsonObject hourly = doc["hourly"];
+    JsonArray times     = hourly["time"];
+    JsonArray temps     = hourly["temperature_2m"];
+    JsonArray wcode     = hourly["weather_code"];
+    JsonArray rainProb  = hourly["precipitation_probability"];
+    JsonArray precip    = hourly["precipitation"];
+    JsonArray humidity  = hourly["relative_humidity_2m"];
+
+    // Track which (day, hour) slots got a valid (non-null) value.
+    bool filled[DAY_CACHE_MAX_DAYS][DAY_CACHE_HOURS] = {{false}};
+
+    // Timestamps are contiguous and ordered starting at day 0 hour 0 (00:00).
+    // Index → day/hour: day = i / 24, hour = i % 24.
+    for (size_t i = 0; i < times.size(); ++i) {
+        int day  = (int)(i / DAY_CACHE_HOURS);
+        int hour = (int)(i % DAY_CACHE_HOURS);
+        if (day >= maxDays) break;
+
+        // Skip hours the model does not provide (null temperature).
+        if (temps[i].isNull()) continue;
+
+        DayBrowsePoint& p = cache[day][hour];
+        p.temperature = temps[i].as<float>();
+        p.rainfall    = precip[i].isNull() ? 0.0f : precip[i].as<float>();
+
+        int rc = rainProb[i].isNull() ? 0 : rainProb[i].as<int>();
+        if (rc < 0) rc = 0; if (rc > 100) rc = 100;
+        p.rainChance = (int16_t)rc;
+
+        p.weatherCode = wcode[i].isNull() ? 0 : (uint8_t)wcode[i].as<int>();
+
+        int hum = humidity[i].isNull() ? 0 : humidity[i].as<int>();
+        if (hum < 0) hum = 0; if (hum > 100) hum = 100;
+        p.humidity = (uint8_t)hum;
+
+        filled[day][hour] = true;
+    }
+
+    // A day is valid only if the entire display window (06:00–23:00) is present.
+    int validDays = 0;
+    for (int day = 0; day < maxDays; ++day) {
+        bool windowComplete = true;
+        for (int h = DAY_BROWSE_START_HOUR; h < DAY_CACHE_HOURS; ++h) {
+            if (!filled[day][h]) { windowComplete = false; break; }
+        }
+        if (windowComplete) {
+            validDays = day + 1;   // contiguous from day 0
+        } else {
+            break;                 // stop at first incomplete day
+        }
+    }
+
+    ESP_LOGI(TAG, "Multi-day hourly: %d valid days cached (of %d requested)", validDays, maxDays);
+    return validDays;
 }
