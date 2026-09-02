@@ -41,6 +41,11 @@ ConfigManager& configMgr = ConfigManager::getInstance();
 RTCConfigData& config = ConfigManager::getConfig();
 RTC_DATA_ATTR WeatherInfo weather;
 
+// Day-browse hourly cache, prefetched during each weather update so button
+// presses render instantly without a WiFi round-trip. ~2 KB of RTC memory.
+RTC_DATA_ATTR DayBrowsePoint dayCache[DAY_CACHE_MAX_DAYS][DAY_CACHE_HOURS];
+RTC_DATA_ATTR uint8_t dayCacheValidDays = 0;  // contiguous valid days from day 0
+
 void DeviceModeManager::runConfigurationMode() {
     ESP_LOGI(TAG, "=== PHASE 2: CONFIGURATION MODE ===");
 
@@ -121,6 +126,33 @@ void DeviceModeManager::showWeatherDeparture() {
     }
 }
 
+// Render a cached forecast day (06:00–23:00, up to 18 points) from the RTC
+// day cache. Returns true if rendered; false if the day is not available in
+// the cache (caller should fall back to the normal weather view).
+static bool renderDayBrowseFromCache(int day) {
+    if (day <= 0 || day >= dayCacheValidDays) {
+        return false;
+    }
+
+    // Slice hours 06:00–23:00 from the cached day into the display struct.
+    WeatherHourlyForecast dayHourly[DAY_BROWSE_HOURLY_COUNT];
+    int count = 0;
+    for (int h = DAY_BROWSE_START_HOUR; h < DAY_CACHE_HOURS; ++h) {
+        const DayBrowsePoint& p = dayCache[day][h];
+        WeatherHourlyForecast& out = dayHourly[count];
+        snprintf(out.time, TIME_STRING_LENGTH, "%02d:00", h);
+        out.temperature = p.temperature;
+        out.weatherCode = p.weatherCode;
+        out.rainChance  = p.rainChance;
+        out.rainfall    = p.rainfall;
+        out.humidity    = p.humidity;
+        count++;
+    }
+
+    DisplayManager::displayWeatherDayBrowse(weather, dayHourly, count, day);
+    return true;
+}
+
 void DeviceModeManager::updateWeatherFull() {
     // For weather-only mode, only check weather updates
     bool needsWeatherUpdate = TimingManager::isTimeForWeatherUpdate();
@@ -134,6 +166,18 @@ void DeviceModeManager::updateWeatherFull() {
             TimingManager::markWeatherUpdated();
             // Update available forecast days for day browsing button wrapping
             config.availableForecastDays = weather.dailyForecastCount;
+
+            // Prefetch all forecast days' hourly data into the RTC cache while
+            // WiFi is still up. Subsequent button presses render from cache with
+            // no network delay. On failure the previous cache is left intact.
+            int cached = getWeatherHourlyMultiDay(config.latitude, config.longitude,
+                                                  weather.dailyForecastCount, dayCache);
+            if (cached > 0) {
+                dayCacheValidDays = (uint8_t)cached;
+            } else {
+                ESP_LOGW(TAG, "Day cache prefetch failed; keeping previous cache (%d days)",
+                         dayCacheValidDays);
+            }
         } else {
             ESP_LOGE(TAG, "Failed to get weather information from DWD.");
         }
@@ -149,29 +193,21 @@ void DeviceModeManager::updateWeatherFull() {
         config.selectedForecastDay = weather.dailyForecastCount - 1;
     }
 
-    // Day browsing: fetch hourly data for selected day BEFORE disconnecting WiFi
-    if (config.selectedForecastDay > 0 && config.selectedForecastDay < weather.dailyForecastCount) {
-        WeatherHourlyForecast dayHourly[DAY_BROWSE_HOURLY_COUNT];
-        int dayHourlyCount = 0;
+    // WiFi is no longer needed — day browsing renders from the RTC cache.
+    shutdownWiFiBeforeRender();
 
-        bool fetched = getWeatherForDay(config.latitude, config.longitude,
-                                         config.selectedForecastDay,
-                                         dayHourly, dayHourlyCount);
-
-        shutdownWiFiBeforeRender();
-
-        if (fetched && dayHourlyCount > 0) {
-            DisplayManager::displayWeatherDayBrowse(weather, dayHourly, dayHourlyCount,
-                                                     config.selectedForecastDay);
-        } else {
-            // Fallback to normal weather display if fetch failed
-            ESP_LOGW(TAG, "Day browse fetch failed, falling back to normal weather display");
-            DisplayManager::displayWeatherFull(weather);
+    // Day browsing: render the selected future day from cache. Falls back to the
+    // normal today view if the day is not cached (cold boot before first fetch,
+    // prefetch failure, or a model with fewer days).
+    if (config.selectedForecastDay > 0) {
+        if (renderDayBrowseFromCache(config.selectedForecastDay)) {
+            return;
         }
-    } else {
-        shutdownWiFiBeforeRender();
-        DisplayManager::displayWeatherFull(weather);
+        ESP_LOGW(TAG, "Day %d not in cache (valid=%d), falling back to today",
+                 config.selectedForecastDay, dayCacheValidDays);
     }
+
+    DisplayManager::displayWeatherFull(weather);
 }
 
 void DeviceModeManager::updateDepartureFull() {
