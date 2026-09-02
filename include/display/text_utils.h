@@ -29,13 +29,11 @@ public:
     // Font metrics utilities
     static int16_t getCurrentFontHeight();
     static int16_t getCurrentFontAscent();
-    static int16_t getCurrentFontDescent();
 
     // Helper functions for proper text positioning
     static void printTextAtWithMargin(int16_t x, int16_t y, const String& text);
     static void printTextAtTopMargin(int16_t x, int16_t topY, const String& text);
     static void printStrikethroughTextAtTopMargin(int16_t x, int16_t topY, const String& text);
-    static int16_t getFontAscent(); // Get current font ascent for calculations
 };
 
 #endif // TEXT_UTILS_H

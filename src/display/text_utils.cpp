@@ -50,10 +50,6 @@ int16_t TextUtils::getCurrentFontAscent() {
     return u8g2.getFontAscent();
 }
 
-int16_t TextUtils::getCurrentFontDescent() {
-    return u8g2.getFontDescent();
-}
-
 // Helper function for proper text positioning
 void TextUtils::printTextAtWithMargin(int16_t x, int16_t y, const String& text) {
     // The y coordinate should already include proper margin, so use as-is
@@ -81,11 +77,6 @@ void TextUtils::printStrikethroughTextAtTopMargin(int16_t x, int16_t topY, const
 
     // Draw strikethrough line
     display.drawLine(x, strikeY, x + textWidth, strikeY, GxEPD_BLACK);
-}
-
-// Get current font ascent for positioning calculations
-int16_t TextUtils::getFontAscent() {
-    return u8g2.getFontAscent();
 }
 
 int16_t TextUtils::getTextWidth(const String& text) {

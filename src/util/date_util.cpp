@@ -16,26 +16,6 @@ static String formatFullDate(const tm& timeinfo) {
     return String(dateStr);
 }
 
-String DateUtil::formatDateText(const String& isoTime) {
-    int year = 0, month = 0, day = 0;
-    if (isoTime.length() >= 10) {
-        year = isoTime.substring(0, 4).toInt();
-        month = isoTime.substring(5, 7).toInt();
-        day = isoTime.substring(8, 10).toInt();
-    }
-    static const char* monthNames[] = {
-        "", "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November",
-        "Dezember"
-    };
-    if (month > 0 && month <= 12 && day > 0) {
-        char buf[24];
-        snprintf(buf, sizeof(buf), "%02d. %s", day, monthNames[month]);
-        return String(buf);
-    } else {
-        return "Datum: N/A";
-    }
-}
-
 String DateUtil::getCurrentDateString() {
     if (TimeManager::isTimeSet()) {
         tm timeinfo;
@@ -56,31 +36,5 @@ String DateUtil::formatFullDateString(const String& isoDate) {
     timeinfo.tm_mday = isoDate.substring(8, 10).toInt();
     mktime(&timeinfo);  // normalizes and fills tm_wday
     return formatFullDate(timeinfo);
-}
-
-String DateUtil::getDayOfWeekFromDateString(const String& dateStr, int format) {
-    int year = 0, month = 0, day = 0;
-    if (dateStr.length() >= 10) {
-        year = dateStr.substring(0, 4).toInt();
-        month = dateStr.substring(5, 7).toInt();
-        day = dateStr.substring(8, 10).toInt();
-    } else {
-        return "";
-    }
-    tm timeinfo = {};
-    timeinfo.tm_year = year - 1900;
-    timeinfo.tm_mon = month - 1;
-    timeinfo.tm_mday = day;
-    mktime(&timeinfo);
-    static const char* dayNamesFull[] = {
-        "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
-    };
-    static const char* dayNames2[] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
-    static const char* dayNames3[] = {"Son", "Mon", "Die", "Mit", "Don", "Fre", "Sam"};
-    int wday = timeinfo.tm_wday;
-    if (wday < 0 || wday > 6) wday = 0;
-    if (format == 2) return String(dayNames2[wday]);
-    if (format == 3) return String(dayNames3[wday]);
-    return String(dayNamesFull[wday]);
 }
 

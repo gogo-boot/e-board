@@ -72,10 +72,6 @@ String WeatherUtil::sunshineSecondsToHHMM(const float& seconds) {
     return String(buf);
 }
 
-String WeatherUtil::formatWindText(const String& windSpeed, const String& windGust) {
-    return "Wind : " + windSpeed + " - " + windGust + " m/s";
-}
-
 String WeatherUtil::formatDateText(const String& isoTime) {
     int year = 0, month = 0, day = 0;
     if (isoTime.length() >= 10) {
@@ -96,24 +92,6 @@ String WeatherUtil::formatDateText(const String& isoTime) {
     } else {
         return "Datum: N/A";
     }
-}
-
-String WeatherUtil::getCurrentDateString() {
-    if (TimeManager::isTimeSet()) {
-        tm timeinfo;
-        if (TimeManager::getCurrentLocalTime(timeinfo)) {
-            static const char* dayNames[] = {
-                "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"
-            };
-            char dateStr[40];
-            int wday = timeinfo.tm_wday;
-            if (wday < 0 || wday > 6) wday = 0;
-            snprintf(dateStr, sizeof(dateStr), "%02d.%02d.%04d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1,
-                     timeinfo.tm_year + 1900, dayNames[wday]);
-            return String(dateStr);
-        }
-    }
-    return "";
 }
 
 String WeatherUtil::getDayOfWeekFromDateString(const String& dateStr, int format) {
