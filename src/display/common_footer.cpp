@@ -10,13 +10,19 @@
 
 static const char* TAG = "COMMON_FOOTER";
 
-// Static member definitions
-int32_t CommonFooter::cachedRSSI = 0;
-bool CommonFooter::cachedConnected = false;
+// Static member definitions — RTC-persistent so last-known WiFi state survives
+// deep sleep and is available on wakes that skip the WiFi connect.
+RTC_DATA_ATTR int32_t CommonFooter::cachedRSSI = 0;
+RTC_DATA_ATTR bool CommonFooter::cachedConnected = false;
 
 void CommonFooter::cacheWiFiState() {
-    cachedRSSI = WiFi.RSSI();
-    cachedConnected = (WiFi.status() == WL_CONNECTED);
+    // Only refresh the cache while WiFi is actually up. On a wake that skipped
+    // WiFi, this preserves the last-known-good state instead of overwriting it
+    // with a disconnected/zero reading.
+    if (WiFi.status() == WL_CONNECTED) {
+        cachedRSSI = WiFi.RSSI();
+        cachedConnected = true;
+    }
 }
 
 

@@ -85,6 +85,28 @@ void ActivityManager::onStart() {
     }
 
     // Start Wifi connection. If gets failed, show Wifi Error Screen
+    //
+    // Performance optimization: a day-browse button wake in Weather-Only mode
+    // renders entirely from the RTC cache (weather + day hourly data), so WiFi
+    // is unnecessary unless a weather refresh is actually due. Skipping the
+    // connect saves ~1-2s of radio-on time and its power per button press.
+    RTCConfigData& cfg = ConfigManager::getConfig();
+    int8_t wakeButtonMode = ButtonManager::getWakeupButtonMode();
+    bool isDayBrowseButtonWake =
+        (wakeButtonMode >= 0) &&
+        (cfg.displayMode == DISPLAY_MODE_WEATHER_ONLY) &&
+        (wakeButtonMode != DISPLAY_MODE_APPLICATION_INFO);
+    bool skipWifi = isDayBrowseButtonWake
+        && !TimingManager::isTimeForWeatherUpdate()
+        && !OTAManager::shouldCheckForUpdate();
+
+    if (skipWifi) {
+        ESP_LOGI(TAG, "Day-browse button wake, no weather update due — skipping WiFi (render from RTC cache)");
+        ButtonManager::handleWakeupMode();
+        setNextActivityLifecycle(Lifecycle::ON_RUNNING);
+        return;
+    }
+
     MyWiFiManager::reconnectWiFi();
 
     if (WiFi.status() != WL_CONNECTED) {

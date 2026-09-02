@@ -27,6 +27,9 @@ public:
     static icon_name getBatteryIcon();
 
 private:
+    // RTC-persistent so the last-known WiFi state survives deep sleep. This lets
+    // wakes that skip WiFi (e.g. day-browse button wake rendering from cache)
+    // still show the correct signal/connected state in the footer.
     static int32_t cachedRSSI;
     static bool cachedConnected;
 
