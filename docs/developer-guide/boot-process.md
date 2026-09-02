@@ -48,9 +48,17 @@ but can skip phases or branch based on conditions.
 - Fetch data from APIs (Phase 3: Complete)
   - If `tripMode == true`: fetch trip connections via `/hapi/trip` (origin → destination)
   - If `tripMode == false`: fetch departures via `/hapi/departureBoard` (single stop)
-  - If `selectedForecastDay > 0`: fetch day-specific hourly data via `getWeatherForDay()` (on-demand, before WiFi shutdown). Falls back to normal weather display (day 0) on failure.
+  - Weather: when the update interval has elapsed, one wide `forecast_days=N` fetch
+    refreshes both the current `WeatherInfo` and the per-day hourly RTC cache
+    (`getWeatherHourlyMultiDay()`) while WiFi is up. Day browsing (`selectedForecastDay > 0`)
+    then renders instantly from this RTC cache — no per-day fetch.
 - Disconnect WiFi (saves ~100mA during display rendering)
 - Render display
+
+> **Day-browse button wake optimization:** if the device is woken by a day-browse
+> button press in Weather-Only mode and no weather update (or OTA check) is due, WiFi is
+> **not** connected at all — the day is rendered straight from the RTC cache. See
+> [Display System](display-system.md#day-browse-layout).
 
 ### ON_LOOP: Web Server Mode
 
