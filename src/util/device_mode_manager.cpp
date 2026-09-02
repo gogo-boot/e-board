@@ -154,6 +154,23 @@ static bool renderDayBrowseFromCache(int day) {
         count++;
     }
 
+    // Append the 24:00 point (next day's 00:00) so the graph spans 18 intervals
+    // that divide evenly by 3 for aligned 3-hour grid lines. Only possible when
+    // the next day is cached; the last browsable day falls back to 18 points.
+    if (day + 1 < dayCacheValidDays) {
+        const DayBrowsePoint& p = dayCache[day + 1][0];
+        WeatherHourlyForecast& out = dayHourly[count];
+        // Label as "24:00" rather than the next day's 00:00 for a clear single-day
+        // axis. This string is only string-sliced for display, never date-parsed.
+        snprintf(out.time, TIME_STRING_LENGTH, "%sT24:00", datePrefix);
+        out.temperature = p.temperature;
+        out.weatherCode = p.weatherCode;
+        out.rainChance  = p.rainChance;
+        out.rainfall    = p.rainfall;
+        out.humidity    = p.humidity;
+        count++;
+    }
+
     DisplayManager::displayWeatherDayBrowse(weather, dayHourly, count, day);
     return true;
 }

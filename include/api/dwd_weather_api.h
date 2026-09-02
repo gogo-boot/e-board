@@ -68,9 +68,12 @@ struct DayBrowsePoint {
 static constexpr int DAY_CACHE_MAX_DAYS = 7;   // days 0..6 (index 0 = today)
 static constexpr int DAY_CACHE_HOURS    = 24;  // 00:00–23:00 per day
 
-// Day-browse display window: 06:00 through 23:00 inclusive (18 points).
+// Day-browse display window: 06:00 through 24:00 inclusive (19 points).
+// The 24:00 point is the next day's 00:00, giving 18 intervals that divide
+// cleanly by 3 for aligned 3-hour grid lines. The last browsable day (with no
+// next-day data cached) falls back to 18 points (06:00–23:00).
 static constexpr int DAY_BROWSE_START_HOUR = 6;
-static constexpr int DAY_BROWSE_HOURLY_COUNT = DAY_CACHE_HOURS - DAY_BROWSE_START_HOUR; // 18
+static constexpr int DAY_BROWSE_HOURLY_COUNT = DAY_CACHE_HOURS - DAY_BROWSE_START_HOUR + 1; // 19 (max)
 
 // Fetch full hourly data (00:00–23:00) for up to maxDays days in a SINGLE
 // Open-Meteo call and populate the RTC cache. Limited-day models return null
